@@ -1,8 +1,8 @@
 {
   "name": "rgb2g",
-  "fullName": "rgb2g",
-  "description": "a basic add-on",
-  "author": "",
+  "fullName": "Rocking Gaia on B2G",
+  "description": "an experimental Firefox OS development environment",
+  "author": "Myk Melez <myk@mozilla.org>",
   "license": "MPL 2.0",
   "version": "0.1"
 }
