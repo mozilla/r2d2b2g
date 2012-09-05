@@ -5,5 +5,6 @@
   "fullName": "Race to Develop to Boot to Gecko",
   "description": "an experimental Firefox OS development environment",
   "author": "Myk Melez <myk@mozilla.org>",
-  "license": "MPL 2.0"
+  "license": "MPL 2.0",
+  "unpack": true
 }
