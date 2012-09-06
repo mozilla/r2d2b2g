@@ -1,3 +1,3 @@
 document.defaultView.addEventListener("message", function(event) {
-  self.port.emit(event.data);
+  self.postMessage(event.data);
 }, false);

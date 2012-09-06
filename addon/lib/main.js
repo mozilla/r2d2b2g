@@ -20,7 +20,13 @@ require("widget").Widget({
         let worker = tab.attach({
           contentScriptFile: require("self").data.url("content-script.js")
         });
-        worker.port.on("run", function() run());
+        worker.on("message", function(data) {
+          switch(data) {
+            case "run":
+              run();
+              break;
+          }
+        });
       }
     });
     return;
