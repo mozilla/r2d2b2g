@@ -13,22 +13,37 @@ require("widget").Widget({
   content: "r2d2b2g",
   width: 50,
   onClick: function() {
-    let executables = {
-      WINNT: "b2g/b2g.exe",
-      Darwin: "mac64/B2G.app/Contents/MacOS/b2g",
-      Linux: "",
-    };
-    let url = require("self").data.url(executables[require("runtime").OS]);
-    let path = require("url").toFilename(url);
+    let addontab = require("addon-page");
+    require("tabs").open({
+      url: require("self").data.url("index.html"),
+      onReady: function(tab) {
+        let worker = tab.attach({
+          contentScriptFile: require("self").data.url("content-script.js")
+        });
+        worker.port.on("run", function() run());
+      }
+    });
+    return;
 
-    let b2g = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
-    b2g.initWithPath(path);
-
-    let profile = require("url").toFilename(require("self").data.url("profile"));
-    let args = ["-profile", profile];
-
-    let process = Cc["@mozilla.org/process/util;1"].createInstance(Ci.nsIProcess);
-    process.init(b2g);
-    process.run(false, args, args.length);
   }
 });
+
+function run() {
+  let executables = {
+    WINNT: "b2g/b2g.exe",
+    Darwin: "mac64/B2G.app/Contents/MacOS/b2g",
+    Linux: "",
+  };
+  let url = require("self").data.url(executables[require("runtime").OS]);
+  let path = require("url").toFilename(url);
+
+  let b2g = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
+  b2g.initWithPath(path);
+
+  let profile = require("url").toFilename(require("self").data.url("profile"));
+  let args = ["-profile", profile];
+
+  let process = Cc["@mozilla.org/process/util;1"].createInstance(Ci.nsIProcess);
+  process.init(b2g);
+  process.run(false, args, args.length);
+}
