@@ -15,7 +15,7 @@ require("widget").Widget({
   onClick: function() {
     let addontab = require("addon-page");
     require("tabs").open({
-      url: require("self").data.url("index.html"),
+      url: require("self").data.url("content/index.html"),
       onReady: function(tab) {
         let worker = tab.attach({
           contentScriptFile: require("self").data.url("content-script.js")
