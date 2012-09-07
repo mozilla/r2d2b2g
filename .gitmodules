@@ -1,3 +1,6 @@
 [submodule "mozdownload"]
 	path = mozdownload
 	url = git://github.com/mozilla/mozdownload.git
+[submodule "mozbase"]
+	path = mozbase
+	url = git://github.com/mozilla/mozbase.git
