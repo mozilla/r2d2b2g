@@ -37,7 +37,7 @@ require("widget").Widget({
 
 function run() {
   let executables = {
-    WINNT: "b2g/b2g.exe",
+    WINNT: "win32/b2g/b2g.exe",
     Darwin: "mac64/B2G.app/Contents/MacOS/b2g",
     Linux: "",
   };
