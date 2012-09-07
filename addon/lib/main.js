@@ -24,6 +24,7 @@ require("widget").Widget({
           switch(data) {
             case "run":
               run();
+              worker.postMessage("B2G was started!");
               break;
           }
         });

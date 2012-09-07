@@ -7,3 +7,7 @@
 document.defaultView.addEventListener("message", function(event) {
   self.postMessage(event.data);
 }, false);
+
+self.on("message", function(data) {
+  document.defaultView.postMessage(data, "*");
+});
