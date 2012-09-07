@@ -1,0 +1,3 @@
+[submodule "mozdownload"]
+	path = mozdownload
+	url = git://github.com/mozilla/mozdownload.git
