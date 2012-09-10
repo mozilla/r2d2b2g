@@ -7,3 +7,9 @@
 [submodule "addon-sdk"]
 	path = addon-sdk
 	url = git://github.com/mozilla/addon-sdk.git
+[submodule "addon/packages/menuitems"]
+	path = addon/packages/menuitems
+	url = git://github.com/voldsoftware/menuitems-jplib.git
+[submodule "addon/packages/vold-utils"]
+	path = addon/packages/vold-utils
+	url = git://github.com/voldsoftware/vold-utils-jplib.git
