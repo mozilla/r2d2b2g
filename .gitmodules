@@ -4,3 +4,6 @@
 [submodule "mozbase"]
 	path = mozbase
 	url = git://github.com/mozilla/mozbase.git
+[submodule "addon-sdk"]
+	path = addon-sdk
+	url = git://github.com/mozilla/addon-sdk.git
