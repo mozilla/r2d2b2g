@@ -54,3 +54,14 @@ function run() {
   process.init(b2g);
   process.run(false, args, args.length);
 }
+
+// XXX Also add to appmenu_webDeveloper_popup (appmenu_devToolsEndSeparator).
+let menuitem = require("menuitems").Menuitem({
+  id: "launchB2G",
+  menuid: "menuWebDeveloperPopup",
+  insertbefore: "devToolsEndSeparator",
+  label: "Launch B2G",
+  onCommand: function() {
+    run();
+  },
+});
