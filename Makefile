@@ -11,4 +11,5 @@ package:
 
 help:
 	@echo 'Targets:'
-	@echo '  build:   build'
+	@echo '  build: make Gaia profile, download B2G'
+	@echo '  package: package the addon into a XPI'
