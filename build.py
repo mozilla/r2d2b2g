@@ -20,12 +20,15 @@ datadir = os.path.join(os.getcwd(), "addon", "data")
 if sys.platform == 'win32':
   platform = 'win32'
   file_extension = '.zip'
+  installdirname = 'b2g'
 elif sys.platform == 'darwin':
   platform = 'mac64'
   file_extension = '.dmg'
+  installdirname = 'B2G.app'
 elif sys.platform.startswith('linux'):
   platform = 'linux-i686'
   file_extension = '.tar.bz2'
+  installdirname = 'b2g'
 else:
   raise NotImplementedError('platform %s not supported' % sys.platform)
 
@@ -52,8 +55,9 @@ for file in os.listdir(downloaddir):
     installer = os.path.join(downloaddir, file)
     break
 
+# Remove the existing installation, then install.
 platformdir = os.path.join(datadir, platform)
-
+shutil.rmtree(os.path.join(platformdir, installdirname))
 mozinstall.install(installer, platformdir)
 
 
