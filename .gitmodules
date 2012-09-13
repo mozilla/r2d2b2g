@@ -13,3 +13,6 @@
 [submodule "addon/packages/vold-utils"]
 	path = addon/packages/vold-utils
 	url = git://github.com/voldsoftware/vold-utils-jplib.git
+[submodule "gaia"]
+	path = gaia
+	url = git://github.com/mykmelez/gaia.git
