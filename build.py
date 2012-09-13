@@ -10,8 +10,10 @@ import shutil
 from mozdownload.scraper import DailyScraper
 import mozinstall
 
-tmpdir = tempfile.mkdtemp()
-print "temp dir: %S", tmpdir
+#tmpdir = tempfile.mkdtemp()
+#print "temp dir: %S", tmpdir
+#downloaddir = tmpdir
+downloaddir = os.getcwd()
 
 datadir = os.path.join(os.getcwd(), "addon", "data")
 
@@ -33,7 +35,7 @@ scraper_keywords = { 'application': 'b2g',
                      'platform': platform,
                      'locale': 'en-US',
                      'version': None,
-                     'directory': tmpdir }
+                     'directory': downloaddir }
 kwargs = scraper_keywords.copy()
 if platform == "win32":
   kwargs.update({ 'windows_extension': '.zip' })
@@ -45,15 +47,16 @@ build.download()
 
 # Install B2G Desktop to addon's data directory.
 
-for file in os.listdir(tmpdir):
+for file in os.listdir(downloaddir):
   if file.endswith(file_extension):
-    installer = file
+    installer = os.path.join(downloaddir, file)
     break
 
-mozinstall.install(os.path.join(tmpdir, installer),
-                   os.path.join(datadir, platform))
+platformdir = os.path.join(datadir, platform)
+
+mozinstall.install(installer, platformdir)
 
 
 # Clean up.
 
-shutil.rmtree(tmpdir)
+#shutil.rmtree(tmpdir)
