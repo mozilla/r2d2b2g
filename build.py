@@ -7,6 +7,10 @@ import os
 import sys
 import tempfile
 import shutil
+
+sys.path.insert(0, os.path.join(os.getcwd(), "mozdownload"))
+sys.path.insert(0, os.path.join(os.getcwd(), "mozbase", "mozinstall"))
+
 from mozdownload.scraper import DailyScraper
 import mozinstall
 
