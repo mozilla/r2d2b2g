@@ -9,33 +9,53 @@ let UUID = require("api-utils/uuid");
 let File = require("file");
 let Menuitems = require("menuitems");
 
-Widget({
-  id: "r2d2b2g",
-  label: "r2d2b2g",
-  content: "r2d2b2g",
-  width: 50,
-  onClick: function() {
-    let addontab = require("addon-page");
-    Tabs.open({
-      url: Self.data.url("content/index.html"),
-      onReady: function(tab) {
-        let worker = tab.attach({
-          contentScriptFile: Self.data.url("content-script.js")
-        });
-        worker.on("message", function(data) {
-          switch(data) {
-            case "run":
-              run();
-              worker.postMessage("B2G was started!");
-              break;
-          }
-        });
-      }
-    });
-    return;
+//Widget({
+//  id: "r2d2b2g",
+//  label: "r2d2b2g",
+//  content: "r2d2b2g",
+//  width: 50,
+//  onClick: function() {
+//    let addontab = require("addon-page");
+//    Tabs.open({
+//      url: Self.data.url("content/index.html"),
+//      onReady: function(tab) {
+//        let worker = tab.attach({
+//          contentScriptFile: Self.data.url("content-script.js")
+//        });
+//        worker.on("message", function(data) {
+//          switch(data) {
+//            case "run":
+//              run();
+//              worker.postMessage("B2G was started!");
+//              break;
+//          }
+//        });
+//      }
+//    });
+//    return;
+//
+//  }
+//});
 
-  }
-});
+if (Self.loadReason == "install") {
+  let addontab = require("addon-page");
+  Tabs.open({
+    url: Self.data.url("content/index.html"),
+    onReady: function(tab) {
+      let worker = tab.attach({
+        contentScriptFile: Self.data.url("content-script.js")
+      });
+      worker.on("message", function(data) {
+        switch(data) {
+          case "run":
+            run();
+            worker.postMessage("B2G was started!");
+            break;
+        }
+      });
+    }
+  });
+}
 
 function run() {
   let executables = {
