@@ -40,20 +40,26 @@ Widget({
 function run() {
   let executables = {
     WINNT: "win32/b2g/b2g.exe",
-    Darwin: "mac64/B2G.app/Contents/MacOS/b2g",
+    Darwin: "mac64/B2G.app",
     Linux: "",
   };
   let url = Self.data.url(executables[Runtime.OS]);
   let path = URL.toFilename(url);
 
-  let b2g = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
-  b2g.initWithPath(path);
+  let executable = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
+  executable.initWithPath(path);
 
   let profile = URL.toFilename(Self.data.url("profile"));
   let args = ["-profile", profile];
 
+  // On Mac, use `open` to launch B2G Desktop so it opens in the foreground.
+  if (Runtime.OS == "Darwin") {
+    executable.initWithPath("/usr/bin/open");
+    args.unshift("-a", path, "--args");
+  }
+
   let process = Cc["@mozilla.org/process/util;1"].createInstance(Ci.nsIProcess);
-  process.init(b2g);
+  process.init(executable);
   process.run(false, args, args.length);
 }
 
