@@ -61,7 +61,7 @@ for file in os.listdir(downloaddir):
 
 # Remove the existing installation, then install.
 platformdir = os.path.join(datadir, platform)
-shutil.rmtree(os.path.join(platformdir, installdirname))
+shutil.rmtree(os.path.join(platformdir, installdirname), True)
 mozinstall.install(installer, platformdir)
 
 
