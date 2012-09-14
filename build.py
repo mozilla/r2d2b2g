@@ -10,6 +10,7 @@ import shutil
 
 sys.path.insert(0, os.path.join(os.getcwd(), "mozdownload"))
 sys.path.insert(0, os.path.join(os.getcwd(), "mozbase", "mozinstall"))
+sys.path.insert(0, os.path.join(os.getcwd(), "mozbase", "mozinfo"))
 
 from mozdownload.scraper import DailyScraper
 import mozinstall
@@ -30,7 +31,7 @@ elif sys.platform == 'darwin':
   file_extension = '.dmg'
   installdirname = 'B2G.app'
 elif sys.platform.startswith('linux'):
-  platform = 'linux-i686'
+  platform = 'linux'
   file_extension = '.tar.bz2'
   installdirname = 'b2g'
 else:
