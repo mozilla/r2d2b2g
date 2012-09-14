@@ -135,8 +135,8 @@ function installActiveTab() {
 
 let menuitem = Menuitems.Menuitem({
   id: "appifyPage",
-  menuid: "menuWebDeveloperPopup",
-  insertbefore: "devToolsEndSeparator",
+  menuid: "menu_ToolsPopup",
+  insertbefore: "sanitizeSeparator",
   label: "Install Page as App",
   onCommand: function() {
     installActiveTab();
