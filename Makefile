@@ -1,10 +1,13 @@
-.PHONY: help build package
+.PHONY: help build run package
 
 build:
 	cd gaia && make
 	rm -rf gaia/profile/startupCache
 	rm -rf addon/data/profile && mv gaia/profile addon/data/profile
 	python ./build.py
+
+run:
+	cd addon-sdk && source bin/activate && cd ../addon && cfx run
 
 package:
 	cd addon-sdk && source bin/activate && cd ../addon && cfx xpi
