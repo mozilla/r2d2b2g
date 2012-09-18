@@ -8,6 +8,7 @@ let Tabs = require("tabs");
 let UUID = require("api-utils/uuid");
 let File = require("file");
 let Menuitems = require("menuitems");
+const subprocess = require("subprocess").subprocess;
 
 //Widget({
 //  id: "r2d2b2g",
@@ -60,7 +61,7 @@ if (Self.loadReason == "install") {
 function run() {
   let executables = {
     WINNT: "win32/b2g/b2g.exe",
-    Darwin: "mac64/B2G.app",
+    Darwin: "mac64/B2G.app/Contents/MacOS/b2g",
     Linux: "linux/b2g/b2g",
   };
   let url = Self.data.url(executables[Runtime.OS]);
@@ -72,15 +73,20 @@ function run() {
   let profile = URL.toFilename(Self.data.url("profile"));
   let args = ["-profile", profile];
 
-  // On Mac, use `open` to launch B2G Desktop so it opens in the foreground.
-  if (Runtime.OS == "Darwin") {
-    executable.initWithPath("/usr/bin/open");
-    args.unshift("-a", path, "--args");
-  }
+  subprocess.call({
+    command: executable,
+    arguments: args,
 
-  let process = Cc["@mozilla.org/process/util;1"].createInstance(Ci.nsIProcess);
-  process.init(executable);
-  process.run(false, args, args.length);
+    stdout: function(data) {
+      dump(data);
+    },
+
+    stderr: function(data) {
+      dump(data);
+    },
+
+  });
+
 }
 
 let menuitem = Menuitems.Menuitem({

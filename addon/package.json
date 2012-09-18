@@ -7,5 +7,9 @@
   "author": "Myk Melez <myk@mozilla.org>",
   "license": "MPL 2.0",
   "unpack": true,
-  "dependencies": ["addon-kit", "api-utils", "menuitems", "vold-utils"]
+  "dependencies": ["addon-kit",
+                   "api-utils",
+                   "menuitems",
+                   "subprocess",
+                   "vold-utils"]
 }
