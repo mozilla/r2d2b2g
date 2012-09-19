@@ -87,6 +87,28 @@ function run() {
 
   });
 
+  // On Mac, tell the application to activate, as it opens in the background
+  // by default.  This can race process instantiation, in which case osascript
+  // instantiates the process itself (but without supplying necessary args),
+  // so we do it in a timeout, which looks like it can be zero (i.e. simply
+  // spinning the event loop resolves the race condition).  However, if we start
+  // to see reports of B2G Desktop opening on Mac to an unusable state, or two
+  // copies of B2G Desktop opening, then we may need to increase the timeout.
+  if (Runtime.OS == "Darwin") {
+    // Escape double quotes and escape characters for use in AppleScript.
+    let path = executable.path.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+
+    require("timer").setTimeout(
+      function() {
+        subprocess.call({
+          command: "/usr/bin/osascript",
+          arguments: ["-e", 'tell application "' + path + '" to activate'],
+        });
+      },
+      0
+    );
+  }
+
 }
 
 let menuitem = Menuitems.Menuitem({
