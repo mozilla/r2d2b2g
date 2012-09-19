@@ -8,7 +8,7 @@ let Tabs = require("tabs");
 let UUID = require("api-utils/uuid");
 let File = require("file");
 let Menuitems = require("menuitems");
-const subprocess = require("subprocess").subprocess;
+const subprocess = require("subprocess");
 
 //Widget({
 //  id: "r2d2b2g",
