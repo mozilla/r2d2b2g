@@ -8,7 +8,10 @@ let Tabs = require("tabs");
 let UUID = require("api-utils/uuid");
 let File = require("file");
 let Menuitems = require("menuitems");
+let Prefs = require("preferences-service");
 const subprocess = require("subprocess");
+
+let currentProcess = null;
 
 //Widget({
 //  id: "r2d2b2g",
@@ -58,7 +61,7 @@ if (Self.loadReason == "install") {
   });
 }
 
-function run() {
+function run(app) {
   let executables = {
     WINNT: "win32/b2g/b2g.exe",
     Darwin: "mac64/B2G.app/Contents/MacOS/b2g",
@@ -73,7 +76,19 @@ function run() {
   let profile = URL.toFilename(Self.data.url("profile"));
   let args = ["-profile", profile];
 
-  subprocess.call({
+  if (Prefs.get("extensions.r2d2b2g.jsconsole", true)) {
+    args.push("-jsconsole");
+  }
+
+  if (app != null) {
+    args.push("-runapp", app);
+  }
+
+  if (currentProcess != null) {
+    currentProcess.kill();
+  }
+
+  currentProcess = subprocess.call({
     command: executable,
     arguments: args,
 
@@ -84,6 +99,11 @@ function run() {
     stderr: function(data) {
       dump(data);
     },
+
+    done: function(result) {
+      dump(executable + " terminated with " + result.exitCode);
+      currentProcess = null;
+    }
 
   });
 
@@ -125,13 +145,15 @@ function installActiveTab() {
   let webappDir = File.join(webappsDir, key);
   File.mkpath(webappDir);
   let webappFile = File.join(webappDir, "manifest.webapp");
+  let name = Tabs.activeTab.title.substring(0, 18) || url.host;
 
   let webapp = {
-    name: Tabs.activeTab.title.substring(0, 18),
+    name: name,
     description: Tabs.activeTab.title,
     default_locale:"en",
     launch_path: url.path
   };
+  // Possible icon? 'http://www.google.com/s2/favicons?domain=' + url.host
 
   File.open(webappFile, "w").writeAsync(JSON.stringify(webapp, null, 2) + "\n",
     function(error) {
@@ -155,6 +177,7 @@ function installActiveTab() {
   File.open(webappsFile, "w").writeAsync(JSON.stringify(webapps, null, 2) + "\n",
     function(error) {
       console.log(JSON.stringify(webapps[key], null, 2));
+      run(name.match(/[\w\s]+/)[0]); // Clean up name for CLI
     }
   );
 }
