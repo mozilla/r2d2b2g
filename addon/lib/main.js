@@ -177,7 +177,7 @@ function installActiveTab() {
   File.open(webappsFile, "w").writeAsync(JSON.stringify(webapps, null, 2) + "\n",
     function(error) {
       console.log(JSON.stringify(webapps[key], null, 2));
-      run(name.match(/[\w\s]+/)[0]); // Clean up name for CLI
+      run(name);
     }
   );
 }
