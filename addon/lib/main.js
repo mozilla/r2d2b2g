@@ -101,7 +101,7 @@ function run(app) {
     },
 
     done: function(result) {
-      dump(executable + " terminated with " + result.exitCode);
+      console.log(executables[Runtime.OS] + " terminated with " + result.exitCode);
       currentProcess = null;
     }
 
