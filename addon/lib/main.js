@@ -81,7 +81,7 @@ function run(app) {
   }
 
   if (app != null) {
-    args.push("-runapp", app);
+    args.push("--runapp", app);
   }
 
   if (currentProcess != null) {
