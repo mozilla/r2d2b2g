@@ -30,12 +30,43 @@
             box-pack: center;
             box-align: center;
           }
+          dfn {
+            border-radius: 3px;
+            border: none;
+            background-color: #333;
+            color: #fff;
+            text-decoration: none;
+            font-style: normal;
+            padding: 3px 5px 2px;
+          }
+          figure {
+            display: block;
+            text-align: center;
+            margin-bottom: 1.5em;
+          }
+          h1 {
+            font-size: 1.5em;
+          }
+          h2 {
+            font-size: 1em;
+          }
         </style>
     </head>
     <body>
         <div style="width: 400px; max-width: 400px">
-            You just installed <code>r2d2b2g</code>, an <i>experimental prototype</i> test environment for Firefox OS!
-            Access its functionality via <b>Tools</b> > <b>B2G Desktop</b> and <b>Install Page as App</b>.
+            <h1>You just installed <code>r2d2b2g</code>,</h1>
+            <p>
+                an <em>experimental prototype</em> test environment for <a href="http://www.mozilla.org/en-US/b2g/">Firefox OS</a>!
+                Access its functionality via:
+                <figure>
+                    <dfn>Tools</dfn> &#62; <dfn>B2G Desktop</dfn> and <dfn>Install Page as App</dfn>.
+                </figure>
+            </p>
+            <h2>Usage Tips</h2>
+            <ul>
+                <li>Back button: ESC</li>
+                <li>Home button: Home key (Fn+←, Fn + Left Arrow on <em>Mac</em>)</li>
+            </ul>
             <!--<button onclick="window.postMessage('run', '*')">Start B2G Desktop</button>-->
         </div>
         <script src="js/vendor/jquery-1.8.0.min.js"></script>
