@@ -43,8 +43,17 @@ let currentProcess = null;
 //});
 
 function openHelperTab() {
+  let url = Self.data.url("content/index.html");
+
+  for each (var tab in Tabs) {
+    if (tab.url == url) {
+      tab.activate();
+      return;
+    }
+  }
+
   Tabs.open({
-    url: Self.data.url("content/index.html"),
+    url: url,
     onReady: function(tab) {
       let worker = tab.attach({
         contentScriptFile: Self.data.url("content-script.js")
