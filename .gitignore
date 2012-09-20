@@ -1,3 +1,4 @@
 addon/data/mac64
 addon/data/profile
 addon/data/win32
+*.mac64.dmg
