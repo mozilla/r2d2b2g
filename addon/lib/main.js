@@ -10,6 +10,7 @@ let File = require("file");
 let Menuitems = require("menuitems");
 let Prefs = require("preferences-service");
 const subprocess = require("subprocess");
+require("addon-page");
 
 let currentProcess = null;
 
@@ -41,8 +42,7 @@ let currentProcess = null;
 //  }
 //});
 
-if (Self.loadReason == "install") {
-  let addontab = require("addon-page");
+function openHelperTab() {
   Tabs.open({
     url: Self.data.url("content/index.html"),
     onReady: function(tab) {
@@ -53,12 +53,16 @@ if (Self.loadReason == "install") {
         switch(data) {
           case "run":
             run();
-            worker.postMessage("B2G was started!");
+            //worker.postMessage("B2G was started!");
             break;
         }
       });
     }
   });
+}
+
+if (Self.loadReason == "install") {
+  openHelperTab();
 }
 
 function run(app) {
@@ -131,7 +135,7 @@ function run(app) {
 
 }
 
-let menuitem = Menuitems.Menuitem({
+Menuitems.Menuitem({
   id: "launchB2G",
   menuid: "menu_ToolsPopup",
   insertbefore: "sanitizeSeparator",
@@ -204,12 +208,22 @@ function installActiveTab() {
   );
 }
 
-let menuitem = Menuitems.Menuitem({
+Menuitems.Menuitem({
   id: "appifyPage",
   menuid: "menu_ToolsPopup",
   insertbefore: "sanitizeSeparator",
   label: "Install Page as App",
   onCommand: function() {
     installActiveTab();
+  },
+});
+
+Menuitems.Menuitem({
+  id: "hamB2GerHelper",
+  menuid: "menu_ToolsPopup",
+  insertbefore: "sanitizeSeparator",
+  label: "B2G Desktop Helper",
+  onCommand: function() {
+    openHelperTab();
   },
 });
