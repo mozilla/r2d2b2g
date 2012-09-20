@@ -209,21 +209,21 @@ function installActiveTab() {
 }
 
 Menuitems.Menuitem({
-  id: "appifyPage",
-  menuid: "menu_ToolsPopup",
-  insertbefore: "sanitizeSeparator",
-  label: "Install Page as App",
-  onCommand: function() {
-    installActiveTab();
-  },
-});
-
-Menuitems.Menuitem({
   id: "hamB2GerHelper",
   menuid: "menu_ToolsPopup",
   insertbefore: "sanitizeSeparator",
   label: "B2G Desktop Helper",
   onCommand: function() {
     openHelperTab();
+  },
+});
+
+Menuitems.Menuitem({
+  id: "appifyPage",
+  menuid: "menu_ToolsPopup",
+  insertbefore: "sanitizeSeparator",
+  label: "Install Page as App",
+  onCommand: function() {
+    installActiveTab();
   },
 });
