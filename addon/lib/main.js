@@ -159,6 +159,22 @@ Menuitems.Menuitem({
  */
 function installActiveTab() {
   let url = URL.URL(Tabs.activeTab.url);
+  let origin = url.toString().substring(0, url.lastIndexOf(url.path));
+
+  let manifestUrl = URL.URL(origin + "/" + "manifest.webapp");
+  let webapp = {
+    name: Tabs.activeTab.title.substring(0, 18) || url.host,
+    description: Tabs.activeTab.title,
+    default_locale: "en",
+    launch_path: url.path
+  };
+  // Possible icon? 'http://www.google.com/s2/favicons?domain=' + url.host
+  installManifest(manifestUrl, webapp, origin);
+}
+
+function installManifest(manifestUrl, webapp, installOrigin) {
+  let origin = manifestUrl.toString().substring(0, manifestUrl.lastIndexOf(manifestUrl.path));
+
   let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
   let webappsFile = File.join(webappsDir, "webapps.json");
   let webapps = JSON.parse(File.read(webappsFile));
@@ -180,15 +196,6 @@ function installActiveTab() {
   let webappDir = File.join(webappsDir, key);
   File.mkpath(webappDir);
   let webappFile = File.join(webappDir, "manifest.webapp");
-  let name = Tabs.activeTab.title.substring(0, 18) || url.host;
-
-  let webapp = {
-    name: name,
-    description: Tabs.activeTab.title,
-    default_locale:"en",
-    launch_path: url.path
-  };
-  // Possible icon? 'http://www.google.com/s2/favicons?domain=' + url.host
 
   File.open(webappFile, "w").writeAsync(JSON.stringify(webapp, null, 2) + "\n",
     function(error) {
@@ -198,21 +205,19 @@ function installActiveTab() {
 
   // Update the webapps object and write it to the webapps.json file.
 
-  let origin = url.toString().substring(0, url.lastIndexOf(url.path));
-
   webapps[key] = {
     origin: origin,
-    installOrigin: origin,
+    installOrigin: installOrigin,
     receipt: null,
     installTime: 132333986000,
-    manifestURL: origin + "/" + "manifest.webapp",
+    manifestURL: manifestUrl.toString(),
     localId: id
   };
 
   File.open(webappsFile, "w").writeAsync(JSON.stringify(webapps, null, 2) + "\n",
     function(error) {
       console.log(JSON.stringify(webapps[key], null, 2));
-      run(name);
+      run(webapp.name);
     }
   );
 }
