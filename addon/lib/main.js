@@ -101,24 +101,32 @@ function run(app) {
     currentProcess.kill();
   }
 
-  currentProcess = subprocess.call({
-    command: executable,
-    arguments: args,
+  // Continue to use nsIProcess on Linux, where subprocess isn't working
+  // for some reason.
+  if (Runtime.OS == "Linux") {
+    let process = Cc["@mozilla.org/process/util;1"].createInstance(Ci.nsIProcess);
+    process.init(executable);
+    process.run(false, args, args.length);
+  } else {
+    currentProcess = subprocess.call({
+      command: executable,
+      arguments: args,
 
-    stdout: function(data) {
-      dump(data);
-    },
+      stdout: function(data) {
+        dump(data);
+      },
 
-    stderr: function(data) {
-      dump(data);
-    },
+      stderr: function(data) {
+        dump(data);
+      },
 
-    done: function(result) {
-      console.log(executables[Runtime.OS] + " terminated with " + result.exitCode);
-      currentProcess = null;
-    }
+      done: function(result) {
+        console.log(executables[Runtime.OS] + " terminated with " + result.exitCode);
+        currentProcess = null;
+      }
 
-  });
+    });
+  }
 
   // On Mac, tell the application to activate, as it opens in the background
   // by default.  This can race process instantiation, in which case osascript
