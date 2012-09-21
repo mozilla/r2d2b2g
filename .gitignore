@@ -1,6 +1,15 @@
-addon/data/mac64
+# generated Gaia profile
 addon/data/profile
+
+# platform-specific directories containing B2G Desktop binaries
 addon/data/win32
-*.mac64.dmg
+addon/data/mac64
+addon/data/linux
+
+# archives
 *.zip
+*.mac64.dmg
+*.tar.bz2
+
+# cross-platform installers
 *.xpi
