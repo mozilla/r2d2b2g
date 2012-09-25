@@ -1,14 +1,14 @@
 const { Cc, Ci, Cr, Cu } = require("chrome");
 
-let Widget = require("widget").Widget;
-let Self = require("self");
-let URL = require("url");
-let Runtime = require("runtime");
-let Tabs = require("tabs");
-let UUID = require("api-utils/uuid");
-let File = require("file");
-let Menuitems = require("menuitems");
-let Prefs = require("preferences-service");
+const Widget = require("widget").Widget;
+const Self = require("self");
+const URL = require("url");
+const Runtime = require("runtime");
+const Tabs = require("tabs");
+const UUID = require("api-utils/uuid");
+const File = require("file");
+const Menuitems = require("menuitems");
+const Prefs = require("preferences-service");
 const subprocess = require("subprocess");
 const Environment = require('api-utils/environment').env;
 
