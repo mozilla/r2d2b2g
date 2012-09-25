@@ -12,10 +12,10 @@ build:
 	python ./build.py $(PLATFORM_ARG)
 
 run:
-	cd addon-sdk && source bin/activate && cd ../addon && cfx run
+	cd addon-sdk && . bin/activate && cd ../addon && cfx run
 
 package:
-	cd addon-sdk && source bin/activate && cd ../addon && cfx xpi
+	cd addon-sdk && . bin/activate && cd ../addon && cfx xpi
 
 help:
 	@echo 'Targets:'
