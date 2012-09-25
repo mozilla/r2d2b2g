@@ -88,8 +88,10 @@ function run(app) {
   let executable = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
   executable.initWithPath(path);
 
+  let args = [];
+
   let profile = URL.toFilename(Self.data.url("profile"));
-  let args = ["-profile", profile];
+  args.push("-profile", profile);
 
   if (Prefs.get("extensions.r2d2b2g.jsconsole", true)) {
     args.push("-jsconsole");
@@ -125,7 +127,7 @@ function run(app) {
     done: function(result) {
       console.log(executables[Runtime.OS] + " terminated with " + result.exitCode);
       currentProcess = null;
-    }
+    },
 
   });
 
