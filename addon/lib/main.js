@@ -9,7 +9,7 @@ const UUID = require("api-utils/uuid");
 const File = require("file");
 const Menuitems = require("menuitems");
 const Prefs = require("preferences-service");
-const subprocess = require("subprocess");
+const Subprocess = require("subprocess");
 const Environment = require('api-utils/environment').env;
 
 require("addon-page");
@@ -111,7 +111,7 @@ function run(app) {
     currentProcess.kill();
   }
 
-  currentProcess = subprocess.call({
+  currentProcess = Subprocess.call({
     command: executable,
     arguments: args,
     environment: env,
@@ -144,7 +144,7 @@ function run(app) {
 
     require("timer").setTimeout(
       function() {
-        subprocess.call({
+        Subprocess.call({
           command: "/usr/bin/osascript",
           arguments: ["-e", 'tell application "' + path + '" to activate'],
         });
