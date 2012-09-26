@@ -11,6 +11,9 @@ const Menuitems = require("menuitems");
 const Prefs = require("preferences-service");
 const Subprocess = require("subprocess");
 const Environment = require('api-utils/environment').env;
+const ContextMenu = require("context-menu");
+const Request = require('request').Request;
+const Notifications = require("notifications");
 
 require("addon-page");
 
@@ -170,6 +173,61 @@ Menuitems.Menuitem({
  */
 function installActiveTab() {
   let url = URL.URL(Tabs.activeTab.url);
+  let origin = url.toString().substring(0, url.lastIndexOf(url.path));
+
+  let manifestUrl = URL.URL(origin + "/" + "manifest.webapp");
+  let webapp = {
+    name: Tabs.activeTab.title.substring(0, 18) || url.host,
+    description: Tabs.activeTab.title,
+    default_locale: "en",
+    launch_path: url.path
+  };
+  // Possible icon? 'http://www.google.com/s2/favicons?domain=' + url.host
+  installManifest(manifestUrl, webapp, origin);
+}
+
+function installManifestUrl(manifestUrl) {
+  Request({
+    url: manifestUrl.toString(),
+    onComplete: function (response) {
+      if (response.status != 200) {
+        Notifications.notify({
+          title: "App Install Error",
+          text: "Unexpected status code " + response.status
+        });
+        return
+      }
+      if (!response.json) {
+        Notifications.notify({
+          title: "App Install Error",
+          text: "Expected JSON response"
+        });
+        console.error("Expected JSON response, got " + response.text);
+        return;
+      }
+      if (!response.json.name || !response.json.description) {
+        Notifications.notify({
+          title: "App Install Error",
+          text: "Missing mandatory property (name or description)"
+        });
+        return;
+      }
+      let contentType = response.headers["Content-Type"];
+      if (contentType !== "application/x-web-app-manifest+json") {
+        console.warn("Unexpected Content-Type " + contentType + ", but not a biggie");
+      }
+
+      installManifest(manifestUrl, response.json);
+    }
+  }).get();
+}
+
+function installManifest(manifestUrl, webapp, installOrigin) {
+  let origin = manifestUrl.toString().replace(/([^\/])\/[^\/].*/, "$1");
+  if (!installOrigin) {
+    installOrigin = origin
+  }
+
   let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
   let webappsFile = File.join(webappsDir, "webapps.json");
   let webapps = JSON.parse(File.read(webappsFile));
@@ -191,15 +249,6 @@ function installActiveTab() {
   let webappDir = File.join(webappsDir, key);
   File.mkpath(webappDir);
   let webappFile = File.join(webappDir, "manifest.webapp");
-  let name = Tabs.activeTab.title.substring(0, 18) || url.host;
-
-  let webapp = {
-    name: name,
-    description: Tabs.activeTab.title,
-    default_locale:"en",
-    launch_path: url.path
-  };
-  // Possible icon? 'http://www.google.com/s2/favicons?domain=' + url.host
 
   File.open(webappFile, "w").writeAsync(JSON.stringify(webapp, null, 2) + "\n",
     function(error) {
@@ -209,24 +258,41 @@ function installActiveTab() {
 
   // Update the webapps object and write it to the webapps.json file.
 
-  let origin = url.toString().substring(0, url.lastIndexOf(url.path));
-
   webapps[key] = {
     origin: origin,
-    installOrigin: origin,
+    installOrigin: installOrigin,
     receipt: null,
     installTime: 132333986000,
-    manifestURL: origin + "/" + "manifest.webapp",
+    manifestURL: manifestUrl.toString(),
     localId: id
   };
 
   File.open(webappsFile, "w").writeAsync(JSON.stringify(webapps, null, 2) + "\n",
     function(error) {
       console.log(JSON.stringify(webapps[key], null, 2));
-      run(name);
+
+      Notifications.notify({
+        title: "Installed " + webapp.name
+      });
+
+      run(webapp.name);
     }
   );
 }
+
+ContextMenu.Item({
+  label: "Install Manifest as B2G App",
+  context: ContextMenu.SelectorContext("a"),
+  contentScript: 'self.on("context", function (node) {' +
+                 '  return /\\.webapp$/.test(node.href);' +
+                 '});' +
+                'self.on("click", function (node, data) {' +
+                 '  self.postMessage(node.href)' +
+                 '});',
+  onMessage: function (manifestUrl) {
+    installManifestUrl(manifestUrl);
+  }
+});
 
 Menuitems.Menuitem({
   id: "hamB2GerHelper",
