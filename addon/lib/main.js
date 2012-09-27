@@ -10,7 +10,6 @@ const File = require("file");
 const Menuitems = require("menuitems");
 const Prefs = require("preferences-service");
 const Subprocess = require("subprocess");
-const Environment = require('api-utils/environment').env;
 const ContextMenu = require("context-menu");
 const Request = require('request').Request;
 const Notifications = require("notifications");
@@ -104,12 +103,6 @@ function run(app) {
     args.push("--runapp", app);
   }
 
-  let env = [];
-
-  if (Runtime.OS == "Linux") {
-    env.push("DISPLAY=" + Environment.DISPLAY);
-  }
-
   if (currentProcess != null) {
     currentProcess.kill();
   }
@@ -117,7 +110,6 @@ function run(app) {
   currentProcess = Subprocess.call({
     command: executable,
     arguments: args,
-    environment: env,
 
     stdout: function(data) {
       dump(data);
