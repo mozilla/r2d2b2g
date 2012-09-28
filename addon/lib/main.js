@@ -111,8 +111,31 @@ function run(app) {
     command: executable,
     arguments: args,
 
+    // Whether or not the app has been activated.  Mac-specific, and custom
+    // to our implementation (not used by subprocess).  See below for usage.
+    activated: false,
+
     stdout: function(data) {
       dump(data);
+
+      // On Mac, tell the application to activate, as it opens in the background
+      // by default.  This can race process instantiation, in which case
+      // osascript will instantiate a duplicate process (but without supplying
+      // necessary args, so the process will be hung).  Thus we wait until
+      // the first output to do it.
+      if (Runtime.OS == "Darwin" && !this.activated) {
+        // Escape double quotes and escape characters for use in AppleScript.
+        let path = executable.path.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+
+        Subprocess.call({
+          command: "/usr/bin/osascript",
+          arguments: ["-e", 'tell application "' + path + '" to activate'],
+        });
+
+        this.activated = true;
+
+      }
+
     },
 
     stderr: function(data) {
@@ -125,28 +148,6 @@ function run(app) {
     },
 
   });
-
-  // On Mac, tell the application to activate, as it opens in the background
-  // by default.  This can race process instantiation, in which case osascript
-  // instantiates the process itself (but without supplying necessary args),
-  // so we do it in a timeout, which looks like it can be zero (i.e. simply
-  // spinning the event loop resolves the race condition).  However, if we start
-  // to see reports of B2G Desktop opening on Mac to an unusable state, or two
-  // copies of B2G Desktop opening, then we may need to increase the timeout.
-  if (Runtime.OS == "Darwin") {
-    // Escape double quotes and escape characters for use in AppleScript.
-    let path = executable.path.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-
-    require("timer").setTimeout(
-      function() {
-        Subprocess.call({
-          command: "/usr/bin/osascript",
-          arguments: ["-e", 'tell application "' + path + '" to activate'],
-        });
-      },
-      0
-    );
-  }
 
 }
 
