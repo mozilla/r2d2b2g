@@ -66,7 +66,7 @@ scraper_keywords = { 'application': 'b2g',
                      'directory': downloaddir }
 kwargs = scraper_keywords.copy()
 if platform == "win32":
-  kwargs.update({ 'extension': '.zip' })
+  kwargs.update({ 'extension': 'zip' })
 
 build = DailyScraper(**kwargs)
 print "Initiating download B2G Desktop latest build..."
