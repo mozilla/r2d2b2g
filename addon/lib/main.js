@@ -306,3 +306,28 @@ Menuitems.Menuitem({
     installActiveTab();
   },
 });
+
+Menuitems.Menuitem({
+  id: "createApp",
+  menuid: "menu_ToolsPopup",
+  insertbefore: "sanitizeSeparator",
+  label: "Create App",
+  onCommand: function() {
+    create();
+  },
+});
+
+function create() {
+  // We have to use nsIFile instead of the File module because File doesn't
+  // have a copy interface.
+
+  let templateDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsIFile);
+  templateDir.initWithPath(URL.toFilename(Self.data.url("template")));
+
+  let webappsDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsIFile);
+  webappsDir.initWithPath(URL.toFilename(Self.data.url("profile/webapps")));
+
+  let key = UUID.uuid();
+  templateDir.copyTo(webappsDir, key);
+
+}
