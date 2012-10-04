@@ -318,16 +318,139 @@ Menuitems.Menuitem({
 });
 
 function create() {
-  // We have to use nsIFile instead of the File module because File doesn't
-  // have a copy interface.
+  let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
+  let webappsFile = File.join(webappsDir, "webapps.json");
+  let webapps = JSON.parse(File.read(webappsFile));
 
-  let templateDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsIFile);
-  templateDir.initWithPath(URL.toFilename(Self.data.url("template")));
+  // The "local ID" of the app, which is required by the webapp registry.
+  // Extract numeric local IDs, sort in reverse order, and increment the first
+  // (highest) one to generate a new local ID for the app.
+  let id =
+    ++[id for each ({ localId: id } in webapps)].sort(function(a, b) b - a)[0];
 
-  let webappsDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsIFile);
-  webappsDir.initWithPath(URL.toFilename(Self.data.url("profile/webapps")));
+  // The key by which the app is indexed in the webapp registry.
+  // It's unclear what the key should be, but it needs to be a valid directory
+  // name.  Gaia uses the names of the directories from which its apps are
+  // provisioned, and we could use origins, but that isn't forward-compatible
+  // with multiple apps per origin.  And DOMApplicationRegistry uses UUIDs,
+  // so we do too.
+  //let key = url.scheme + ";" + url.host + (url.port ? ";" + url.port : "");
+  //let key = UUID.uuid();
+  let key = "myapp" + id + ".gaiamobile.org";
 
-  let key = UUID.uuid();
-  templateDir.copyTo(webappsDir, key);
+  let origin = "app://myapp" + id + ".gaiamobile.org";
 
+  // Create the webapp record and write it to the registry.
+  webapps[key] = {
+    origin: origin,
+    installOrigin: origin,
+    receipt: null,
+    installTime: 132333986000,
+    manifestURL: origin + "/manifest.webapp",
+    appStatus: 3,
+    localId: id,
+  };
+  File.open(webappsFile, "w").writeAsync(
+    JSON.stringify(webapps, null, 2) + "\n",
+    function(error) {
+      if (error) {
+        console.error("error writing webapp record to registry: " + error);
+      }
+
+      let templateDir = Cc['@mozilla.org/file/local;1'].
+                        createInstance(Ci.nsIFile);
+      templateDir.initWithPath(URL.toFilename(Self.data.url("template")));
+
+      // We have to get an nsIFile reference to the webapps dir because the File
+      // reference doesn't have a copy function.
+      let webappsDir_nsIFile = Cc['@mozilla.org/file/local;1'].
+                               createInstance(Ci.nsIFile);
+      webappsDir_nsIFile.initWithPath(webappsDir);
+
+      templateDir.copyTo(webappsDir_nsIFile, key);
+
+      let webappDir = File.join(webappsDir, key);
+      let manifestFile = File.join(webappDir, "manifest.webapp");
+      let manifest = {
+        name: "My App " + id,
+        description: "my app",
+        launch_path: "/index.html",
+        developer: {
+          name: "App Developer",
+          url: "http://example.com/"
+        },
+        permissions: [
+        ],
+        locales: {
+          "en-US": {
+            name: "My App " + id,
+            description: "my app"
+          },
+        },
+        default_locale: "en-US",
+        icons: {
+          "128": "/style/icons/Blank.png"
+        }
+      };
+
+      File.open(manifestFile, "w").writeAsync(
+        JSON.stringify(manifest, null, 2) + "\n",
+        function(error) {
+          if (error) {
+            console.error("error writing manifest: " + error);
+          }
+          archiveDir(File.join(webappDir, "application.zip"), webappDir);
+          //run("My App " + id);
+        }
+      );
+    }
+  );
+
+}
+
+const PR_RDWR = 0x04;
+const PR_CREATE_FILE = 0x08;
+const PR_TRUNCATE = 0x20;
+const PR_USEC_PER_MSEC = 1000;
+
+function addDirToArchive(writer, dir, basePath) {
+  let files = dir.directoryEntries;
+
+  while (files.hasMoreElements()) {
+    let file = files.getNext().QueryInterface(Ci.nsIFile);
+
+    if (file.isHidden() ||
+        file.isSymlink() ||
+        file.isSpecial() ||
+        file.equals(writer.file))
+    {
+      continue;
+    }
+
+    if (file.isDirectory()) {
+      writer.addEntryDirectory(basePath + file.leafName + "/",
+                               file.lastModifiedTime * PR_USEC_PER_MSEC,
+                               false);
+      addDirToArchive(writer, file, basePath + file.leafName + "/");
+    } else {
+      writer.addEntryFile(basePath + file.leafName,
+                          Ci.nsIZipWriter.COMPRESSION_DEFAULT,
+                          file,
+                          false);
+    }
+  }
+};
+
+function archiveDir(zipFile, dirToArchive) {
+  let writer = Cc["@mozilla.org/zipwriter;1"].createInstance(Ci.nsIZipWriter);
+  let file = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsIFile);
+  file.initWithPath(zipFile);
+  writer.open(file, PR_RDWR | PR_CREATE_FILE | PR_TRUNCATE);
+
+  let dir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsIFile);
+  dir.initWithPath(dirToArchive);
+
+  addDirToArchive(writer, dir, "");
+
+  console.log("archived dir");
 }
