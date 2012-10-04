@@ -81,7 +81,7 @@ if (Self.loadReason == "install") {
 function run(app) {
   let executables = {
     WINNT: "win32/b2g/b2g.exe",
-    Darwin: "mac64/B2G.app/Contents/MacOS/b2g",
+    Darwin: "mac64/B2G.app/Contents/MacOS/b2g-bin",
     Linux: "linux/b2g/b2g-bin",
   };
   let url = Self.data.url(executables[Runtime.OS]);
@@ -216,7 +216,7 @@ function installManifestUrl(manifestUrl) {
 }
 
 function installManifest(manifestUrl, webapp, installOrigin) {
-  let origin = manifestUrl.toString().replace(/([^\/])\/[^\/].*/, "$1");
+  let origin = manifestUrl.toString().substring(0, manifestUrl.toString().lastIndexOf(manifestUrl.path));
   if (!installOrigin) {
     installOrigin = origin
   }
@@ -283,7 +283,7 @@ ContextMenu.Item({
                  '  self.postMessage(node.href)' +
                  '});',
   onMessage: function (manifestUrl) {
-    installManifestUrl(manifestUrl);
+    installManifestUrl(URL.URL(manifestUrl));
   }
 });
 
