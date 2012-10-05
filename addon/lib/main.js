@@ -16,7 +16,10 @@ const Notifications = require("notifications");
 
 require("addon-page");
 
-let currentProcess = null;
+let simulator = {
+  process: null,
+  worker: null,
+};
 
 //Widget({
 //  id: "r2d2b2g",
@@ -59,17 +62,18 @@ function openHelperTab() {
   Tabs.open({
     url: url,
     onReady: function(tab) {
-      let worker = tab.attach({
-        contentScriptFile: Self.data.url("content-script.js")
+      simulator.worker = tab.attach({
+        contentScriptFile: Self.data.url("content-script.js"),
       });
-      worker.on("message", function(message) {
+      simulator.worker.on("message", function(message) {
         switch(message.name) {
           case "getIsRunning":
-            worker.postMessage({ name: "isRunning",
-                                 isRunning: !!currentProcess });
+            simulator.worker.postMessage({ name: "isRunning",
+                                           isRunning: !!simulator.process });
             break;
         }
       });
+      simulator.worker.on("detach", function(message) simulator.worker = null);
     }
   });
 }
@@ -103,11 +107,11 @@ function run(app) {
     args.push("--runapp", app);
   }
 
-  if (currentProcess != null) {
-    currentProcess.kill();
+  if (simulator.process != null) {
+    simulator.process.kill();
   }
 
-  currentProcess = Subprocess.call({
+  simulator.process = Subprocess.call({
     command: executable,
     arguments: args,
 
@@ -144,7 +148,7 @@ function run(app) {
 
     done: function(result) {
       console.log(executables[Runtime.OS] + " terminated with " + result.exitCode);
-      currentProcess = null;
+      simulator.process = null;
     },
 
   });
