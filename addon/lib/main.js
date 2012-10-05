@@ -62,11 +62,11 @@ function openHelperTab() {
       let worker = tab.attach({
         contentScriptFile: Self.data.url("content-script.js")
       });
-      worker.on("message", function(data) {
-        switch(data) {
-          case "run":
-            run();
-            //worker.postMessage("B2G was started!");
+      worker.on("message", function(message) {
+        switch(message.name) {
+          case "getIsRunning":
+            worker.postMessage({ name: "isRunning",
+                                 isRunning: !!currentProcess });
             break;
         }
       });
