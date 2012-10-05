@@ -32,7 +32,36 @@ let simulator = {
     }
   },
 
-  worker: null,
+  _worker: null,
+
+  get worker() this._worker,
+
+  set worker(newVal) {
+    this._worker = newVal;
+
+    if (this.worker) {
+      this.worker.on("message", this.onMessage.bind(this));
+      this.worker.on("detach",
+                     (function(message) this._worker = null).bind(this));
+    }
+  },
+
+  onMessage: function onMessage(message) {
+    switch(message.name) {
+      case "getIsRunning":
+        this.worker.postMessage({ name: "isRunning",
+                                  isRunning: !!this.process });
+        break;
+      case "toggle":
+        if (this.process) {
+          this.process.kill();
+        }
+        else {
+          run();
+        }
+        break;
+    }
+  },
 };
 
 //Widget({
@@ -79,15 +108,6 @@ function openHelperTab() {
       simulator.worker = tab.attach({
         contentScriptFile: Self.data.url("content-script.js"),
       });
-      simulator.worker.on("message", function(message) {
-        switch(message.name) {
-          case "getIsRunning":
-            simulator.worker.postMessage({ name: "isRunning",
-                                           isRunning: !!simulator.process });
-            break;
-        }
-      });
-      simulator.worker.on("detach", function(message) simulator.worker = null);
     }
   });
 }

@@ -7,9 +7,11 @@ $(document).ready(function() {
       if ("name" in message && message.name == "isRunning") {
         if (message.isRunning) {
           $("#simulatorStatus").text("running");
+          $("#toggleButton").text("Stop");
         }
         else {
           $("#simulatorStatus").text("stopped");
+          $("#toggleButton").text("Start");
         }
       }
     },
@@ -18,3 +20,9 @@ $(document).ready(function() {
   window.postMessage({ name: "getIsRunning" }, "*");
 
 });
+
+var simulator = {
+  toggle: function() {
+    window.postMessage({ name: "toggle" }, "*");
+  }
+};
