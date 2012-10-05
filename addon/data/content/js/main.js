@@ -24,5 +24,8 @@ $(document).ready(function() {
 var simulator = {
   toggle: function() {
     window.postMessage({ name: "toggle" }, "*");
-  }
+  },
+  create: function() {
+    window.postMessage({ name: "create" }, "*");
+  },
 };

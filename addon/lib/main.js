@@ -60,6 +60,9 @@ let simulator = {
           run();
         }
         break;
+      case "create":
+        create();
+        break;
     }
   },
 };
@@ -345,16 +348,6 @@ Menuitems.Menuitem({
   },
 });
 
-Menuitems.Menuitem({
-  id: "createApp",
-  menuid: "menu_ToolsPopup",
-  insertbefore: "sanitizeSeparator",
-  label: "Create App",
-  onCommand: function() {
-    create();
-  },
-});
-
 function create() {
   let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
   let webappsFile = File.join(webappsDir, "webapps.json");
@@ -438,6 +431,7 @@ function create() {
             console.error("error writing manifest: " + error);
           }
           archiveDir(File.join(webappDir, "application.zip"), webappDir);
+          console.log("app created");
           //run("My App " + id);
         }
       );
