@@ -17,7 +17,21 @@ const Notifications = require("notifications");
 require("addon-page");
 
 let simulator = {
-  process: null,
+  _process: null,
+
+  get process() this._process,
+
+  set process(newVal) {
+    this._process = newVal;
+
+    if (this.worker) {
+      this.worker.postMessage({
+        name: "isRunning",
+        isRunning: !!this.process,
+      });
+    }
+  },
+
   worker: null,
 };
 
