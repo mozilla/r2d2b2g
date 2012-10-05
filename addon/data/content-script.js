@@ -11,9 +11,7 @@ contentWindow.addEventListener("message", function(event) {
 }, false);
 
 self.on("message", function(message) {
-  // For some reason, an object message posted to the content window gets cloned
-  // to the string "[object Object]" on the other side.  Perhaps this is
-  // something to do with wrappers.  In any case, we want to pass the actual
-  // object, so we stringify it here and then make the content parse it.
-  contentWindow.postMessage(JSON.stringify(message), "*");
+  let event = document.createEvent("CustomEvent");
+  event.initCustomEvent("addon-message", true, true, message);
+  document.documentElement.dispatchEvent(event);
 });
