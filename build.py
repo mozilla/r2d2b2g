@@ -74,11 +74,7 @@ build.download()
 
 
 # Install B2G Desktop to addon's data directory.
-
-for file in os.listdir(downloaddir):
-  if file.endswith(file_extension):
-    installer = os.path.join(downloaddir, file)
-    break
+installer = os.path.abspath(build.target)
 
 # Remove the existing installation, then install.
 platformdir = os.path.join(datadir, platform)
