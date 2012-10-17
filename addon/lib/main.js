@@ -196,7 +196,7 @@ Menuitems.Menuitem({
   id: "launchB2G",
   menuid: "menu_ToolsPopup",
   insertbefore: "sanitizeSeparator",
-  label: "B2G Desktop",
+  label: "Firefox OS Simulator",
   onCommand: function() {
     run();
   },
@@ -315,7 +315,7 @@ function installManifest(manifestUrl, webapp, installOrigin) {
 }
 
 ContextMenu.Item({
-  label: "Install Manifest as B2G App",
+  label: "Install Manifest as Firefox OS App",
   context: ContextMenu.SelectorContext("a"),
   contentScript: 'self.on("context", function (node) {' +
                  '  return /\\.webapp$/.test(node.href);' +
@@ -332,7 +332,7 @@ Menuitems.Menuitem({
   id: "hamB2GerHelper",
   menuid: "menu_ToolsPopup",
   insertbefore: "sanitizeSeparator",
-  label: "B2G Desktop Helper",
+  label: "FirefoxOS Simulator Dashboard",
   onCommand: function() {
     openHelperTab();
   },
