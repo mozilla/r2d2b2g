@@ -7,79 +7,64 @@
         <link rel="stylesheet" href="css/normalize.css">
         <link rel="stylesheet" href="css/main.css">
         <script src="js/vendor/modernizr-2.6.1.min.js"></script>
-        <style>
-          html, body {
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            padding: 0;
-          }
-          body {
-            display: -moz-box;
-            -moz-box-orient: horizontal;
-            -moz-box-pack: center;
-            -moz-box-align: center;
-
-            display: -webkit-box;
-            -webkit-box-orient: horizontal;
-            -webkit-box-pack: center;
-            -webkit-box-align: center;
-
-            display: box;
-            box-orient: horizontal;
-            box-pack: center;
-            box-align: center;
-
-            background-color: white;
-            color: black;
-            background-image: url(watermark.png);
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            background-position: center;
-          }
-          dfn {
-            border-radius: 3px;
-            border: none;
-            background-color: #333;
-            color: #fff;
-            text-decoration: none;
-            font-style: normal;
-            padding: 3px 5px 2px;
-          }
-          figure {
-            display: block;
-            text-align: center;
-            margin-bottom: 1.5em;
-          }
-          h1 {
-            font-size: 1.5em;
-          }
-          h2 {
-            font-size: 1em;
-          }
-        </style>
     </head>
     <body>
-        <div style="width: 400px; max-width: 400px">
-            <h1>You've got <code>r2d2b2g</code>,</h1>
-            <p>
-                an <em>experimental prototype</em> test environment for <a href="http://www.mozilla.org/en-US/b2g/">Firefox OS</a>!
-                Access its functionality via:
-                <figure>
-                    <dfn>Tools</dfn> &#62; <dfn>B2G Desktop</dfn> and <dfn>Install Page as App</dfn>.
-                </figure>
-            </p>
-            <h2>Usage Tips</h2>
-            <ul>
-                <li>Home button: Home key (Fn+←, Fn + Left Arrow on <em>Mac</em>)</li>
-            </ul>
-            <p>
-                B2G Desktop is <code id="simulatorStatus"></code>.
-                <button id="toggleButton" onclick="simulator.toggle()"></button>
-            </p>
+        <article>
+            <header>
+                <h1>r2d2b2g</h1>
+                <aside class="beta">Experimental</aside>
+                <button id="toggleButton" class="started" onclick="simulator.toggle()">
+                    <span id="simulatorStatus">Stopped</span>
+                    <abbr class="stop">&#9632;</abbr>
+                    <abbr class="start">&#9654;</abbr>
+                </button>
+                <!--<small>B2G v0.8</small>-->
+                <nav>
+                    <ul>
+                        <li><a href="#index" class="active">Welcome</a></li>
+                        <li><a href="#apps">Packaged Apps</a></li>
+                        <li><a href="#logs">Logs</a></li>
+                    </ul>
+                </nav>
+            </header>
+            <section class="active" id="index">
+                <div style="width: 400px; max-width: 400px">
+                    <h2>Welcome Developer!</h2>
+                    <p>
+                        r2d2b2g is an <em>experimental prototype</em> test environment for <a href="http://www.mozilla.org/en-US/b2g/">Firefox OS</a>!
+                        Access its functionality via:
+                        <figure>
+                            <dfn>Tools</dfn> &#62; <dfn>Launch B2G Desktop</dfn> and <dfn>Install Page as B2G App</dfn>.
+                        </figure>
+                    </p>
+                    <h2>Usage Tips</h2>
+                    <ul>
+                        <li>Home button: Home key (Fn+←, Fn + Left Arrow on <em>Mac</em>)</li>
+                    </ul>
+                </div>
+            </section>
+            <section id="apps">
+                <h2>Packaged Apps</h2>
+                <label>
+                    Your Webapps Directory: <input type="text" readonly id="apps-dir">
+                </label>
+                <button id="createButton" onclick="simulator.create()">Create New App</button>
+                <div style="white-space: pre" id="apps-list">
+sadjkhfg sakdf gkjhsadfsad
+fa
+sd f
+dsa f
+asd f
+asd f
+asdf
 
-        </div>
-        <button id="createButton" onclick="simulator.create()" style="position: absolute; bottom: 0; right: 0">Create App</button>
+                </div>
+            </section>
+            <section id="logs">
+                <h2>Logs</h2>
+                <textarea id="dump"></textarea>
+            </section>
+        </article>
 
         <script src="js/vendor/jquery-1.8.0.min.js"></script>
         <script src="js/plugins.js"></script>

@@ -90,26 +90,6 @@ textarea {
 }
 
 /* ==========================================================================
-   Author's custom styles
-   ========================================================================== */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* ==========================================================================
    Helper classes
    ========================================================================== */
 
@@ -295,4 +275,152 @@ textarea {
     h3 {
         page-break-after: avoid;
     }
+}
+
+
+/* ==========================================================================
+   Author's custom styles
+   ========================================================================== */
+
+
+html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+body {
+    background-color: white;
+    color: black;
+    background-image: url(watermark.png);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-position: center;
+    display: -moz-box;
+    -moz-box-orient: horizontal;
+}
+.center-box {
+    display: -moz-box;
+    -moz-box-orient: horizontal;
+    -moz-box-pack: center;
+    -moz-box-align: center;
+    display: box;
+    box-orient: horizontal;
+    box-pack: center;
+    box-align: center;
+}
+article {
+    display: -moz-box;
+    -moz-box-flex: 1;
+    -moz-box-align: stretch;
+    box-align: stretch;
+    min-width: 960px;
+    min-height: 768px;
+    height: 100%;
+}
+header {
+    width: 200px;
+    margin-right: 10px;
+    padding: 20px 10px;
+    border-right: 1px solid #eee;
+    background-color: #f5f5f5;
+    text-align: right;
+}
+h1, h2 {
+    margin: 20px 0;
+    color: #4D4E53;
+    font-weight: lighter;
+    font-size: 1.5em;
+}
+.beta {
+    position: absolute;
+    left: -25px;
+    top: 105px;
+    text-align: center;
+    -moz-transform-origin: 0 0;
+    -moz-transform: rotate(-45deg);
+    box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+    background-color: rgba(255, 0, 0, 0.7);
+    padding: 1px 40px;
+    font-size: 16px;
+    font-weight: bolder;
+    color: white;
+}
+nav {
+    margin: 20px 0;
+}
+nav ul {
+    margin: 0;
+}
+nav li {
+    margin: 0;
+}
+nav a {
+    display: block;
+    color: #666;
+    text-decoration: none;
+    padding: 5px 0;
+}
+nav a:active, nav a.active {
+    color: #222;
+}
+#toggleButton {
+    color: #f5f5f5;
+    background-color: #ff0000;
+    border-radius: 5px;
+    border: none;
+    padding: 5px 10px;
+    line-height: 20px;
+    text-shadow: 0px 1px 0px rgba(0, 0, 0, 0.3);
+    box-shadow: 0px 0px 1px 1px rgba(255, 255, 255, 0.3) inset, 0px 1px 0px rgba(0, 0, 0, 0.3);
+}
+#toggleButton:hover {
+    color: #fff;
+}
+#toggleButton abbr {
+    padding: 0 0 0 8px;
+}
+#toggleButton .start {
+    display: none;
+}
+#toggleButton .stop {
+}
+#toggleButton.started {
+    background-color: #008000;
+}
+#toggleButton.started .stop {
+    display: none;
+}
+#toggleButton.started .start {
+    display: inline;
+}
+#toggleButton + small {
+    margin-top: 2px;
+    display: block;
+    color: #666;
+}
+
+article section {
+    display: none;
+    -moz-box-flex: 1;
+    padding: 20px 10px;
+}
+section.active {
+    display: -moz-box;
+    display: box;
+}
+dfn {
+    border-radius: 3px;
+    border: none;
+    background-color: #333;
+    color: #fff;
+    text-decoration: none;
+    font-style: normal;
+    padding: 3px 5px 2px;
+    white-space: nowrap;
+}
+figure {
+    display: block;
+    text-align: center;
+    margin-bottom: 1.5em;
 }
