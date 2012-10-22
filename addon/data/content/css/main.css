@@ -337,8 +337,8 @@ h1, h2 {
     left: -25px;
     top: 105px;
     text-align: center;
-    -moz-transform-origin: 0 0;
-    -moz-transform: rotate(-45deg);
+    transform-origin: 0 0;
+    transform: rotate(-45deg);
     box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
     background-color: rgba(255, 0, 0, 0.7);
     padding: 1px 40px;
@@ -364,45 +364,11 @@ nav a {
 nav a:active, nav a.active {
     color: #222;
 }
-#toggleButton {
-    color: #f5f5f5;
-    background-color: #ff0000;
-    border-radius: 5px;
-    border: none;
-    padding: 5px 10px;
-    line-height: 20px;
-    text-shadow: 0px 1px 0px rgba(0, 0, 0, 0.3);
-    box-shadow: 0px 0px 1px 1px rgba(255, 255, 255, 0.3) inset, 0px 1px 0px rgba(0, 0, 0, 0.3);
-}
-#toggleButton:hover {
-    color: #fff;
-}
-#toggleButton abbr {
-    padding: 0 0 0 8px;
-}
-#toggleButton .start {
-    display: none;
-}
-#toggleButton .stop {
-}
-#toggleButton.started {
-    background-color: #008000;
-}
-#toggleButton.started .stop {
-    display: none;
-}
-#toggleButton.started .start {
-    display: inline;
-}
-#toggleButton + small {
-    margin-top: 2px;
-    display: block;
-    color: #666;
-}
 
 article section {
     display: none;
     -moz-box-flex: 1;
+    box-flex: 1;
     padding: 20px 10px;
 }
 section.active {

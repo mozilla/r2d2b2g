@@ -330,27 +330,27 @@ Menuitems.Menuitem({
   id: "hamB2GerHelper",
   menuid: "menu_ToolsPopup",
   insertbefore: "sanitizeSeparator",
-  label: "B2G Desktop Dashboard",
+  label: "Firefox OS Simulator",
   onCommand: function() {
     openHelperTab();
   },
 });
 
-Menuitems.Menuitem({
-  id: "launchB2G",
-  menuid: "menu_ToolsPopup",
-  insertbefore: "sanitizeSeparator",
-  label: "Launch B2G Desktop",
-  onCommand: function() {
-    run();
-  },
-});
+// Menuitems.Menuitem({
+//   id: "launchB2G",
+//   menuid: "menu_ToolsPopup",
+//   insertbefore: "sanitizeSeparator",
+//   label: "Launch B2G Desktop",
+//   onCommand: function() {
+//     run();
+//   },
+// });
 
 Menuitems.Menuitem({
   id: "appifyPage",
   menuid: "menu_ToolsPopup",
   insertbefore: "sanitizeSeparator",
-  label: "Install Page as B2G App",
+  label: "Install Page in FxOS Simulator",
   onCommand: function() {
     installActiveTab();
   },
