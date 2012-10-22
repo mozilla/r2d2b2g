@@ -8,7 +8,7 @@ var Simulator = {
       Simulator.toggle();
     });
 
-    var current = document.location.hash.substr(1) || 'index';
+    var current = document.location.hash.substr(1) || 'dashboard';
     Simulator.show('#' + current);
 
     $(document).on('click', 'a[href^="#"]', function(evt) {
