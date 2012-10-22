@@ -424,3 +424,88 @@ figure {
     text-align: center;
     margin-bottom: 1.5em;
 }
+
+#commands {
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1) inset;
+    border-radius: 5px;
+    background-color: #fff;
+    padding: 9px 9px 9px 0;
+}
+
+#commands h5 {
+    text-align: right;
+    display: inline;
+    font-size: 0.8em;
+    color: #888;
+    font-weight: normal;
+    padding-right: 5px;
+}
+#commands h5 a {
+    color: #888;
+    border-bottom: 1px dotted #888;
+    text-decoration: none;
+}
+
+.toggle {
+    position: relative;
+    border: 1px solid rgba(0, 0, 0, 0.4);
+    border-radius: 5px;
+    display: inline-block;
+    vertical-align: middle;
+    width: 98px;
+    overflow: hidden;
+    cursor: pointer;
+    user-select: none;
+    -moz-user-select: none;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1) inset;
+}
+.toggles {
+    width: 170%;
+    display: block;
+    margin-left: -70%;
+    transition: margin-left 0.1s ease-in 0s;
+}
+.toggle .toggle-on, .toggle .toggle-off {
+    width: 50%;
+    float: right;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    text-align: center;
+    line-height: 1.6em;
+    transition: background-color 0.15s ease-in 0s;
+    background-color: rgba(255, 255, 255, 0);
+    padding-top: 2px;
+    text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.2);
+}
+.toggle .toggle-on {
+    padding-left: 6px;
+    background-color: rgba(0, 0, 0, 0.1);
+    color: #c4521b;
+    box-shadow: 1px 0 2px rgba(0, 0, 0, 0.2) inset;
+}
+.toggle .toggle-off {
+    box-shadow: -1px 0 2px rgba(0, 0, 0, 0.2) inset;
+    padding-right: 6px;
+    border-right: 1px solid rgba(0, 0, 0, 0.3);
+    background-color: rgba(255, 255, 255, 0);
+    color: #4d5713;
+}
+.toggle input {
+    display: none;
+}
+.toggle input:checked + .toggles {
+    margin-left: 0%;
+}
+.toggle input:checked + .toggles .toggle-off {
+    background-color: #adbe35;
+}
+.toggle input:checked + .toggles .toggle-on {
+    background-color: rgba(255, 255, 255, 0);
+}
+.toggle input:indeterminate + .toggles {
+    opacity: 0.4;
+    cursor: progress;
+}
