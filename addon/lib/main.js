@@ -46,11 +46,105 @@ let simulator = {
     }
   },
 
+  addAppByDirectory: function() {
+    Cu.import("resource://gre/modules/Services.jsm");
+    let win = Services.wm.getMostRecentWindow("navigator:browser");
+
+    let fp = Cc["@mozilla.org/filepicker;1"].createInstance(Ci.nsIFilePicker);
+    fp.init(win, "Select a Web Application Manifest", Ci.nsIFilePicker.modeOpen);
+    fp.appendFilter("Webapp Manifest", "*.webapp");
+    fp.appendFilters(Ci.nsIFilePicker.filterAll);
+
+    let ret = fp.show();
+    if (ret == Ci.nsIFilePicker.returnOK || ret == Ci.nsIFilePicker.returnReplace) {
+      let webappFile = fp.file.path;
+      console.log("Selected " + webappFile);
+      let webapp;
+      try {
+        webapp = JSON.parse(File.read(webappFile));
+      } catch (e) {
+        console.error("Error loading " + webappFile, e);
+        Notifications.notify({
+          title: "Manifest Error",
+          text: "Could not load " + webappFile + " (" + e.name + ")"
+        });
+        return;
+      }
+
+      console.log("Loaded " + webapp.name);
+
+      let icon = null;
+      let size = Object.keys(webapp.icons).sort(function(a, b) b - a)[0] || null;
+      if (size) {
+        icon = webapp.icons[size];
+      }
+
+      apps = simulator.apps;
+      console.log(apps);
+      apps[webappFile] = {
+        type: 'local',
+        xid: null,
+        xkey: null,
+        name: webapp.name,
+        icon: icon,
+        manifest: webapp
+      }
+
+      simulator.apps = apps;
+
+      this.updateApp(webappFile);
+    }
+  },
+
+  updateApp: function(id) {
+    let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
+    let webappsFile = File.join(webappsDir, "webapps.json");
+    let webapps = JSON.parse(File.read(webappsFile));
+
+    let config = apps[id];
+
+    if (!config.xid) {
+      config.xid = ++[id for each ({ localId: id } in webapps)].sort(function(a, b) b - a)[0];
+      config.xkey = "myapp" + config.xid + ".gaiamobile.org";
+
+      if (!config.origin) {
+        config.origin = "app://myapp" + config.xid + ".gaiamobile.org";
+      }
+    }
+
+    // Create the webapp record and write it to the registry.
+    webapps[config.xkey] = {
+      origin: config.origin,
+      installOrigin: config.origin,
+      receipt: null,
+      installTime: Date.now(),
+      manifestURL: config.origin + "/manifest.webapp",
+      appStatus: 3,
+      localId: config.xid
+    };
+    File.open(webappsFile, "w").writeAsync(
+      JSON.stringify(webapps, null, 2) + "\n",
+      function(error) {
+        if (error) {
+          console.error("error writing webapp record to registry: " + error);
+          return
+        }
+
+        let webappDir = File.join(webappsDir, config.xkey);
+        let sourceDir = id.replace(/[^\/\\]*$/, "");
+        archiveDir(File.join(webappDir, "application.zip"), sourceDir);
+      }
+    );
+  },
+
   onMessage: function onMessage(message) {
     switch(message.name) {
       case "getIsRunning":
         this.worker.postMessage({ name: "isRunning",
                                   isRunning: !!this.process });
+        break;
+      case "addAppByDirectory":
+        this.addAppByDirectory();
         break;
       case "listApps":
         let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
@@ -257,7 +351,7 @@ function installManifestUrl(manifestUrl) {
 function installManifest(manifestUrl, webapp, installOrigin) {
   let origin = manifestUrl.toString().substring(0, manifestUrl.toString().lastIndexOf(manifestUrl.path));
   if (!installOrigin) {
-    installOrigin = origin
+    installOrigin = origin;
   }
 
   let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
@@ -492,5 +586,5 @@ function archiveDir(zipFile, dirToArchive) {
 
   addDirToArchive(writer, dir, "");
 
-  console.log("archived dir");
+  console.log("archived dir " + dirToArchive);
 }

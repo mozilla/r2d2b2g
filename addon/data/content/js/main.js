@@ -8,6 +8,11 @@ var Simulator = {
       Simulator.toggle();
     });
 
+    $(this.toggler).on('change', function(evt) {
+      // FIXME: Change to actual checkbox state
+      Simulator.toggle();
+    });
+
     var current = document.location.hash.substr(1) || 'dashboard';
     Simulator.show('#' + current);
 
@@ -36,8 +41,7 @@ var Simulator = {
             }
             break;
           case "listApps":
-            $('#apps-dir').val(message.dir);
-            $('#apps-list').text(JSON.stringify(message.list));
+            // $('#apps-list').text(JSON.stringify(message.list));
             break;
         }
       },
@@ -68,6 +72,10 @@ var Simulator = {
 
   create: function() {
     window.postMessage({ name: "create" }, "*");
+  },
+
+  addAppByDirectory: function() {
+    window.postMessage({ name: "addAppByDirectory" }, "*");
   }
 
 };

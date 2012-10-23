@@ -475,3 +475,9 @@ figure {
     opacity: 0.4;
     cursor: progress;
 }
+.list-actions {
+    border-bottom: 1px solid #eee;
+    padding: 10px 0;
+    margin-bottom: 10px;
+    text-align: right;
+}
