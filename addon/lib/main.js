@@ -52,6 +52,14 @@ let simulator = {
         this.worker.postMessage({ name: "isRunning",
                                   isRunning: !!this.process });
         break;
+      case "listApps":
+        let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
+        let webappsFile = File.join(webappsDir, "webapps.json");
+        let webapps = JSON.parse(File.read(webappsFile));
+        this.worker.postMessage({ name: "listApps",
+                                  list: webapps,
+                                  dir: webappsDir});
+        break;
       case "toggle":
         if (this.process) {
           this.process.kill();
@@ -192,16 +200,6 @@ function run(app) {
 
 }
 
-Menuitems.Menuitem({
-  id: "launchB2G",
-  menuid: "menu_ToolsPopup",
-  insertbefore: "sanitizeSeparator",
-  label: "Firefox OS Simulator",
-  onCommand: function() {
-    run();
-  },
-});
-
 /**
  * Installs the web page in the active tab as if it was an app.
  */
@@ -332,17 +330,27 @@ Menuitems.Menuitem({
   id: "hamB2GerHelper",
   menuid: "menu_ToolsPopup",
   insertbefore: "sanitizeSeparator",
-  label: "FirefoxOS Simulator Dashboard",
+  label: "Firefox OS Simulator",
   onCommand: function() {
     openHelperTab();
   },
 });
 
+// Menuitems.Menuitem({
+//   id: "launchB2G",
+//   menuid: "menu_ToolsPopup",
+//   insertbefore: "sanitizeSeparator",
+//   label: "Launch B2G Desktop",
+//   onCommand: function() {
+//     run();
+//   },
+// });
+
 Menuitems.Menuitem({
   id: "appifyPage",
   menuid: "menu_ToolsPopup",
   insertbefore: "sanitizeSeparator",
-  label: "Install Page as App",
+  label: "Install Page in FxOS Simulator",
   onCommand: function() {
     installActiveTab();
   },

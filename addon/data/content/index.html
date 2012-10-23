@@ -7,79 +7,69 @@
         <link rel="stylesheet" href="css/normalize.css">
         <link rel="stylesheet" href="css/main.css">
         <script src="js/vendor/modernizr-2.6.1.min.js"></script>
-        <style>
-          html, body {
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            padding: 0;
-          }
-          body {
-            display: -moz-box;
-            -moz-box-orient: horizontal;
-            -moz-box-pack: center;
-            -moz-box-align: center;
-
-            display: -webkit-box;
-            -webkit-box-orient: horizontal;
-            -webkit-box-pack: center;
-            -webkit-box-align: center;
-
-            display: box;
-            box-orient: horizontal;
-            box-pack: center;
-            box-align: center;
-
-            background-color: white;
-            color: black;
-            background-image: url(watermark.png);
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            background-position: center;
-          }
-          dfn {
-            border-radius: 3px;
-            border: none;
-            background-color: #333;
-            color: #fff;
-            text-decoration: none;
-            font-style: normal;
-            padding: 3px 5px 2px;
-          }
-          figure {
-            display: block;
-            text-align: center;
-            margin-bottom: 1.5em;
-          }
-          h1 {
-            font-size: 1.5em;
-          }
-          h2 {
-            font-size: 1em;
-          }
-        </style>
     </head>
     <body>
-        <div style="width: 400px; max-width: 400px">
-            <h1>You've got <code>r2d2b2g</code>,</h1>
-            <p>
-                an <em>experimental prototype</em> test environment for <a href="http://www.mozilla.org/en-US/b2g/">Firefox OS</a>!
-                Access its functionality via:
-                <figure>
-                    <dfn>Tools</dfn> &#62; <dfn>Firefox OS Simulator</dfn> and <dfn>Install Page as App</dfn>.
-                </figure>
-            </p>
-            <h2>Usage Tips</h2>
-            <ul>
-                <li>Home button: Home key (Fn+←, Fn + Left Arrow on <em>Mac</em>)</li>
-            </ul>
-            <p>
-                FirefoxOS Desktop is <code id="simulatorStatus"></code>.
-                <button id="toggleButton" onclick="simulator.toggle()"></button>
-            </p>
+        <article>
+            <header>
+                <h1>FxOS Simulator</h1>
+                <aside class="beta">Experimental</aside>
 
-        </div>
-        <button id="createButton" onclick="simulator.create()" style="position: absolute; bottom: 0; right: 0">Create App</button>
+                <fieldset id="commands">
+                    <h5 title="Version x.x, Last Update: 10-23-2012 12:34 UTC">
+                        <a href="#help">Simulator</a>
+                    </h5>
+                    <label class="toggle">
+                        <input type="checkbox" id="command-toggle" />
+                        <span class="toggles">
+                            <span class="toggle-on">Stopped</span>
+                            <span class="toggle-off">Running</span>
+                        </span>
+                    </label>
+                </fieldset>
+                <!--<small>B2G v0.8</small>-->
+                <nav>
+                    <ul>
+                        <li><a href="#dashboard">Dashboard</a></li>
+                        <li><a href="#debugger">Debugger</a></li>
+                        <li><a href="#help">Help</a></li>
+                    </ul>
+                </nav>
+            </header>
+            <section id="welcome">
+                <div style="width: 400px; max-width: 400px">
+                    <h2>Welcome Developer!</h2>
+                    <p>
+                        r2d2b2g is an <em>experimental prototype</em> test environment for <a href="http://www.mozilla.org/en-US/b2g/">Firefox OS</a>!
+                        Access its functionality via:
+                        <figure>
+                            <dfn>Tools</dfn> &#62; <dfn>Launch B2G Desktop</dfn> and <dfn>Install Page as B2G App</dfn>.
+                        </figure>
+                    </p>
+                    <h2>Usage Tips</h2>
+                    <ul>
+                        <li>Home button: Home key (Fn+←, Fn + Left Arrow on <em>Mac</em>)</li>
+                    </ul>
+                </div>
+            </section>
+            <section id="dashboard">
+                <h2>Packaged Apps</h2>
+                <label>
+                    Your Webapps Directory: <input type="text" readonly id="apps-dir">
+                </label>
+                <button id="createButton" onclick="Simulator.create()">Create New App</button>
+                <div style="white-space: pre" id="apps-list"></div>
+            </section>
+            <section id="debugger">
+                <h2><strong>INCOMPLETE</strong> Debugger</h2>
+                <textarea id="dump"></textarea>
+            </section>
+            <section id="help">
+                <h2><strong>INCOMPLETE</strong> - Help Resources</h2>
+                <ul>
+                    <li><a href="https://wiki.mozilla.org/Gaia/Hacking" target="_new">Gaia/Hacking</a>
+                </ul>
+            </section>
+        </article>
 
         <script src="js/vendor/jquery-1.8.0.min.js"></script>
         <script src="js/plugins.js"></script>
