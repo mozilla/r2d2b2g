@@ -35,6 +35,7 @@
                     </ul>
                 </nav>
             </header>
+
             <section id="welcome">
                 <div style="width: 400px; max-width: 400px">
                     <h2>Welcome Developer!</h2>
@@ -51,14 +52,20 @@
                     </ul>
                 </div>
             </section>
+
             <section id="dashboard">
                 <h2>Packaged Apps</h2>
-                <label>
-                    Your Webapps Directory: <input type="text" readonly id="apps-dir">
-                </label>
-                <button id="createButton" onclick="Simulator.create()">Create New App</button>
-                <div style="white-space: pre" id="apps-list"></div>
+                <div class="list-actions">
+                    Add App:
+                    <button id="action-add-directory" onclick="Simulator.addAppByDirectory()">From Directory</button>
+                    <button id="action-add-url">From URL</button>
+                </div>
+                <div id="apps-list">
+                </div>
+
+
             </section>
+
             <section id="debugger">
                 <h2><strong>INCOMPLETE</strong> Debugger</h2>
                 <textarea id="dump"></textarea>
