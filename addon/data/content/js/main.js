@@ -8,11 +8,6 @@ var Simulator = {
       Simulator.toggle();
     });
 
-    $(this.toggler).on('change', function(evt) {
-      // FIXME: Change to actual checkbox state
-      Simulator.toggle();
-    });
-
     var current = document.location.hash.substr(1) || 'dashboard';
     Simulator.show('#' + current);
 

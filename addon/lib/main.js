@@ -36,10 +36,12 @@ let simulator = {
   _worker: null,
 
   get apps() {
+    console.log("Simulator.get apps");
     return SStorage.storage.apps || {};
   },
 
   set apps(list) {
+    console.log("Simulator.set apps");
     SStorage.storage.apps = list;
   },
 
@@ -56,6 +58,8 @@ let simulator = {
   },
 
   addAppByDirectory: function() {
+    console.log("Simulator.addAppByDirectory");
+
     Cu.import("resource://gre/modules/Services.jsm");
     let win = Services.wm.getMostRecentWindow("navigator:browser");
 
@@ -89,15 +93,15 @@ let simulator = {
       }
 
       apps = simulator.apps;
-      console.log(apps);
       apps[webappFile] = {
-        type: 'local',
+        type: "local",
         xid: null,
         xkey: null,
         name: webapp.name,
         icon: icon,
         manifest: webapp
       }
+      console.log("Stored " + JSON.stringify(apps[webappFile]));
 
       simulator.apps = apps;
 
@@ -106,6 +110,8 @@ let simulator = {
   },
 
   updateApp: function(id) {
+    console.log("Simulator.updateApp " + id);
+
     let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
     let webappsFile = File.join(webappsDir, "webapps.json");
     let webapps = JSON.parse(File.read(webappsFile));
@@ -141,8 +147,20 @@ let simulator = {
           return
         }
 
+        // Create target folder
         let webappDir = File.join(webappsDir, config.xkey);
         File.mkpath(webappDir);
+
+        // Copy manifest
+        let manifestFile = Cc['@mozilla.org/file/local;1'].
+                        createInstance(Ci.nsIFile);
+        manifestFile.initWithPath(id);
+        let webappDir_nsIFile = Cc['@mozilla.org/file/local;1'].
+                                 createInstance(Ci.nsIFile);
+        webappDir_nsIFile.initWithPath(webappDir);
+        manifestFile.copyTo(webappDir_nsIFile, "manifest.webapp");
+
+        // Archive source folder to target folder
         let sourceDir = id.replace(/[\/\\][^\/\\]*$/, "");
         let archiveFile = File.join(webappDir, "application.zip");
 
@@ -155,12 +173,14 @@ let simulator = {
   },
 
   sendListApps: function() {
+    console.log("Simulator.sendListApps");
     this.worker.postMessage({ name: "listApps",
                               list: simulator.apps});
   },
 
   onMessage: function onMessage(message) {
-    switch(message.name) {
+    console.log("Simulator.onMessage " + message.name);
+    switch (message.name) {
       case "getIsRunning":
         this.worker.postMessage({ name: "isRunning",
                                   isRunning: !!this.process });
@@ -579,11 +599,13 @@ function addDirToArchive(writer, dir, basePath) {
     }
 
     if (file.isDirectory()) {
+      console.log("… archiving directory " + file.leafName);
       writer.addEntryDirectory(basePath + file.leafName + "/",
                                file.lastModifiedTime * PR_USEC_PER_MSEC,
                                false);
       addDirToArchive(writer, file, basePath + file.leafName + "/");
     } else {
+      console.log("… archiving file " + file.leafName);
       writer.addEntryFile(basePath + file.leafName,
                           Ci.nsIZipWriter.COMPRESSION_DEFAULT,
                           file,
