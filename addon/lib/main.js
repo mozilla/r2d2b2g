@@ -125,9 +125,10 @@ let simulator = {
       if (!config.origin) {
         config.origin = "app://" + config.xkey;
       }
-
-      simulator.apps[id] = config;
     }
+
+    config.lastUpdate = Date.now();
+    simulator.apps[id] = config;
 
     // Create the webapp record and write it to the registry.
     webapps[config.xkey] = {
@@ -190,6 +191,9 @@ let simulator = {
         break;
       case "listApps":
         this.sendListApps();
+        break;
+      case "updateApp":
+        this.updateApp(message.id);
         break;
       case "toggle":
         if (this.process) {
