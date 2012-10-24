@@ -36,8 +36,42 @@ var Simulator = {
             }
             break;
           case "listApps":
-            $('#apps-dir').val(message.dir);
-            $('#apps-list').text(JSON.stringify(message.list));
+            console.log("listApps " + message.list.length);
+            var container = $('#apps-list').empty();
+            Object.keys(message.list).forEach(function(id) {
+              // FIXME: forEach workaround as for-in resulted in broken index
+              var app = message.list[id];
+
+              var lastUpdate = app.lastUpdate || null;
+              if (lastUpdate) {
+                lastUpdate = (new Date(app.lastUpdate)).toUTCString();
+              } else {
+                lastUpdate = "-";
+              }
+
+              // FIXME: Make an actual list, add a template engine
+              container.append(
+                $("<div class='app'>").append(
+                  // $("<input type='checkbox'>").prop("title", "Default Launch").on("change", function(evt) {
+                  //   console.log($(this).prop("checked"));
+                  //   window.postMessage({
+                  //     name: "setDefaultApp",
+                  //     id: id,
+                  //     checked: $(this).prop("checked")
+                  //   }, "*");
+                  // }).prop("checked", app.isDefault),
+                  $("<label>").append(
+                    $("<span>").text("Last Updated: " + lastUpdate),
+                    $("<button>").text("Update").click(function(evt) {
+                      console.log("CLICKED updateApp " + id);
+                      window.postMessage({name: "updateApp", id: id}, "*");
+                    })
+                  ),
+                  $("<h4>").text(app.name),
+                  $("<code>").text(id)
+                )
+              )
+            });
             break;
         }
       },
@@ -68,6 +102,10 @@ var Simulator = {
 
   create: function() {
     window.postMessage({ name: "create" }, "*");
+  },
+
+  addAppByDirectory: function() {
+    window.postMessage({ name: "addAppByDirectory" }, "*");
   }
 
 };

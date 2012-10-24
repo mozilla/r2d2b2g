@@ -314,8 +314,8 @@ article {
     -moz-box-flex: 1;
     -moz-box-align: stretch;
     box-align: stretch;
-    min-width: 960px;
-    min-height: 768px;
+    min-width: 480px;
+    min-height: 384px;
     height: 100%;
 }
 header {
@@ -474,4 +474,27 @@ figure {
 .toggle input:indeterminate + .toggles {
     opacity: 0.4;
     cursor: progress;
+}
+.list-actions {
+    border-bottom: 1px solid #eee;
+    padding: 10px 0;
+    margin-bottom: 10px;
+    text-align: right;
+}
+
+#apps-list .app {
+    margin: 5px 0;
+    padding: 5px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1) inset;
+    border: 1px solid rgba(0, 0, 0, 0.4);
+}
+#apps-list label {
+    float: right;
+}
+#apps-list h4 {
+    margin: 0 0 10px 0;
+}
+#apps-list label span {
+    font-size: 0.8em;
+    padding: 0 10px;
 }
