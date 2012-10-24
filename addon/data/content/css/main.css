@@ -314,8 +314,8 @@ article {
     -moz-box-flex: 1;
     -moz-box-align: stretch;
     box-align: stretch;
-    min-width: 960px;
-    min-height: 768px;
+    min-width: 480px;
+    min-height: 384px;
     height: 100%;
 }
 header {

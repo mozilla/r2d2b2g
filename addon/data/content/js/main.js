@@ -41,7 +41,13 @@ var Simulator = {
             }
             break;
           case "listApps":
-            // $('#apps-list').text(JSON.stringify(message.list));
+            var container = $('#apps-list').empty();
+            Object.keys(message.list).forEach(function(id) {
+              // FIXME: forEach workaround as for-in resulted in broken index
+              var app = message.list[id];
+              // FIXME: Make an actual list, add a template engine
+              container.append($("<h4>").text(app.name + " (" + id + ")"));
+            });
             break;
         }
       },

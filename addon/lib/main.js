@@ -13,6 +13,7 @@ const Subprocess = require("subprocess");
 const ContextMenu = require("context-menu");
 const Request = require('request').Request;
 const Notifications = require("notifications");
+const SStorage = require("simple-storage");
 
 require("addon-page");
 
@@ -33,6 +34,14 @@ let simulator = {
   },
 
   _worker: null,
+
+  get apps() {
+    return SStorage.storage.apps || {};
+  },
+
+  set apps(list) {
+    SStorage.storage.apps = list;
+  },
 
   get worker() this._worker,
 
@@ -108,8 +117,10 @@ let simulator = {
       config.xkey = "myapp" + config.xid + ".gaiamobile.org";
 
       if (!config.origin) {
-        config.origin = "app://myapp" + config.xid + ".gaiamobile.org";
+        config.origin = "app://" + config.xkey;
       }
+
+      simulator.apps[id] = config;
     }
 
     // Create the webapp record and write it to the registry.
@@ -131,10 +142,21 @@ let simulator = {
         }
 
         let webappDir = File.join(webappsDir, config.xkey);
-        let sourceDir = id.replace(/[^\/\\]*$/, "");
-        archiveDir(File.join(webappDir, "application.zip"), sourceDir);
+        File.mkpath(webappDir);
+        let sourceDir = id.replace(/[\/\\][^\/\\]*$/, "");
+        let archiveFile = File.join(webappDir, "application.zip");
+
+        console.log("Zipping " + sourceDir + " to " + archiveFile);
+        archiveDir(archiveFile, sourceDir);
+
+        simulator.sendListApps();
       }
     );
+  },
+
+  sendListApps: function() {
+    this.worker.postMessage({ name: "listApps",
+                              list: simulator.apps});
   },
 
   onMessage: function onMessage(message) {
@@ -147,12 +169,7 @@ let simulator = {
         this.addAppByDirectory();
         break;
       case "listApps":
-        let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
-        let webappsFile = File.join(webappsDir, "webapps.json");
-        let webapps = JSON.parse(File.read(webappsFile));
-        this.worker.postMessage({ name: "listApps",
-                                  list: webapps,
-                                  dir: webappsDir});
+        this.sendListApps();
         break;
       case "toggle":
         if (this.process) {
