@@ -13,6 +13,7 @@ const Subprocess = require("subprocess");
 const ContextMenu = require("context-menu");
 const Request = require('request').Request;
 const Notifications = require("notifications");
+const SStorage = require("simple-storage");
 
 require("addon-page");
 
@@ -34,6 +35,16 @@ let simulator = {
 
   _worker: null,
 
+  get apps() {
+    console.log("Simulator.get apps");
+    return SStorage.storage.apps || {};
+  },
+
+  set apps(list) {
+    console.log("Simulator.set apps");
+    SStorage.storage.apps = list;
+  },
+
   get worker() this._worker,
 
   set worker(newVal) {
@@ -46,19 +57,143 @@ let simulator = {
     }
   },
 
+  addAppByDirectory: function() {
+    console.log("Simulator.addAppByDirectory");
+
+    Cu.import("resource://gre/modules/Services.jsm");
+    let win = Services.wm.getMostRecentWindow("navigator:browser");
+
+    let fp = Cc["@mozilla.org/filepicker;1"].createInstance(Ci.nsIFilePicker);
+    fp.init(win, "Select a Web Application Manifest", Ci.nsIFilePicker.modeOpen);
+    fp.appendFilter("Webapp Manifest", "*.webapp");
+    fp.appendFilters(Ci.nsIFilePicker.filterAll);
+
+    let ret = fp.show();
+    if (ret == Ci.nsIFilePicker.returnOK || ret == Ci.nsIFilePicker.returnReplace) {
+      let webappFile = fp.file.path;
+      console.log("Selected " + webappFile);
+      let webapp;
+      try {
+        webapp = JSON.parse(File.read(webappFile));
+      } catch (e) {
+        console.error("Error loading " + webappFile, e);
+        Notifications.notify({
+          title: "Manifest Error",
+          text: "Could not load " + webappFile + " (" + e.name + ")"
+        });
+        return;
+      }
+
+      console.log("Loaded " + webapp.name);
+
+      let icon = null;
+      let size = Object.keys(webapp.icons).sort(function(a, b) b - a)[0] || null;
+      if (size) {
+        icon = webapp.icons[size];
+      }
+
+      apps = simulator.apps;
+      apps[webappFile] = {
+        type: "local",
+        xid: null,
+        xkey: null,
+        name: webapp.name,
+        icon: icon,
+        manifest: webapp
+      }
+      console.log("Stored " + JSON.stringify(apps[webappFile]));
+
+      simulator.apps = apps;
+
+      this.updateApp(webappFile);
+    }
+  },
+
+  updateApp: function(id) {
+    console.log("Simulator.updateApp " + id);
+
+    let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
+    let webappsFile = File.join(webappsDir, "webapps.json");
+    let webapps = JSON.parse(File.read(webappsFile));
+
+    let config = apps[id];
+
+    if (!config.xid) {
+      config.xid = ++[id for each ({ localId: id } in webapps)].sort(function(a, b) b - a)[0];
+      config.xkey = "myapp" + config.xid + ".gaiamobile.org";
+
+      if (!config.origin) {
+        config.origin = "app://" + config.xkey;
+      }
+    }
+
+    config.lastUpdate = Date.now();
+    simulator.apps[id] = config;
+
+    // Create the webapp record and write it to the registry.
+    webapps[config.xkey] = {
+      origin: config.origin,
+      installOrigin: config.origin,
+      receipt: null,
+      installTime: Date.now(),
+      manifestURL: config.origin + "/manifest.webapp",
+      appStatus: 3,
+      localId: config.xid
+    };
+    File.open(webappsFile, "w").writeAsync(
+      JSON.stringify(webapps, null, 2) + "\n",
+      function(error) {
+        if (error) {
+          console.error("error writing webapp record to registry: " + error);
+          return
+        }
+
+        // Create target folder
+        let webappDir = File.join(webappsDir, config.xkey);
+        File.mkpath(webappDir);
+
+        // Copy manifest
+        let manifestFile = Cc['@mozilla.org/file/local;1'].
+                        createInstance(Ci.nsIFile);
+        manifestFile.initWithPath(id);
+        let webappDir_nsIFile = Cc['@mozilla.org/file/local;1'].
+                                 createInstance(Ci.nsIFile);
+        webappDir_nsIFile.initWithPath(webappDir);
+        manifestFile.copyTo(webappDir_nsIFile, "manifest.webapp");
+
+        // Archive source folder to target folder
+        let sourceDir = id.replace(/[\/\\][^\/\\]*$/, "");
+        let archiveFile = File.join(webappDir, "application.zip");
+
+        console.log("Zipping " + sourceDir + " to " + archiveFile);
+        archiveDir(archiveFile, sourceDir);
+
+        simulator.sendListApps();
+      }
+    );
+  },
+
+  sendListApps: function() {
+    console.log("Simulator.sendListApps");
+    this.worker.postMessage({ name: "listApps",
+                              list: simulator.apps});
+  },
+
   onMessage: function onMessage(message) {
-    switch(message.name) {
+    console.log("Simulator.onMessage " + message.name);
+    switch (message.name) {
       case "getIsRunning":
         this.worker.postMessage({ name: "isRunning",
                                   isRunning: !!this.process });
         break;
+      case "addAppByDirectory":
+        this.addAppByDirectory();
+        break;
       case "listApps":
-        let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
-        let webappsFile = File.join(webappsDir, "webapps.json");
-        let webapps = JSON.parse(File.read(webappsFile));
-        this.worker.postMessage({ name: "listApps",
-                                  list: webapps,
-                                  dir: webappsDir});
+        this.sendListApps();
+        break;
+      case "updateApp":
+        this.updateApp(message.id);
         break;
       case "toggle":
         if (this.process) {
@@ -257,7 +392,7 @@ function installManifestUrl(manifestUrl) {
 function installManifest(manifestUrl, webapp, installOrigin) {
   let origin = manifestUrl.toString().substring(0, manifestUrl.toString().lastIndexOf(manifestUrl.path));
   if (!installOrigin) {
-    installOrigin = origin
+    installOrigin = origin;
   }
 
   let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
@@ -468,11 +603,13 @@ function addDirToArchive(writer, dir, basePath) {
     }
 
     if (file.isDirectory()) {
+      console.log("… archiving directory " + file.leafName);
       writer.addEntryDirectory(basePath + file.leafName + "/",
                                file.lastModifiedTime * PR_USEC_PER_MSEC,
                                false);
       addDirToArchive(writer, file, basePath + file.leafName + "/");
     } else {
+      console.log("… archiving file " + file.leafName);
       writer.addEntryFile(basePath + file.leafName,
                           Ci.nsIZipWriter.COMPRESSION_DEFAULT,
                           file,
@@ -492,5 +629,5 @@ function archiveDir(zipFile, dirToArchive) {
 
   addDirToArchive(writer, dir, "");
 
-  console.log("archived dir");
+  console.log("archived dir " + dirToArchive);
 }
