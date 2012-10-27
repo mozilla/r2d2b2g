@@ -55,11 +55,21 @@
 
             <section id="dashboard">
                 <h2>Packaged Apps</h2>
-                <div class="list-actions">
-                    Add App:
-                    <button id="action-add-directory" onclick="Simulator.addAppByDirectory()">From Directory</button>
-                    <button id="action-add-url">From URL</button>
-                </div>
+                <form class="list-actions" id="form-add-app" action="#">
+                    <ul>
+                        <li>
+                            <button id="action-add-directory" onclick="Simulator.addAppByDirectory()">Add Directory</button>
+                        </li>
+                        <li>
+                            <form id="form-add-app" action="#">
+                                <input id="add-app-url" list="list-app-tabs" type="url" placeholder="URL for Webapp manifest or page" required pattern="https?://.+" />
+                                <datalist id="list-app-tabs"></datalist>
+                                <button id="action-add-manifest" disabled>Add Manifest</button>
+                                <button id="action-add-page" disabled>Add URL</button>
+                            </form>
+                        </li>
+                    </ul>
+                <form>
                 <div id="apps-list">
                 </div>
 
