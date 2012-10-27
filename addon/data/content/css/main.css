@@ -475,11 +475,30 @@ figure {
     opacity: 0.4;
     cursor: progress;
 }
-.list-actions {
+.list-actions ul {
+    margin: 0;
+    padding: 0;
+}
+.list-actions ul {
+    list-style: none;
+    display: block;
     border-bottom: 1px solid #eee;
-    padding: 10px 0;
+    padding: 10px 0 9px;
     margin-bottom: 10px;
     text-align: right;
+}
+.list-actions li {
+    display: inline-block;
+    padding: 0 10px;
+    margin: 0;
+    border-left: 1px dotted #eee;
+}
+.list-actions li:first-child {
+    border-left: none;
+}
+.list-actions small {
+    font-size: 0.8em;
+    color: #888;
 }
 
 #apps-list .app {
@@ -497,4 +516,80 @@ figure {
 #apps-list label span {
     font-size: 0.8em;
     padding: 0 10px;
+}
+button, input {
+    font-size: 0.8em;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+    padding: 4px 9px;
+    font-weight: bold;
+}
+button:disabled {
+    color: #999;
+    cursor: default;
+}
+input {
+    background-color: #fff;
+    color: #444;
+    font-weight: normal;
+    width: 200px;
+}
+input:-moz-placeholder {
+    color: #999;
+    font-style: italic;
+}
+button:hover, .popover-wrap:hover button {
+    background-color: #adbe35;
+    color: #4d5713;
+    cursor: pointer;
+}
+.popover-wrap button {
+    pointer-events: none;
+    z-index: 2;
+}
+.popover-wrap select {
+    border: none;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -moz-appearance: none;
+    opacity: 0;
+    z-index: 1;
+    cursor: pointer;
+}
+.popover-wrap select:active {
+    opacity: 1;
+}
+.popover-wrap select option {
+    background-color: #adbe35;
+    color: #4d5713;
+    padding: 2px 4px;
+}
+.popover-wrap select option:disabled {
+    font-style: italic;
+}
+.popover-wrap {
+    display: inline;
+    position: relative;
+}
+#action-add-manifest, .is-manifest #action-add-page {
+    display: none;
+}
+.is-manifest #action-add-manifest, #action-add-page {
+    display: inline;
+}
+.button-popover {
+    display: none;
+    position: absolute;
+    right: 0.4em;
+    top: 1.2em;
+    border: 1px solid rgba(0, 0, 0, 0.5);
+    background-color: #fff;
+}
+.popover-wrap:hover .button-popover {
+    display: block;
 }

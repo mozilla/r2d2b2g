@@ -18,6 +18,33 @@ var Simulator = {
       }
     });
 
+    var currentUrl;
+    $('#add-app-url').on('keyup change', function(evt) {
+      var url = $(this).val();
+      if (url == currentUrl) {
+        return;
+      }
+      currentUrl = url;
+      var valid = this.checkValidity();
+      $('#action-add-page, #action-add-manifest').prop('disabled', !valid);
+      if (!valid) {
+        return;
+      }
+
+      window.postMessage({name: "validateUrl", url: url}, "*");
+    });
+
+    $('#form-add-app').on('submit', function(evt) {
+      evt.preventDefault();
+
+      var input = $('#add-app-url');
+      var valid = input[0].checkValidity();
+      window.postMessage({
+        name: "addAppByTab",
+        url: input.val()
+      }, "*");
+    });
+
     document.documentElement.addEventListener(
       "addon-message",
       function isRunningListener(event) {
@@ -25,6 +52,7 @@ var Simulator = {
         if (!("name" in message)) {
           return;
         }
+        console.log('Addon-message: ' + message.name);
         switch (message.name) {
           case "isRunning":
             $(Simulator.toggler).prop('indeterminate', false);
@@ -35,8 +63,23 @@ var Simulator = {
               $(Simulator.toggler).prop('checked', false);
             }
             break;
+          case "listTabs":
+            var container = $('#list-app-tabs'), items = [];
+            for (var url in message.list) {
+              console.log(url);
+              items.push($('<option>').prop('value', url).text(message.list[url]));
+            }
+            container.append(items);
+            break;
+          case "validateUrl":
+            var set = $('#add-app-url').parents('form').removeClass('is-manifest');
+            if (!message.err) {
+              set.addClass('is-manifest');
+            } else {
+              $('#add-app-url').prop('title', message.err);
+            }
+            break;
           case "listApps":
-            console.log("listApps " + message.list.length);
             var container = $('#apps-list').empty();
             Object.keys(message.list).forEach(function(id) {
               // FIXME: forEach workaround as for-in resulted in broken index
@@ -79,6 +122,7 @@ var Simulator = {
     );
     window.postMessage({ name: "getIsRunning" }, "*");
     window.postMessage({ name: "listApps" }, "*");
+    window.postMessage({ name: "listTabs" }, "*");
   },
 
   show: function(target) {
