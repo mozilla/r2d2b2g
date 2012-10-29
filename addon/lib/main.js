@@ -130,16 +130,26 @@ let simulator = {
     config.lastUpdate = Date.now();
     simulator.apps[id] = config;
 
-    // Create the webapp record and write it to the registry.
-    webapps[config.xkey] = {
+    let webappEntry = {
       origin: config.origin,
       installOrigin: config.origin,
       receipt: null,
       installTime: Date.now(),
-      manifestURL: config.origin + "/manifest.webapp",
       appStatus: 3,
       localId: config.xid
     };
+
+    switch (config.type) {
+      case 'local':
+        webappEntry.manifestURL = config.origin + "/manifest.webapp";
+        break;
+      default:
+        webappEntry.manifestURL = id;
+    }
+    console.log("Creating webapp entry: " + JSON.stringify(webappEntry, null, 2))
+
+    // Create the webapp record and write it to the registry.
+    webapps[config.xkey] = webappEntry;
     File.open(webappsFile, "w").writeAsync(
       JSON.stringify(webapps, null, 2) + "\n",
       function(error) {
@@ -150,33 +160,211 @@ let simulator = {
 
         // Create target folder
         let webappDir = File.join(webappsDir, config.xkey);
+        // if (File.exists(webappDir)) {
+        //   File.rmdir(webappDir);
+        // }
         File.mkpath(webappDir);
+        console.log("Created " + webappDir);
 
-        // Copy manifest
-        let manifestFile = Cc['@mozilla.org/file/local;1'].
-                        createInstance(Ci.nsIFile);
-        manifestFile.initWithPath(id);
-        let webappDir_nsIFile = Cc['@mozilla.org/file/local;1'].
-                                 createInstance(Ci.nsIFile);
-        webappDir_nsIFile.initWithPath(webappDir);
-        manifestFile.copyTo(webappDir_nsIFile, "manifest.webapp");
+        if (config.type == "local") {
+          // Copy manifest
+          let manifestFile = Cc['@mozilla.org/file/local;1'].
+                          createInstance(Ci.nsIFile);
+          manifestFile.initWithPath(id);
+          let webappDir_nsIFile = Cc['@mozilla.org/file/local;1'].
+                                   createInstance(Ci.nsIFile);
+          webappDir_nsIFile.initWithPath(webappDir);
+          manifestFile.copyTo(webappDir_nsIFile, "manifest.webapp");
 
-        // Archive source folder to target folder
-        let sourceDir = id.replace(/[\/\\][^\/\\]*$/, "");
-        let archiveFile = File.join(webappDir, "application.zip");
+          // Archive source folder to target folder
+          let sourceDir = id.replace(/[\/\\][^\/\\]*$/, "");
+          let archiveFile = File.join(webappDir, "application.zip");
 
-        console.log("Zipping " + sourceDir + " to " + archiveFile);
-        archiveDir(archiveFile, sourceDir);
+          console.log("Zipping " + sourceDir + " to " + archiveFile);
+          archiveDir(archiveFile, sourceDir);
+        } else {
+          let webappFile = File.join(webappDir, "manifest.webapp");
+          File.open(webappFile, "w").writeAsync(JSON.stringify(config.manifest, null, 2), function(err) {
+            if (err) {
+              console.error("Error while writing manifest.webapp " + err);
+            }
+            console.log("Written manifest.webapp");
+          });
+        }
 
         simulator.sendListApps();
       }
     );
   },
 
+  /**
+   * Installs the web page in the active tab as if it was an app.
+   */
+  addActiveTab: function() {
+    console.log("Simulator.addActiveTab");
+    this.addAppByTabUrl(Tabs.activeTab.url);
+  },
+
+  /**
+   * Installs the web page in the active tab as if it was an app.
+   */
+  addAppByTabUrl: function(tabUrl) {
+    console.log("Simulator.addAppByTabUrl " + tabUrl);
+    let found = false;
+    let tab = null;
+    for each (tab in Tabs) {
+      if (tab.url == tabUrl) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      console.error("Could not find tab");
+      this.addManifestUrl(tabUrl);
+      return;
+    }
+    let url = URL.URL(tabUrl);
+    let origin = url.toString().substring(0, url.lastIndexOf(url.path));
+
+    let manifestUrl = URL.URL(origin + "/" + "manifest.webapp");
+    let webapp = {
+      name: tab.title.substring(0, 18) || url.host,
+      description: tab.title || url.host,
+      default_locale: "en",
+      launch_path: url.path
+    };
+    console.log("Generated manifest " + JSON.stringify(webapp, null, 2));
+    // Possible icon? 'http://www.google.com/s2/favicons?domain=' + url.host
+    this.addManifest(manifestUrl, webapp, origin, true);
+  },
+
+  addManifestUrl: function(manifestUrl) {
+    console.log("Simulator.addManifestUrl " + manifestUrl);
+
+    Request({
+      url: manifestUrl.toString(),
+      onComplete: function (response) {
+        if (response.status != 200) {
+          Notifications.notify({
+            title: "App Install Error",
+            text: "Unexpected status code " + response.status
+          });
+          return
+        }
+        if (!response.json) {
+          Notifications.notify({
+            title: "App Install Error",
+            text: "Expected JSON response"
+          });
+          console.error("Expected JSON response, got " + response.text);
+          return;
+        }
+        if (!response.json.name || !response.json.description) {
+          Notifications.notify({
+            title: "App Install Error",
+            text: "Missing mandatory property (name or description)"
+          });
+          return;
+        }
+        let contentType = response.headers["Content-Type"];
+        if (contentType !== "application/x-web-app-manifest+json") {
+          console.warn("Unexpected Content-Type " + contentType + ", but not a biggie");
+        }
+
+        console.log("Fetched manifest " + JSON.stringify(response.json, null, 2));
+
+        simulator.addManifest(manifestUrl, response.json);
+      }
+    }).get();
+  },
+
+  validateUrl: function(url, cb) {
+    console.log("Simulator.validateUrl " + url);
+
+    Request({
+      url: url,
+      onComplete: function (response) {
+        var err = null;
+        if (response.status != 200) {
+          err = "Unexpected status code " + response.status;
+        } else if (!response.json) {
+          err = "Expected JSON response";
+        } else {
+          let contentType = response.headers["Content-Type"];
+          if (contentType !== "application/x-web-app-manifest+json") {
+            err = "Unexpected Content-Type " + contentType;
+          }
+        }
+
+        if (err) {
+          console.error(err);
+        }
+        if (cb) {
+          cb(err);
+        } else {
+          simulator.worker.postMessage({
+            name: "validateUrl",
+            err: err
+          });
+        }
+      }
+    }).get();
+  },
+
+  addManifest: function(manifestUrl, webapp, installOrigin, generated) {
+    console.log("Simulator.addManifest " + manifestUrl);
+    let origin = manifestUrl.toString().substring(0, manifestUrl.toString().lastIndexOf(manifestUrl.path));
+    if (!installOrigin) {
+      installOrigin = origin;
+    }
+
+    let icon = null;
+    // if (webapp.icons)
+    //   let size = Object.keys(webapp.icons).sort(function(a, b) b - a)[0] || null;
+    //   if (size) {
+    //     icon = webapp.icons[size];
+    //   }
+    // }
+
+    let id = manifestUrl.toString();
+
+    apps = simulator.apps;
+    apps[id] = {
+      type: (generated) ? "generated" : "hosted",
+      xid: null,
+      xkey: null,
+      name: webapp.name,
+      icon: icon,
+      manifest: webapp,
+      origin: origin,
+      installOrigin: installOrigin
+    }
+    console.log("Stored " + JSON.stringify(apps[id], null, 2));
+
+    simulator.apps = apps;
+
+    this.updateApp(id);
+  },
+
   sendListApps: function() {
     console.log("Simulator.sendListApps");
     this.worker.postMessage({ name: "listApps",
                               list: simulator.apps});
+  },
+
+  sendListTabs: function() {
+    var tabs = {};
+    for each (var tab in Tabs) {
+      if (!tab.url || !(/^http:/).test(tab.url)) {
+        continue;
+      }
+      tabs[tab.url] = tab.title;
+    }
+    console.log("Tabs: " + JSON.stringify(tabs));
+    this.worker.postMessage({
+      name: "listTabs",
+      list: tabs
+    });
   },
 
   onMessage: function onMessage(message) {
@@ -188,6 +376,9 @@ let simulator = {
         break;
       case "addAppByDirectory":
         this.addAppByDirectory();
+        break;
+      case "addAppByTab":
+        this.addAppByTabUrl(message.url);
         break;
       case "listApps":
         this.sendListApps();
@@ -202,6 +393,12 @@ let simulator = {
         else {
           run();
         }
+        break;
+      case "listTabs":
+        simulator.sendListTabs();
+        break;
+      case "validateUrl":
+        simulator.validateUrl(message.url);
         break;
       case "create":
         create();
@@ -261,6 +458,17 @@ function openHelperTab() {
 if (Self.loadReason == "install") {
   openHelperTab();
 }
+
+Tabs.on('ready', function() {
+  if (simulator.worker) {
+    simulator.sendListTabs();
+  }
+});
+Tabs.on('close', function() {
+  if (simulator.worker) {
+    simulator.sendListTabs();
+  }
+});
 
 function run(app) {
   let executables = {
@@ -335,118 +543,6 @@ function run(app) {
 
 }
 
-/**
- * Installs the web page in the active tab as if it was an app.
- */
-function installActiveTab() {
-  let url = URL.URL(Tabs.activeTab.url);
-  let origin = url.toString().substring(0, url.lastIndexOf(url.path));
-
-  let manifestUrl = URL.URL(origin + "/" + "manifest.webapp");
-  let webapp = {
-    name: Tabs.activeTab.title.substring(0, 18) || url.host,
-    description: Tabs.activeTab.title,
-    default_locale: "en",
-    launch_path: url.path
-  };
-  // Possible icon? 'http://www.google.com/s2/favicons?domain=' + url.host
-  installManifest(manifestUrl, webapp, origin);
-}
-
-function installManifestUrl(manifestUrl) {
-  Request({
-    url: manifestUrl.toString(),
-    onComplete: function (response) {
-      if (response.status != 200) {
-        Notifications.notify({
-          title: "App Install Error",
-          text: "Unexpected status code " + response.status
-        });
-        return
-      }
-      if (!response.json) {
-        Notifications.notify({
-          title: "App Install Error",
-          text: "Expected JSON response"
-        });
-        console.error("Expected JSON response, got " + response.text);
-        return;
-      }
-      if (!response.json.name || !response.json.description) {
-        Notifications.notify({
-          title: "App Install Error",
-          text: "Missing mandatory property (name or description)"
-        });
-        return;
-      }
-      let contentType = response.headers["Content-Type"];
-      if (contentType !== "application/x-web-app-manifest+json") {
-        console.warn("Unexpected Content-Type " + contentType + ", but not a biggie");
-      }
-
-      installManifest(manifestUrl, response.json);
-    }
-  }).get();
-}
-
-function installManifest(manifestUrl, webapp, installOrigin) {
-  let origin = manifestUrl.toString().substring(0, manifestUrl.toString().lastIndexOf(manifestUrl.path));
-  if (!installOrigin) {
-    installOrigin = origin;
-  }
-
-  let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
-  let webappsFile = File.join(webappsDir, "webapps.json");
-  let webapps = JSON.parse(File.read(webappsFile));
-
-  // Extract numeric local IDs, sort in reverse order, and increment the first
-  // (highest) one to generate a new local ID for the app.
-  let id = ++[id for each ({ localId: id } in webapps)].sort(function(a, b) b - a)[0];
-
-  // It's unclear what the key should be, but it needs to be a valid directory
-  // name.  Gaia uses the names of the directories from which its apps are
-  // provisioned, and we could use origins, but that isn't forward-compatible
-  // with multiple apps per origin.  And DOMApplicationRegistry uses UUIDs,
-  // so we do too.
-  //let key = url.scheme + ";" + url.host + (url.port ? ";" + url.port : "");
-  let key = UUID.uuid();
-
-  // Write the manifest.webapp file to the key-specific subdirectory.
-
-  let webappDir = File.join(webappsDir, key);
-  File.mkpath(webappDir);
-  let webappFile = File.join(webappDir, "manifest.webapp");
-
-  File.open(webappFile, "w").writeAsync(JSON.stringify(webapp, null, 2) + "\n",
-    function(error) {
-      console.log(File.read(webappFile));
-    }
-  );
-
-  // Update the webapps object and write it to the webapps.json file.
-
-  webapps[key] = {
-    origin: origin,
-    installOrigin: installOrigin,
-    receipt: null,
-    installTime: 132333986000,
-    manifestURL: manifestUrl.toString(),
-    localId: id
-  };
-
-  File.open(webappsFile, "w").writeAsync(JSON.stringify(webapps, null, 2) + "\n",
-    function(error) {
-      console.log(JSON.stringify(webapps[key], null, 2));
-
-      Notifications.notify({
-        title: "Installed " + webapp.name
-      });
-
-      run(webapp.name);
-    }
-  );
-}
-
 ContextMenu.Item({
   label: "Install Manifest as Firefox OS App",
   context: ContextMenu.SelectorContext("a"),
@@ -457,7 +553,7 @@ ContextMenu.Item({
                  '  self.postMessage(node.href)' +
                  '});',
   onMessage: function (manifestUrl) {
-    installManifestUrl(URL.URL(manifestUrl));
+    simulator.addManifestUrl(URL.URL(manifestUrl));
   }
 });
 
@@ -487,7 +583,7 @@ Menuitems.Menuitem({
   insertbefore: "sanitizeSeparator",
   label: "Install Page in FxOS Simulator",
   onCommand: function() {
-    installActiveTab();
+    simulator.addActiveTab();
   },
 });
 
@@ -603,13 +699,11 @@ function addDirToArchive(writer, dir, basePath) {
     }
 
     if (file.isDirectory()) {
-      console.log("… archiving directory " + file.leafName);
       writer.addEntryDirectory(basePath + file.leafName + "/",
                                file.lastModifiedTime * PR_USEC_PER_MSEC,
                                false);
       addDirToArchive(writer, file, basePath + file.leafName + "/");
     } else {
-      console.log("… archiving file " + file.leafName);
       writer.addEntryFile(basePath + file.leafName,
                           Ci.nsIZipWriter.COMPRESSION_DEFAULT,
                           file,
@@ -628,6 +722,8 @@ function archiveDir(zipFile, dirToArchive) {
   dir.initWithPath(dirToArchive);
 
   addDirToArchive(writer, dir, "");
+
+  writer.close();
 
   console.log("archived dir " + dirToArchive);
 }
