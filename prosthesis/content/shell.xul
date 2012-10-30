@@ -7,9 +7,8 @@
 <!DOCTYPE window SYSTEM "chrome://prosthesis/locale/shell.dtd">
 
 <window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-        id="shell"
         windowtype="navigator:browser"
-        style="background: black; overflow: hidden; width:320px; height:480px"
+        style="background: black;"
         onload="shell.start();"
         onunload="shell.stop();">
 
@@ -31,6 +30,10 @@
   <!-- this script handles the "runapp" argument for desktop builds -->
   <script type="application/javascript" src="chrome://browser/content/runapp.js"/>
 
+  <!-- The html:iframe containing the UI is created here. -->
+  <box id="shell"
+       style="background: black; overflow: hidden; width: 320px; height: 480px;"/>
+
   <toolbox>
     <toolbar id="toolbar">
       <toolbarbutton id="prosthesis_homeButton"
@@ -39,5 +42,4 @@
     </toolbar>
   </toolbox>
 
-  <!-- The html:iframe containing the UI is created here. -->
 </window>
