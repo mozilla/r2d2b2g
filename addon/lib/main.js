@@ -558,9 +558,19 @@ ContextMenu.Item({
 });
 
 Menuitems.Menuitem({
-  id: "hamB2GerHelper",
-  menuid: "menu_ToolsPopup",
-  insertbefore: "sanitizeSeparator",
+  id: "webdevB2GSimulatorHelper",
+  menuid: "menuWebDeveloperPopup",
+  insertbefore: "devToolsEndSeparator",
+  label: "Firefox OS Simulator",
+  onCommand: function() {
+    openHelperTab();
+  },
+});
+
+Menuitems.Menuitem({
+  id: "appmenu_webDeveloper_popup",
+  menuid: "appmenu_webDeveloper_popup",
+  insertbefore: "appmenu_devToolsEndSeparator",
   label: "Firefox OS Simulator",
   onCommand: function() {
     openHelperTab();
@@ -577,15 +587,15 @@ Menuitems.Menuitem({
 //   },
 // });
 
-Menuitems.Menuitem({
-  id: "appifyPage",
-  menuid: "menu_ToolsPopup",
-  insertbefore: "sanitizeSeparator",
-  label: "Install Page in FxOS Simulator",
-  onCommand: function() {
-    simulator.addActiveTab();
-  },
-});
+// Menuitems.Menuitem({
+//   id: "appifyPage",
+//   menuid: "menu_ToolsPopup",
+//   insertbefore: "sanitizeSeparator",
+//   label: "Install Page in FxOS Simulator",
+//   onCommand: function() {
+//     simulator.addActiveTab();
+//   },
+// });
 
 function create() {
   let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
