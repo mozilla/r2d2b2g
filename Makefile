@@ -9,7 +9,7 @@ build:
 	cd gaia && make
 	rm -rf gaia/profile/startupCache
 	rm -rf addon/data/profile && mv gaia/profile addon/data/profile
-	mkdir -p addon/data/profile/extensions && cd prosthesis/ && zip -r b2g-desktop-prosthesis\@mozilla.org.xpi content locale skin chrome.manifest install.rdf && mv b2g-desktop-prosthesis@mozilla.org.xpi ../addon/data/profile/extensions/ && cd ..
+	mkdir -p addon/data/profile/extensions && cd prosthesis/ && zip -r b2g-prosthesis\@mozilla.org.xpi content locale skin chrome.manifest install.rdf && mv b2g-prosthesis@mozilla.org.xpi ../addon/data/profile/extensions/ && cd ..
 	python ./build.py $(PLATFORM_ARG)
 
 run:

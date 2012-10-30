@@ -6,8 +6,8 @@
 <RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
      xmlns:em="http://www.mozilla.org/2004/em-rdf#">
   <Description about="urn:mozilla:install-manifest">
-    <em:id>b2g-desktop-prosthesis@mozilla.org</em:id>
-    <em:name>B2G Desktop Prosthesis</em:name>
+    <em:id>b2g-prosthesis@mozilla.org</em:id>
+    <em:name>B2G Prosthesis</em:name>
     <em:version>0.4</em:version>
     <em:type>2</em:type>
 
