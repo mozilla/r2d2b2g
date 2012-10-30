@@ -4,6 +4,8 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this file,
    - You can obtain one at http://mozilla.org/MPL/2.0/.  -->
 
+<?xml-stylesheet href="chrome://prosthesis/skin/shell.css"?>
+
 <!DOCTYPE window SYSTEM "chrome://prosthesis/locale/shell.dtd">
 
 <window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
@@ -35,10 +37,8 @@
        style="background: black; overflow: hidden; width: 320px; height: 480px;"/>
 
   <toolbox>
-    <toolbar id="toolbar">
-      <toolbarbutton id="prosthesis_homeButton"
-                     label="&prosthesis.homeButton.label;"
-                     onclick="prosthesis.goHome()"/>
+    <toolbar align="center" pack="center">
+      <toolbarbutton id="homeButton" onclick="prosthesis.goHome()"/>
     </toolbar>
   </toolbox>
 

@@ -1,0 +1,27 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+toolbarbutton {
+  margin: 4px 4px 5px;
+  padding: 0;
+  height: 22px;
+  -moz-appearance: toolbarbutton;
+}
+
+toolbarbutton > .toolbarbutton-icon {
+  margin: 1px 4px;
+}
+
+toolbarbutton > .toolbarbutton-text {
+  display: none;
+}
+
+#homeButton {
+  list-style-image: url("chrome://prosthesis/skin/home.png");
+  -moz-image-region: rect(0, 12px, 12px, 0);
+}
+
+#homeButton:hover {
+  -moz-image-region: rect(0, 24px, 12px, 12px);
+}
