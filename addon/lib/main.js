@@ -558,7 +558,7 @@ ContextMenu.Item({
 });
 
 Menuitems.Menuitem({
-  id: "webdevB2GSimulatorHelper",
+  id: "webdevFxOSSimulatorHelper",
   menuid: "menuWebDeveloperPopup",
   insertbefore: "devToolsEndSeparator",
   label: "Firefox OS Simulator",
@@ -568,7 +568,7 @@ Menuitems.Menuitem({
 });
 
 Menuitems.Menuitem({
-  id: "appmenu_webDeveloper_popup",
+  id: "appmenu_fxossimulator",
   menuid: "appmenu_webDeveloper_popup",
   insertbefore: "appmenu_devToolsEndSeparator",
   label: "Firefox OS Simulator",
