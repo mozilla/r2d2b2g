@@ -1,0 +1,5 @@
+resource prosthesis ./
+content prosthesis content/
+locale prosthesis en-US locale/en-US/
+
+override chrome://browser/content/shell.xul chrome://prosthesis/content/shell.xul
