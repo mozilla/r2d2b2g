@@ -26,12 +26,21 @@ var Simulator = {
       }
       currentUrl = url;
       var valid = this.checkValidity();
+      console.log(valid);
       $('#action-add-page, #action-add-manifest').prop('disabled', !valid);
       if (!valid) {
         return;
       }
 
       window.postMessage({name: "validateUrl", url: url}, "*");
+    });
+
+    $('#commands-preference-jsconsole').on('change', function(evt) {
+      window.postMessage({
+        name: "setPreference",
+        key: "jsconsole",
+        value: $(this).prop("checked")
+      }, "*");
     });
 
     $('#form-add-app').on('submit', function(evt) {
@@ -66,10 +75,12 @@ var Simulator = {
           case "listTabs":
             var container = $('#list-app-tabs'), items = [];
             for (var url in message.list) {
-              console.log(url);
-              items.push($('<option>').prop('value', url).text(message.list[url]));
+              items.push($('<option>').prop('value', url));
             }
             container.append(items);
+            break;
+          case "setPreference":
+            $("#commands-preference-" + message.key).prop("checked", message.value);
             break;
           case "validateUrl":
             var set = $('#add-app-url').parents('form').removeClass('is-manifest');
@@ -80,7 +91,17 @@ var Simulator = {
             }
             break;
           case "listApps":
+            var defaultApp = message.defaultApp || null;
             var container = $('#apps-list').empty();
+
+            var defaultPref = $("#commands-preference-default-app");
+            if (defaultApp) {
+              defaultPref.text(message.list[defaultApp].name).parents('label').show();
+            } else {
+              defaultPref.parents('label').hide();
+            }
+            console.log(defaultApp, defaultPref.text());
+
             Object.keys(message.list).forEach(function(id) {
               // FIXME: forEach workaround as for-in resulted in broken index
               var app = message.list[id];
@@ -95,25 +116,35 @@ var Simulator = {
               // FIXME: Make an actual list, add a template engine
               container.append(
                 $("<div class='app'>").append(
-                  // $("<input type='checkbox'>").prop("title", "Default Launch").on("change", function(evt) {
-                  //   console.log($(this).prop("checked"));
-                  //   window.postMessage({
-                  //     name: "setDefaultApp",
-                  //     id: id,
-                  //     checked: $(this).prop("checked")
-                  //   }, "*");
-                  // }).prop("checked", app.isDefault),
-                  $("<label>").append(
-                    $("<span>").text("Last Updated: " + lastUpdate),
-                    $("<button>").text("Update").click(function(evt) {
-                      console.log("CLICKED updateApp " + id);
-                      window.postMessage({name: "updateApp", id: id}, "*");
-                    })
-                  ),
+                  $("<div class='options'>").append(
+                    $("<button>")
+                      .text("Update")
+                      .click(function(evt) {
+                        window.postMessage({name: "updateApp", id: id}, "*");
+                      })
+                      .prop("title,", lastUpdate)
+                    // $("<label>").append(
+                    //   $("<span>").text('Run by default:'),
+                    //   $("<input type='checkbox'>")
+                    //     .prop('checked', defaultApp == id)
+                    //     .prop('title', "Launch by default")
+                    //     .click(function() {
+                    //       var value = $(this).prop("checked") ? id : null;
+                    //       window.postMessage({name: "setDefaultApp", id: value}, "*");
+                    //     })
+                    //   )
+                    ),
                   $("<h4>").text(app.name),
-                  $("<code>").text(id)
+                  $("<code>").append(
+                    $("<a href='#'>")
+                      .text(id)
+                      .click(function(evt) {
+                        evt.preventDefault();
+                        window.postMessage({name: "revealApp", id: id}, "*");
+                      })
+                  )
                 )
-              )
+              );
             });
             break;
         }
@@ -123,6 +154,7 @@ var Simulator = {
     window.postMessage({ name: "getIsRunning" }, "*");
     window.postMessage({ name: "listApps" }, "*");
     window.postMessage({ name: "listTabs" }, "*");
+    window.postMessage({ name: "getPreference" }, "*");
   },
 
   show: function(target) {

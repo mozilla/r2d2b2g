@@ -413,6 +413,17 @@ figure {
     text-decoration: none;
 }
 
+.commands-options {
+    display: block;
+    margin-top: 10px;
+    line-height: 1.4em;
+    font-size: 0.8em;
+    color: #888;
+}
+.commands-options input {
+    padding-right: 5px;
+}
+
 .toggle {
     position: relative;
     border: 1px solid rgba(0, 0, 0, 0.4);
@@ -475,16 +486,13 @@ figure {
     opacity: 0.4;
     cursor: progress;
 }
-.list-actions ul {
+.list-actions {
     margin: 0;
-    padding: 0;
-}
-.list-actions ul {
+    margin-bottom: 10px;
+    padding: 10px 0 9px;
     list-style: none;
     display: block;
     border-bottom: 1px solid #eee;
-    padding: 10px 0 9px;
-    margin-bottom: 10px;
     text-align: right;
 }
 .list-actions li {
@@ -503,21 +511,33 @@ figure {
 
 #apps-list .app {
     margin: 5px 0;
-    padding: 5px;
-    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1) inset;
-    border: 1px solid rgba(0, 0, 0, 0.4);
+    padding: 9px 19px;
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.15) inset;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
 }
-#apps-list label {
+#apps-list .options {
     float: right;
 }
+#apps-list label {
+    padding-left: 5px;
+}
 #apps-list h4 {
-    margin: 0 0 10px 0;
+    font-size: 1.2em;
+    margin: 0 0 5px 0;
+}
+#apps-list input[type="checkbox"] {
+}
+#apps-list code {
+    font-size: 0.8em;
+    color: #888;
 }
 #apps-list label span {
     font-size: 0.8em;
+    color: #888;
     padding: 0 10px;
 }
-button, input {
+button, input[type="url"], input[type="text"] {
     font-size: 0.8em;
     border: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: 5px;
@@ -528,7 +548,7 @@ button:disabled {
     color: #999;
     cursor: default;
 }
-input {
+input[type="url"], input[type="text"] {
     background-color: #fff;
     color: #444;
     font-weight: normal;
@@ -538,7 +558,7 @@ input:-moz-placeholder {
     color: #999;
     font-style: italic;
 }
-button:hover, .popover-wrap:hover button {
+button:hover:not(:disabled), .popover-wrap:hover button {
     background-color: #adbe35;
     color: #4d5713;
     cursor: pointer;
