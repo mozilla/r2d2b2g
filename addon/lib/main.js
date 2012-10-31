@@ -261,7 +261,7 @@ let simulator = {
       name: title.substring(0, 18),
       description: title,
       default_locale: "en",
-      launch_path: url.path
+      launch_path: url.path || '/'
     };
     console.log("Generated manifest " + JSON.stringify(webapp, null, 2));
     // Possible icon? 'http://www.google.com/s2/favicons?domain=' + url.host
@@ -347,7 +347,7 @@ let simulator = {
     //   }
     // }
 
-    let id = manifestUrl.toString();
+    let id = generated ? (origin + webapp.launch_path) : manifestUrl.toString();
 
     apps = simulator.apps;
     apps[id] = {
@@ -390,11 +390,9 @@ let simulator = {
     });
   },
 
-  openHelperTab: function() {
-    let url = Self.data.url("content/index.html");
-
+  openTab: function(url, onReady, lax) {
     for each (var tab in Tabs) {
-      if (tab.url.startsWith(url)) {
+      if (tab.url == url || (lax && tab.url.indexOf(url) == 0)) {
         tab.activate();
         return;
       }
@@ -403,11 +401,44 @@ let simulator = {
     Tabs.open({
       url: url,
       onReady: function(tab) {
-        simulator.worker = tab.attach({
-          contentScriptFile: Self.data.url("content-script.js"),
-        });
+        if (onReady) {
+          onReady(tab);
+        }
       }
     });
+  },
+
+  openHelperTab: function() {
+    let url = Self.data.url("content/index.html");
+    this.openTab(url, function(tab) {
+      simulator.worker = tab.attach({
+        contentScriptFile: Self.data.url("content-script.js"),
+      });
+    }, true);
+  },
+
+  revealApp: function(id) {
+    let config = this.apps[id];
+    if (!config) {
+      return;
+    }
+    switch (config.type) {
+      case "local":
+        let manifestFile = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
+        manifestFile.initWithPath(id);
+        try {
+          manifestFile.reveal();
+        } catch (e) {
+          this.error("Could not open " + id);
+        }
+        break;
+      case "generated":
+        this.openTab(id);
+        break;
+      case "hosted":
+        this.openTab(id);
+        break;
+    }
   },
 
   getPreference: function() {
@@ -436,6 +467,9 @@ let simulator = {
         break;
       case "updateApp":
         this.updateApp(message.id);
+        break;
+      case "revealApp":
+        this.revealApp(message.id);
         break;
       case "setDefaultApp":
         if (!message.id || message.id in apps) {

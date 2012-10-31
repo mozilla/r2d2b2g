@@ -75,7 +75,6 @@ var Simulator = {
           case "listTabs":
             var container = $('#list-app-tabs'), items = [];
             for (var url in message.list) {
-              console.log(url);
               items.push($('<option>').prop('value', url));
             }
             container.append(items);
@@ -136,7 +135,14 @@ var Simulator = {
                     //   )
                     ),
                   $("<h4>").text(app.name),
-                  $("<code>").text(id)
+                  $("<code>").append(
+                    $("<a href='#'>")
+                      .text(id)
+                      .click(function(evt) {
+                        evt.preventDefault();
+                        window.postMessage({name: "revealApp", id: id}, "*");
+                      })
+                  )
                 )
               );
             });
