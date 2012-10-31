@@ -52,6 +52,10 @@ let simulator = {
     SStorage.storage.defaultApp = id;
   },
 
+  get jsConsoleEnabled() {
+    return Prefs.get("extensions.r2d2b2g.jsconsole", false);
+  },
+
   get worker() this._worker,
 
   set worker(newVal) {
@@ -224,33 +228,38 @@ let simulator = {
    */
   addAppByTabUrl: function(tabUrl, force) {
     console.log("Simulator.addAppByTabUrl " + tabUrl);
+    let url = URL.URL(tabUrl);
     let found = false;
     let tab = null;
+    let title = null;
     for each (tab in Tabs) {
       if (tab.url == tabUrl) {
         found = true;
         break;
       }
     }
-    if (!force && !found) {
+    if (!found) {
       console.error("Could not find tab");
-      this.validateUrl(tabUrl, function(err) {
-        if (err) {
-          simulator.addAppByTabUrl(tabUrl, true);
-        } else {
-          simulator.addManifestUrl(tabUrl);
-        }
-      })
-
-      return;
+      title = url.host;
+      if (!force) {
+        this.validateUrl(tabUrl, function(err) {
+          if (err) {
+            simulator.addAppByTabUrl(tabUrl, true);
+          } else {
+            simulator.addManifestUrl(tabUrl);
+          }
+        });
+        return;
+      }
+    } else {
+      title = tab.title || url.host;
     }
-    let url = URL.URL(tabUrl);
     let origin = url.toString().substring(0, url.lastIndexOf(url.path));
 
     let manifestUrl = URL.URL(origin + "/" + "manifest.webapp");
     let webapp = {
-      name: (tab ? tab.title.substring(0, 18) : null) || url.host,
-      description: (tab ? tab.title : null) || url.host,
+      name: title.substring(0, 18),
+      description: title,
       default_locale: "en",
       launch_path: url.path
     };
@@ -405,7 +414,7 @@ let simulator = {
     this.worker.postMessage({
       name: "setPreference",
       key: "jsconsole",
-      value: Prefs.get("extensions.r2d2b2g.jsconsole", true)
+      value: simulator.jsConsoleEnabled
     });
   },
 
@@ -552,8 +561,7 @@ function run() {
   let profile = URL.toFilename(Self.data.url("profile"));
   args.push("-profile", profile);
 
-  if (Prefs.get("extensions.r2d2b2g.jsconsole", true)) {
-    console.log(Prefs.get("extensions.r2d2b2g.jsconsole"));
+  if (simulator.jsConsoleEnabled) {
     args.push("-jsconsole");
   }
 
