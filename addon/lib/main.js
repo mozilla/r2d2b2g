@@ -14,6 +14,7 @@ const ContextMenu = require("context-menu");
 const Request = require('request').Request;
 const Notifications = require("notifications");
 const SStorage = require("simple-storage");
+const WindowUtils = require("api-utils/window-utils");
 
 require("addon-page");
 
@@ -36,13 +37,23 @@ let simulator = {
   _worker: null,
 
   get apps() {
-    console.log("Simulator.get apps");
     return SStorage.storage.apps || {};
   },
 
   set apps(list) {
-    console.log("Simulator.set apps");
     SStorage.storage.apps = list;
+  },
+
+  get defaultApp() {
+    return SStorage.storage.defaultApp || null;
+  },
+
+  set defaultApp(id) {
+    SStorage.storage.defaultApp = id;
+  },
+
+  get jsConsoleEnabled() {
+    return Prefs.get("extensions.r2d2b2g.jsconsole", false);
   },
 
   get worker() this._worker,
@@ -77,10 +88,7 @@ let simulator = {
         webapp = JSON.parse(File.read(webappFile));
       } catch (e) {
         console.error("Error loading " + webappFile, e);
-        Notifications.notify({
-          title: "Manifest Error",
-          text: "Could not load " + webappFile + " (" + e.name + ")"
-        });
+        simulator.error("Could not load " + webappFile + " (" + e.name + ")");
         return;
       }
 
@@ -106,6 +114,13 @@ let simulator = {
       simulator.apps = apps;
 
       this.updateApp(webappFile);
+    }
+  },
+
+  updateAll: function() {
+    apps = simulator.apps;
+    for (var id in apps) {
+      simulator.updateApp(id);
     }
   },
 
@@ -182,6 +197,8 @@ let simulator = {
 
           console.log("Zipping " + sourceDir + " to " + archiveFile);
           archiveDir(archiveFile, sourceDir);
+
+          simulator.info(config.name + " (packaged app) installed in Firefox OS");
         } else {
           let webappFile = File.join(webappDir, "manifest.webapp");
           File.open(webappFile, "w").writeAsync(JSON.stringify(config.manifest, null, 2), function(err) {
@@ -189,6 +206,7 @@ let simulator = {
               console.error("Error while writing manifest.webapp " + err);
             }
             console.log("Written manifest.webapp");
+            simulator.info(config.name + " (hosted app) installed in Firefox OS");
           });
         }
 
@@ -208,10 +226,12 @@ let simulator = {
   /**
    * Installs the web page in the active tab as if it was an app.
    */
-  addAppByTabUrl: function(tabUrl) {
+  addAppByTabUrl: function(tabUrl, force) {
     console.log("Simulator.addAppByTabUrl " + tabUrl);
+    let url = URL.URL(tabUrl);
     let found = false;
     let tab = null;
+    let title = null;
     for each (tab in Tabs) {
       if (tab.url == tabUrl) {
         found = true;
@@ -220,16 +240,26 @@ let simulator = {
     }
     if (!found) {
       console.error("Could not find tab");
-      this.addManifestUrl(tabUrl);
-      return;
+      title = url.host;
+      if (!force) {
+        this.validateUrl(tabUrl, function(err) {
+          if (err) {
+            simulator.addAppByTabUrl(tabUrl, true);
+          } else {
+            simulator.addManifestUrl(tabUrl);
+          }
+        });
+        return;
+      }
+    } else {
+      title = tab.title || url.host;
     }
-    let url = URL.URL(tabUrl);
     let origin = url.toString().substring(0, url.lastIndexOf(url.path));
 
     let manifestUrl = URL.URL(origin + "/" + "manifest.webapp");
     let webapp = {
-      name: tab.title.substring(0, 18) || url.host,
-      description: tab.title || url.host,
+      name: title.substring(0, 18),
+      description: title,
       default_locale: "en",
       launch_path: url.path
     };
@@ -245,30 +275,21 @@ let simulator = {
       url: manifestUrl.toString(),
       onComplete: function (response) {
         if (response.status != 200) {
-          Notifications.notify({
-            title: "App Install Error",
-            text: "Unexpected status code " + response.status
-          });
+          simulator.error("Unexpected status code " + response.status);
           return
         }
         if (!response.json) {
-          Notifications.notify({
-            title: "App Install Error",
-            text: "Expected JSON response"
-          });
-          console.error("Expected JSON response, got " + response.text);
+          simulator.error("Expected JSON response.");
           return;
         }
         if (!response.json.name || !response.json.description) {
-          Notifications.notify({
-            title: "App Install Error",
-            text: "Missing mandatory property (name or description)"
-          });
+          simulator.error("Missing mandatory property (name or description)");
           return;
         }
         let contentType = response.headers["Content-Type"];
         if (contentType !== "application/x-web-app-manifest+json") {
-          console.warn("Unexpected Content-Type " + contentType + ", but not a biggie");
+          simulator.error("Unexpected Content-Type: " + contentType + ".");
+          return;
         }
 
         console.log("Fetched manifest " + JSON.stringify(response.json, null, 2));
@@ -348,22 +369,52 @@ let simulator = {
 
   sendListApps: function() {
     console.log("Simulator.sendListApps");
-    this.worker.postMessage({ name: "listApps",
-                              list: simulator.apps});
+    this.worker.postMessage({
+      name: "listApps",
+      list: simulator.apps,
+      defaultApp: simulator.defaultApp
+    });
   },
 
   sendListTabs: function() {
     var tabs = {};
     for each (var tab in Tabs) {
-      if (!tab.url || !(/^http:/).test(tab.url)) {
+      if (!tab.url || !(/^https?:/).test(tab.url)) {
         continue;
       }
       tabs[tab.url] = tab.title;
     }
-    console.log("Tabs: " + JSON.stringify(tabs));
     this.worker.postMessage({
       name: "listTabs",
       list: tabs
+    });
+  },
+
+  openHelperTab: function() {
+    let url = Self.data.url("content/index.html");
+
+    for each (var tab in Tabs) {
+      if (tab.url.startsWith(url)) {
+        tab.activate();
+        return;
+      }
+    }
+
+    Tabs.open({
+      url: url,
+      onReady: function(tab) {
+        simulator.worker = tab.attach({
+          contentScriptFile: Self.data.url("content-script.js"),
+        });
+      }
+    });
+  },
+
+  getPreference: function() {
+    this.worker.postMessage({
+      name: "setPreference",
+      key: "jsconsole",
+      value: simulator.jsConsoleEnabled
     });
   },
 
@@ -386,6 +437,18 @@ let simulator = {
       case "updateApp":
         this.updateApp(message.id);
         break;
+      case "setDefaultApp":
+        if (!message.id || message.id in apps) {
+          simulator.defaultApp = message.id;
+          this.sendListApps();
+        }
+        break;
+      case "setPreference":
+        console.log(message.key + ": " + message.value);
+        Prefs.set("extensions.r2d2b2g." + message.key, message.value);
+      case "getPreference":
+        simulator.getPreference();
+        break;
       case "toggle":
         if (this.process) {
           this.process.kill();
@@ -405,6 +468,31 @@ let simulator = {
         break;
     }
   },
+
+  info: function(msg) {
+    // let window = WindowUtils.activeBrowserWindow;
+    // let nb = window.gBrowser.getNotificationBox();
+    // nb.appendNotification(
+    //   msg,
+    //   "simulator-info",
+    //   null,
+    //   nb.PRIORITY_INFO_MEDIUM,
+    //   null
+    // );
+  },
+
+  error: function(msg) {
+    let window = WindowUtils.activeBrowserWindow;
+    let nb = window.gBrowser.getNotificationBox();
+    nb.appendNotification(
+      msg,
+      "simulator-error",
+      null,
+      nb.PRIORITY_WARNING_MEDIUM,
+      null
+    );
+  }
+
 };
 
 //Widget({
@@ -435,28 +523,14 @@ let simulator = {
 //  }
 //});
 
-function openHelperTab() {
-  let url = Self.data.url("content/index.html");
-
-  for each (var tab in Tabs) {
-    if (tab.url == url) {
-      tab.activate();
-      return;
-    }
-  }
-
-  Tabs.open({
-    url: url,
-    onReady: function(tab) {
-      simulator.worker = tab.attach({
-        contentScriptFile: Self.data.url("content-script.js"),
-      });
-    }
-  });
-}
-
-if (Self.loadReason == "install") {
-  openHelperTab();
+switch (Self.loadReason) {
+  case "install":
+    simulator.openHelperTab();
+    break;
+  case "update":
+  case "upgrade":
+    simulator.updateAll();
+    break;
 }
 
 Tabs.on('ready', function() {
@@ -470,7 +544,7 @@ Tabs.on('close', function() {
   }
 });
 
-function run(app) {
+function run() {
   let executables = {
     WINNT: "win32/b2g/b2g.exe",
     Darwin: "mac64/B2G.app/Contents/MacOS/b2g-bin",
@@ -487,12 +561,12 @@ function run(app) {
   let profile = URL.toFilename(Self.data.url("profile"));
   args.push("-profile", profile);
 
-  if (Prefs.get("extensions.r2d2b2g.jsconsole", true)) {
+  if (simulator.jsConsoleEnabled) {
     args.push("-jsconsole");
   }
 
-  if (app != null) {
-    args.push("--runapp", app);
+  if (simulator.defaultApp != null) {
+    args.push("--runapp", simulator.apps[simulator.defaultApp].name);
   }
 
   if (simulator.process != null) {
@@ -563,7 +637,7 @@ Menuitems.Menuitem({
   insertbefore: "devToolsEndSeparator",
   label: "Firefox OS Simulator",
   onCommand: function() {
-    openHelperTab();
+    simulator.openHelperTab();
   },
 });
 
@@ -573,7 +647,7 @@ Menuitems.Menuitem({
   insertbefore: "appmenu_devToolsEndSeparator",
   label: "Firefox OS Simulator",
   onCommand: function() {
-    openHelperTab();
+    simulator.openHelperTab();
   },
 });
 
