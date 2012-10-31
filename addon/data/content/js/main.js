@@ -123,17 +123,17 @@ var Simulator = {
                       .click(function(evt) {
                         window.postMessage({name: "updateApp", id: id}, "*");
                       })
-                      .prop("title,", lastUpdate),
-                    $("<label>").append(
-                      $("<span>").text('Run by default:'),
-                      $("<input type='checkbox'>")
-                        .prop('checked', defaultApp == id)
-                        .prop('title', "Launch by default")
-                        .click(function() {
-                          var value = $(this).prop("checked") ? id : null;
-                          window.postMessage({name: "setDefaultApp", id: value}, "*");
-                        })
-                      )
+                      .prop("title,", lastUpdate)
+                    // $("<label>").append(
+                    //   $("<span>").text('Run by default:'),
+                    //   $("<input type='checkbox'>")
+                    //     .prop('checked', defaultApp == id)
+                    //     .prop('title', "Launch by default")
+                    //     .click(function() {
+                    //       var value = $(this).prop("checked") ? id : null;
+                    //       window.postMessage({name: "setDefaultApp", id: value}, "*");
+                    //     })
+                    //   )
                     ),
                   $("<h4>").text(app.name),
                   $("<code>").text(id)
