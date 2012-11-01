@@ -497,9 +497,11 @@ let simulator = {
       case "validateUrl":
         simulator.validateUrl(message.url);
         break;
+      /*
       case "create":
         create();
         break;
+      */
     }
   },
 
@@ -705,6 +707,7 @@ Menuitems.Menuitem({
 //   },
 // });
 
+/*
 function create() {
   let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
   let webappsFile = File.join(webappsDir, "webapps.json");
@@ -796,6 +799,7 @@ function create() {
   );
 
 }
+*/
 
 const PR_RDWR = 0x04;
 const PR_CREATE_FILE = 0x08;
