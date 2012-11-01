@@ -9,8 +9,8 @@
   "unpack": true,
   "dependencies": ["addon-kit",
                    "api-utils",
+                   "gcli",
                    "menuitems",
                    "subprocess",
-                   "vold-utils",
-                   "gcli"]
+                   "vold-utils"]
 }

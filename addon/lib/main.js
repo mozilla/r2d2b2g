@@ -693,7 +693,7 @@ Gcli.addCommand({
 
 Gcli.addCommand({
   name: "firefoxos manager",
-  description: "Open the FirefoxOS Simulator Dashboard",
+  description: "Open the Firefox OS Simulator Manager",
   params: [],
   exec: function(args, context) {
     simulator.openHelperTab();
@@ -702,7 +702,7 @@ Gcli.addCommand({
 
 Gcli.addCommand({
   name: "firefoxos start",
-  description: "Start FirefoxOS Simulator (restarts if running)",
+  description: "Start Firefox OS Simulator (restarts if running)",
   params: [],
   exec: function(args, context) {
     run();
@@ -711,7 +711,7 @@ Gcli.addCommand({
 
 Gcli.addCommand({
   name: "firefoxos stop",
-  description: "Stop FirefoxOS Simulator",
+  description: "Stop Firefox OS Simulator",
   params: [],
   exec: function(args, context) {
     if (simulator.process) {
