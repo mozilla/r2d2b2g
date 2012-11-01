@@ -19,3 +19,6 @@
 [submodule "addon/packages/subprocess"]
 	path = addon/packages/subprocess
 	url = git://github.com/mykmelez/jetpack-subprocess.git
+[submodule "addon/packages/gcli"]
+	path = addon/packages/gcli
+	url = git://github.com/erikvold/gcli-jplib.git
