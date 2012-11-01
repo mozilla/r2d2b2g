@@ -11,5 +11,6 @@
                    "api-utils",
                    "menuitems",
                    "subprocess",
-                   "vold-utils"]
+                   "vold-utils",
+                   "gcli"]
 }

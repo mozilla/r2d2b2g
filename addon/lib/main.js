@@ -15,6 +15,7 @@ const Request = require('request').Request;
 const Notifications = require("notifications");
 const SStorage = require("simple-storage");
 const WindowUtils = require("api-utils/window-utils");
+const Gcli = require('gcli');
 
 require("addon-page");
 
@@ -683,6 +684,40 @@ Menuitems.Menuitem({
   onCommand: function() {
     simulator.openHelperTab();
   },
+});
+
+Gcli.addCommand({
+  name: 'firefoxos',
+  description: 'Commands to control Firefox OS Simulator',
+});
+
+Gcli.addCommand({
+  name: "firefoxos manager",
+  description: "Open the FirefoxOS Simulator Dashboard",
+  params: [],
+  exec: function(args, context) {
+    simulator.openHelperTab();
+  }
+});
+
+Gcli.addCommand({
+  name: "firefoxos start",
+  description: "Start FirefoxOS Simulator (restarts if running)",
+  params: [],
+  exec: function(args, context) {
+    run();
+  }
+});
+
+Gcli.addCommand({
+  name: "firefoxos stop",
+  description: "Stop FirefoxOS Simulator",
+  params: [],
+  exec: function(args, context) {
+    if (simulator.process) {
+      this.process.kill();
+    }
+  }
 });
 
 // Menuitems.Menuitem({
