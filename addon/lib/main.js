@@ -580,7 +580,7 @@ Tabs.on('close', function() {
 
 function run() {
   let executables = {
-    WINNT: "win32/b2g/b2g.exe",
+    WINNT: "win32/b2g/b2g-bin.exe",
     Darwin: "mac64/B2G.app/Contents/MacOS/b2g-bin",
     Linux: "linux/b2g/b2g-bin",
   };
