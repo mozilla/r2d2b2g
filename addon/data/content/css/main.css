@@ -299,6 +299,9 @@ body {
     display: -moz-box;
     -moz-box-orient: horizontal;
 }
+a {
+    color: rgb(17, 85, 204);
+}
 .center-box {
     display: -moz-box;
     -moz-box-orient: horizontal;
@@ -321,24 +324,28 @@ article {
 header {
     width: 200px;
     margin-right: 10px;
-    padding: 20px 10px;
+    padding: 10px 10px;
     border-right: 1px solid #eee;
     background-color: #f5f5f5;
     text-align: right;
 }
 h1, h2 {
-    margin: 20px 0;
+    margin: 10px 0 15px;
+    padding: 10px 0;
     color: #4D4E53;
     font-weight: lighter;
     font-size: 1.5em;
 }
+h2 {
+    border-bottom: 1px solid #eee;
+}
 .beta {
     position: absolute;
-    left: -25px;
-    top: 105px;
+    right: -58px;
+    top: -25px;
     text-align: center;
     transform-origin: 0 0;
-    transform: rotate(-45deg);
+    transform: rotate(45deg);
     box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
     background-color: rgba(255, 0, 0, 0.7);
     padding: 1px 40px;
@@ -355,21 +362,21 @@ nav ul {
 nav li {
     margin: 0;
 }
-nav a {
+nav li a {
     display: block;
-    color: #666;
+    color: #888;
     text-decoration: none;
     padding: 5px 0;
 }
-nav a:active, nav a.active {
-    color: #222;
+nav li a:active, nav li a.active {
+    color: #4D4E53;
 }
 
 article section {
     display: none;
     -moz-box-flex: 1;
     box-flex: 1;
-    padding: 20px 10px;
+    padding: 10px 10px;
 }
 section.active {
     display: -moz-box;
@@ -378,7 +385,7 @@ section.active {
 dfn {
     border-radius: 3px;
     border: none;
-    background-color: #333;
+    background-color: #222;
     color: #fff;
     text-decoration: none;
     font-style: normal;
@@ -395,7 +402,7 @@ figure {
     border: 1px solid rgba(0, 0, 0, 0.2);
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1) inset;
     border-radius: 5px;
-    background-color: #fff;
+    background-color: rgba(255, 255, 255, 0.8);
     padding: 9px 9px 9px 0;
 }
 
@@ -488,11 +495,9 @@ figure {
 }
 .list-actions {
     margin: 0;
-    margin-bottom: 10px;
-    padding: 10px 0 9px;
+    padding: 10px 0 14px;
     list-style: none;
     display: block;
-    border-bottom: 1px solid #eee;
     text-align: right;
 }
 .list-actions li {
@@ -509,28 +514,46 @@ figure {
     color: #888;
 }
 
-#apps-list .app {
-    margin: 5px 0;
+#apps-list {
+    border-bottom: 1px solid #eee;
+    margin-bottom: 25px;
+    padding: 0 10px;
+}
+#apps-list > em {
+    display: block;
+    text-align: center;
+    color: #888;
     padding: 9px 19px;
-    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.15) inset;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+#apps-list .app {
+    margin: 5px 0 10px;
+    padding: 9px 0;
     border-radius: 5px;
+}
+#apps-list h4 {
+    font-size: 1.1em;
+    color: #4D4E53;
+    font-weight: normal;
+    margin: 0;
+    margin-bottom: 2px;
 }
 #apps-list .options {
     float: right;
 }
+#apps-list .options button {
+    padding: 3px 5px;
+    font-weight: normal;
+}
 #apps-list label {
     padding-left: 5px;
 }
-#apps-list h4 {
-    font-size: 1.2em;
-    margin: 0 0 5px 0;
-}
 #apps-list input[type="checkbox"] {
 }
-#apps-list code {
+#apps-list p {
     font-size: 0.8em;
     color: #888;
+    margin: 0;
+    margin-bottom: 2px;
 }
 #apps-list label span {
     font-size: 0.8em;
@@ -539,9 +562,10 @@ figure {
 }
 button, input[type="url"], input[type="text"] {
     font-size: 0.8em;
-    border: 1px solid rgba(0, 0, 0, 0.2);
+    color: #444;
+    border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 5px;
-    padding: 4px 9px;
+    padding: 7px 9px;
     font-weight: bold;
 }
 button:disabled {
@@ -550,7 +574,7 @@ button:disabled {
 }
 input[type="url"], input[type="text"] {
     background-color: #fff;
-    color: #444;
+    color: #4D4E53;
     font-weight: normal;
     width: 200px;
 }
@@ -559,8 +583,7 @@ input:-moz-placeholder {
     font-style: italic;
 }
 button:hover:not(:disabled), .popover-wrap:hover button {
-    background-color: #adbe35;
-    color: #4d5713;
+    color: #222;
     cursor: pointer;
 }
 .popover-wrap button {
