@@ -19,7 +19,7 @@ var Simulator = {
     });
 
     var currentUrl;
-    $('#add-app-url').on('keyup change', function(evt) {
+    $('#add-app-url').on('keyup change input', function(evt) {
       var url = $(this).val();
       if (url == currentUrl) {
         return;
@@ -77,7 +77,7 @@ var Simulator = {
             for (var url in message.list) {
               items.push($('<option>').prop('value', url));
             }
-            container.append(items);
+            container.empty().append(items);
             break;
           case "setPreference":
             $("#commands-preference-" + message.key).prop("checked", message.value);
@@ -100,9 +100,13 @@ var Simulator = {
             } else {
               defaultPref.parents('label').hide();
             }
-            console.log(defaultApp, defaultPref.text());
 
-            Object.keys(message.list).forEach(function(id) {
+            var ids = Object.keys(message.list);
+            console.log(ids);
+            if (!ids.length) {
+              container.append('<em>No Apps added yet? Add some …</em>');
+            }
+            ids.forEach(function(id) {
               // FIXME: forEach workaround as for-in resulted in broken index
               var app = message.list[id];
 
@@ -135,13 +139,16 @@ var Simulator = {
                     //   )
                     ),
                   $("<h4>").text(app.name),
-                  $("<code>").append(
+                  $("<p>").append(
                     $("<a href='#'>")
-                      .text(id)
+                      .text("Open Location")
+                      .prop("title", id)
                       .click(function(evt) {
                         evt.preventDefault();
                         window.postMessage({name: "revealApp", id: id}, "*");
-                      })
+                      }),
+                    $("<span>")
+                      .text(" (" + id + ")")
                   )
                 )
               );
