@@ -132,6 +132,7 @@ let simulator = {
     let webappsFile = File.join(webappsDir, "webapps.json");
     let webapps = JSON.parse(File.read(webappsFile));
 
+    let apps = simulator.apps;
     let config = apps[id];
 
     if (!config.xid) {
@@ -564,7 +565,7 @@ switch (Self.loadReason) {
   case "install":
     simulator.openHelperTab();
     break;
-  case "update":
+  case "downgrade":
   case "upgrade":
     simulator.updateAll();
     break;
@@ -675,7 +676,7 @@ Menuitems.Menuitem({
   label: "Firefox OS Simulator",
   onCommand: function() {
     simulator.openHelperTab();
-  },
+  }
 });
 
 Menuitems.Menuitem({
@@ -685,7 +686,7 @@ Menuitems.Menuitem({
   label: "Firefox OS Simulator",
   onCommand: function() {
     simulator.openHelperTab();
-  },
+  }
 });
 
 Gcli.addCommand({
@@ -717,7 +718,7 @@ Gcli.addCommand({
   params: [],
   exec: function(args, context) {
     if (simulator.process) {
-      this.process.kill();
+      simulator.process.kill();
     }
   }
 });

@@ -12,7 +12,7 @@
         <article>
             <header>
                 <h1>FxOS Simulator</h1>
-                <aside class="beta">Experimental</aside>
+                <aside class="beta">Alpha</aside>
 
                 <fieldset id="commands">
                     <h5 title="Version x.x, Last Update: 10-23-2012 12:34 UTC">
@@ -62,7 +62,9 @@
             </section>
 
             <section id="dashboard">
-                <h2>Packaged Apps</h2>
+                <h2>Manage Apps</h2>
+                <div id="apps-list">
+                </div>
                 <ul class="list-actions">
                     <li>
                         <button id="action-add-directory" title="Select the manifest.webapp file from your app directory." onclick="Simulator.addAppByDirectory()">Add Directory</button>
@@ -76,10 +78,6 @@
                         </form>
                     </li>
                 </ul>
-                <div id="apps-list">
-                </div>
-
-
             </section>
 
             <!--
@@ -89,7 +87,7 @@
             </section>
             -->
             <section id="help">
-                <h2><strong>INCOMPLETE</strong> - Help Resources</h2>
+                <h2>Help Resources - <strong>INCOMPLETE</strong></h2>
                 <ul>
                     <li><a href="https://wiki.mozilla.org/Gaia/Hacking" target="_new">Gaia/Hacking</a>
                 </ul>
