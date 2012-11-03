@@ -152,7 +152,7 @@ let simulator = {
       installOrigin: config.origin,
       receipt: null,
       installTime: Date.now(),
-      appStatus: 3,
+      appStatus: (config.type == 'local') ? 3 : 1, // 3 = PRV & INSTALLED
       localId: config.xid
     };
 
@@ -336,6 +336,7 @@ let simulator = {
 
   addManifest: function(manifestUrl, webapp, installOrigin, generated) {
     console.log("Simulator.addManifest " + manifestUrl);
+    manifestUrl = URL.URL(manifestUrl.toString());
     let origin = manifestUrl.toString().substring(0, manifestUrl.toString().lastIndexOf(manifestUrl.path));
     if (!installOrigin) {
       installOrigin = origin;
