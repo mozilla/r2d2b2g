@@ -1,7 +1,7 @@
 {
   "id": "r2d2b2g@mozilla.org",
   "name": "r2d2b2g",
-  "version": "0.5",
+  "version": "0.5.1",
   "fullName": "Ready to Deliver to Boot to Gecko",
   "description": "an experimental Firefox OS development environment",
   "author": "Myk Melez <myk@mozilla.org>",
