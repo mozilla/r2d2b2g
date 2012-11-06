@@ -238,7 +238,7 @@ let simulator = {
     let webappsFile = File.join(webappsDir, "webapps.json");
     let webapps = JSON.parse(File.read(webappsFile));
 
-    // Create the webapp record and write it to the registry.
+    // Delete the webapp record from the the registry.
     delete webapps[config.xkey];
     File.open(webappsFile, "w").writeAsync(
       JSON.stringify(webapps, null, 2) + "\n",
@@ -248,7 +248,7 @@ let simulator = {
           return;
         }
 
-        // Create target folder
+        // Delete target folder if it exists
         let webappDir = File.join(webappsDir, config.xkey);
         let webappDir_nsIFile = Cc['@mozilla.org/file/local;1'].
                                  createInstance(Ci.nsIFile);
