@@ -5,3 +5,4 @@ addon/data/profile
 addon/data/win32
 addon/data/mac64
 addon/data/linux
+addon/data/linux64
