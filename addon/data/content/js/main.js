@@ -1,5 +1,11 @@
 var Simulator = {
 
+  APP_TYPES: {
+    "local": "Packaged App",
+    "generated": "Generated App",
+    "hosted": "Hosted App"
+  },
+
   init: function() {
 
     this.toggler = $('#command-toggle')[0];
@@ -121,12 +127,21 @@ var Simulator = {
               container.append(
                 $("<div class='app'>").append(
                   $("<div class='options'>").append(
+                    $("<a href='#'>")
+                      .addClass("button")
+                      .text("Remove")
+                      .click(function(evt) {
+                        evt.preventDefault();
+                        if (confirm("This will remove the app from Firefox OS Simulator and the Manager. Are you sure?")) {
+                          window.postMessage({name: "removeApp", id: id}, "*");
+                        }
+                      }),
                     $("<button>")
                       .text("Update")
                       .click(function(evt) {
                         window.postMessage({name: "updateApp", id: id}, "*");
                       })
-                      .prop("title,", lastUpdate)
+                      .prop("title", lastUpdate)
                     // $("<label>").append(
                     //   $("<span>").text('Run by default:'),
                     //   $("<input type='checkbox'>")
@@ -138,7 +153,9 @@ var Simulator = {
                     //     })
                     //   )
                     ),
-                  $("<h4>").text(app.name),
+                  $("<h4>").text(app.name).append(
+                    $('<small>').text(Simulator.APP_TYPES[app.type])
+                  ),
                   $("<p>").append(
                     $("<a href='#'>")
                       .text("Open Location")

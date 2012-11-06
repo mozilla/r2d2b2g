@@ -537,12 +537,18 @@ figure {
     margin: 0;
     margin-bottom: 2px;
 }
+#apps-list h4 small {
+    font-size: 0.7em;
+    color: #888;
+    padding-left: 10px;
+}
 #apps-list .options {
     float: right;
 }
-#apps-list .options button {
-    padding: 3px 5px;
+#apps-list .options button, #apps-list .options a {
+    padding: 3px 10px;
     font-weight: normal;
+    text-decoration: none;
 }
 #apps-list label {
     padding-left: 5px;
@@ -582,9 +588,13 @@ input:-moz-placeholder {
     color: #999;
     font-style: italic;
 }
-button:hover:not(:disabled), .popover-wrap:hover button {
+button:hover:not(:disabled), .popover-wrap:hover button, a.button:hover {
     color: #222;
     cursor: pointer;
+}
+a.button {
+    font-size: 0.8em;
+    padding: 8px 12px;
 }
 .popover-wrap button {
     pointer-events: none;

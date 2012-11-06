@@ -135,6 +135,11 @@ let simulator = {
     let apps = simulator.apps;
     let config = apps[id];
 
+    if (!config) {
+      simulator.sendListApps();
+      return;
+    }
+
     if (!config.xid) {
       config.xid = ++[id for each ({ localId: id } in webapps)].sort(function(a, b) b - a)[0];
       config.xkey = "myapp" + config.xid + ".gaiamobile.org";
@@ -210,6 +215,46 @@ let simulator = {
             console.log("Written manifest.webapp");
             simulator.info(config.name + " (hosted app) installed in Firefox OS");
           });
+        }
+
+        simulator.sendListApps();
+      }
+    );
+  },
+
+  removeApp: function(id) {
+    let apps = simulator.apps;
+    let config = apps[id];
+
+    delete apps[id];
+    simulator.apps = apps;
+
+    if (!config || !config.xid) {
+      simulator.sendListApps();
+      return;
+    }
+
+    let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
+    let webappsFile = File.join(webappsDir, "webapps.json");
+    let webapps = JSON.parse(File.read(webappsFile));
+
+    // Create the webapp record and write it to the registry.
+    delete webapps[config.xkey];
+    File.open(webappsFile, "w").writeAsync(
+      JSON.stringify(webapps, null, 2) + "\n",
+      function(error) {
+        if (error) {
+          console.error("Error writing webapp record to registry: " + error);
+          return;
+        }
+
+        // Create target folder
+        let webappDir = File.join(webappsDir, config.xkey);
+        let webappDir_nsIFile = Cc['@mozilla.org/file/local;1'].
+                                 createInstance(Ci.nsIFile);
+        webappDir_nsIFile.initWithPath(webappDir);
+        if (webappDir_nsIFile.exists() && webappDir_nsIFile.isDirectory()) {
+          webappDir_nsIFile.remove(true);
         }
 
         simulator.sendListApps();
@@ -470,6 +515,9 @@ let simulator = {
         break;
       case "updateApp":
         this.updateApp(message.id);
+        break;
+      case "removeApp":
+        this.removeApp(message.id);
         break;
       case "revealApp":
         this.revealApp(message.id);
