@@ -268,7 +268,7 @@ let simulator = {
     let webappsFile = File.join(webappsDir, "webapps.json");
     let webapps = JSON.parse(File.read(webappsFile));
 
-    // Delete the webapp record from the the registry.
+    // Delete the webapp record from the registry.
     delete webapps[config.xkey];
     File.open(webappsFile, "w").writeAsync(
       JSON.stringify(webapps, null, 2) + "\n",
