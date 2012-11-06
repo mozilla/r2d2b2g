@@ -476,7 +476,7 @@ let simulator = {
     });
   },
 
-  openTab: function(url, onReady, lax, append) {
+  openTab: function(url, onReady, lax) {
     for each (var tab in Tabs) {
       if (tab.url == url || (lax && tab.url.indexOf(url) == 0)) {
         tab.activate();
@@ -485,7 +485,7 @@ let simulator = {
     }
 
     Tabs.open({
-      url: url + (append || ''),
+      url: url,
       onReady: function(tab) {
         if (onReady) {
           onReady(tab);
@@ -494,7 +494,7 @@ let simulator = {
     });
   },
 
-  openHelperTab: function(initial) {
+  openHelperTab: function() {
     let url = Self.data.url("content/index.html");
     this.openTab(url, function(tab) {
       simulator.worker = tab.attach({
