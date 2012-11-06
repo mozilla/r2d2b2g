@@ -494,13 +494,13 @@ let simulator = {
     });
   },
 
-  openHelperTab: function() {
+  openHelperTab: function(initial) {
     let url = Self.data.url("content/index.html");
     this.openTab(url, function(tab) {
       simulator.worker = tab.attach({
         contentScriptFile: Self.data.url("content-script.js"),
       });
-    }, true, "#welcome");
+    }, true);
   },
 
   revealApp: function(id) {
@@ -659,8 +659,7 @@ let simulator = {
 
 switch (Self.loadReason) {
   case "install":
-  case "startup":
-    simulator.openHelperTab();
+    simulator.openHelperTab(true);
     break;
   case "downgrade":
   case "upgrade":
