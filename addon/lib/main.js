@@ -135,6 +135,11 @@ let simulator = {
     let apps = simulator.apps;
     let config = apps[id];
 
+    if (!config) {
+      simulator.sendListApps();
+      return;
+    }
+
     if (!config.xid) {
       config.xid = ++[id for each ({ localId: id } in webapps)].sort(function(a, b) b - a)[0];
       config.xkey = "myapp" + config.xid + ".gaiamobile.org";
@@ -215,6 +220,84 @@ let simulator = {
         simulator.sendListApps();
       }
     );
+  },
+
+  removeApp: function(id) {
+    let apps = simulator.apps;
+    let config = apps[id];
+
+    if (!config) {
+      return;
+    }
+
+    let needsDeletion = !config.removed;
+    config.removed = true;
+    apps[id] = config;
+    simulator.apps = apps;
+
+    simulator.sendListApps();
+  },
+
+  undoRemoveApp: function(id) {
+    let apps = simulator.apps;
+    let config = apps[id];
+
+    if (!config || !config.removed) {
+      return;
+    }
+
+    config.removed = false;
+    apps[id] = config;
+    simulator.apps = apps;
+
+    simulator.sendListApps();
+  },
+
+  removeAppFinal: function(id) {
+    let apps = simulator.apps;
+    let config = apps[id];
+
+    if (!config.removed) {
+      return;
+    }
+
+    delete apps[id];
+    simulator.apps = apps;
+
+    let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
+    let webappsFile = File.join(webappsDir, "webapps.json");
+    let webapps = JSON.parse(File.read(webappsFile));
+
+    // Delete the webapp record from the the registry.
+    delete webapps[config.xkey];
+    File.open(webappsFile, "w").writeAsync(
+      JSON.stringify(webapps, null, 2) + "\n",
+      function(error) {
+        if (error) {
+          console.error("Error writing webapp record to registry: " + error);
+          return;
+        }
+
+        // Delete target folder if it exists
+        let webappDir = File.join(webappsDir, config.xkey);
+        let webappDir_nsIFile = Cc['@mozilla.org/file/local;1'].
+                                 createInstance(Ci.nsIFile);
+        webappDir_nsIFile.initWithPath(webappDir);
+        if (webappDir_nsIFile.exists() && webappDir_nsIFile.isDirectory()) {
+          webappDir_nsIFile.remove(true);
+        }
+      }
+    );
+  },
+
+  flushRemovedApps: function() {
+    apps = simulator.apps;
+    for (var id in apps) {
+      if (apps[id].removed) {
+        this.removeAppFinal(id);
+      }
+    }
+    simulator.apps = apps;
   },
 
   /**
@@ -466,13 +549,25 @@ let simulator = {
         this.addAppByTabUrl(message.url);
         break;
       case "listApps":
+        if (message.flush) {
+          this.flushRemovedApps();
+        }
         this.sendListApps();
         break;
       case "updateApp":
         this.updateApp(message.id);
         break;
+      case "removeApp":
+        this.removeApp(message.id);
+        break;
       case "revealApp":
         this.revealApp(message.id);
+        break;
+      case "removeApp":
+        this.removeApp(message.id);
+        break;
+      case "undoRemoveApp":
+        this.undoRemoveApp(message.id);
         break;
       case "setDefaultApp":
         if (!message.id || message.id in apps) {
