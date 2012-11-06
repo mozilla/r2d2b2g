@@ -682,7 +682,8 @@ function run() {
   let executables = {
     WINNT: "win32/b2g/b2g-bin.exe",
     Darwin: "mac64/B2G.app/Contents/MacOS/b2g-bin",
-    Linux: "linux/b2g/b2g-bin",
+    Linux: (Runtime.XPCOMABI.indexOf("x86_64") == 0 ? "linux64" : "linux") +
+           "/b2g/b2g-bin",
   };
   let url = Self.data.url(executables[Runtime.OS]);
   let path = URL.toFilename(url);
