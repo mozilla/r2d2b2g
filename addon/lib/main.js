@@ -476,7 +476,7 @@ let simulator = {
     });
   },
 
-  openTab: function(url, onReady, lax) {
+  openTab: function(url, onReady, lax, append) {
     for each (var tab in Tabs) {
       if (tab.url == url || (lax && tab.url.indexOf(url) == 0)) {
         tab.activate();
@@ -485,7 +485,7 @@ let simulator = {
     }
 
     Tabs.open({
-      url: url,
+      url: url + (append || ''),
       onReady: function(tab) {
         if (onReady) {
           onReady(tab);
@@ -500,7 +500,7 @@ let simulator = {
       simulator.worker = tab.attach({
         contentScriptFile: Self.data.url("content-script.js"),
       });
-    }, true);
+    }, true, "#welcome");
   },
 
   revealApp: function(id) {
@@ -659,6 +659,7 @@ let simulator = {
 
 switch (Self.loadReason) {
   case "install":
+  case "startup":
     simulator.openHelperTab();
     break;
   case "downgrade":
