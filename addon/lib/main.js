@@ -226,13 +226,43 @@ let simulator = {
     let apps = simulator.apps;
     let config = apps[id];
 
-    delete apps[id];
-    simulator.apps = apps;
-
-    if (!config || !config.xid) {
-      simulator.sendListApps();
+    if (!config) {
       return;
     }
+
+    let needsDeletion = !config.removed;
+    config.removed = true;
+    apps[id] = config;
+    simulator.apps = apps;
+
+    simulator.sendListApps();
+  },
+
+  undoRemoveApp: function(id) {
+    let apps = simulator.apps;
+    let config = apps[id];
+
+    if (!config || !config.removed) {
+      return;
+    }
+
+    config.removed = false;
+    apps[id] = config;
+    simulator.apps = apps;
+
+    simulator.sendListApps();
+  },
+
+  removeAppFinal: function(id) {
+    let apps = simulator.apps;
+    let config = apps[id];
+
+    if (!config.removed) {
+      return;
+    }
+
+    delete apps[id];
+    simulator.apps = apps;
 
     let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
     let webappsFile = File.join(webappsDir, "webapps.json");
@@ -256,10 +286,18 @@ let simulator = {
         if (webappDir_nsIFile.exists() && webappDir_nsIFile.isDirectory()) {
           webappDir_nsIFile.remove(true);
         }
-
-        simulator.sendListApps();
       }
     );
+  },
+
+  flushRemovedApps: function() {
+    apps = simulator.apps;
+    for (var id in apps) {
+      if (apps[id].removed) {
+        this.removeAppFinal(id);
+      }
+    }
+    simulator.apps = apps;
   },
 
   /**
@@ -511,6 +549,9 @@ let simulator = {
         this.addAppByTabUrl(message.url);
         break;
       case "listApps":
+        if (message.flush) {
+          this.flushRemovedApps();
+        }
         this.sendListApps();
         break;
       case "updateApp":
@@ -521,6 +562,12 @@ let simulator = {
         break;
       case "revealApp":
         this.revealApp(message.id);
+        break;
+      case "removeApp":
+        this.removeApp(message.id);
+        break;
+      case "undoRemoveApp":
+        this.undoRemoveApp(message.id);
         break;
       case "setDefaultApp":
         if (!message.id || message.id in apps) {

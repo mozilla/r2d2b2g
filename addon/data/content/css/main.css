@@ -530,6 +530,9 @@ figure {
     padding: 9px 0;
     border-radius: 5px;
 }
+#apps-list .app.removed h4 {
+    color: #888;
+}
 #apps-list h4 {
     font-size: 1.1em;
     color: #4D4E53;

@@ -126,39 +126,60 @@ var Simulator = {
                 lastUpdate = "-";
               }
 
-              // FIXME: Make an actual list, add a template engine
-              container.append(
-                $("<div class='app'>").append(
-                  $("<div class='options'>").append(
-                    $("<a href='#'>")
-                      .addClass("button")
-                      .text("Remove")
-                      .click(function(evt) {
-                        evt.preventDefault();
-                        if (confirm(Simulator.CONFIRM_DELETE)) {
-                          window.postMessage({name: "removeApp", id: id}, "*");
-                        }
-                      }),
-                    $("<button>")
-                      .text("Update")
-                      .click(function(evt) {
-                        window.postMessage({name: "updateApp", id: id}, "*");
-                      })
-                      .prop("title", lastUpdate)
-                    // $("<label>").append(
-                    //   $("<span>").text('Run by default:'),
-                    //   $("<input type='checkbox'>")
-                    //     .prop('checked', defaultApp == id)
-                    //     .prop('title', "Launch by default")
-                    //     .click(function() {
-                    //       var value = $(this).prop("checked") ? id : null;
-                    //       window.postMessage({name: "setDefaultApp", id: value}, "*");
-                    //     })
-                    //   )
-                    ),
-                  $("<h4>").text(app.name).append(
-                    $('<small>').text(Simulator.APP_TYPES[app.type])
-                  ),
+              var options = [];
+
+              var note = Simulator.APP_TYPES[app.type];
+
+              if (app.removed) {
+                options.push(
+                  $("<a href='#'>")
+                    .addClass("button")
+                    .text("Undo")
+                    .click(function(evt) {
+                      evt.preventDefault();
+                      window.postMessage({name: "undoRemoveApp", id: id}, "*");
+                    })
+                  );
+                note = "has been removed.";
+              } else {
+                options.push(
+                  $("<a href='#'>")
+                    .addClass("button")
+                    .text("Remove")
+                    .click(function(evt) {
+                      evt.preventDefault();
+                      window.postMessage({name: "removeApp", id: id}, "*");
+                    }),
+                  $("<button>")
+                    .text("Update")
+                    .click(function(evt) {
+                      window.postMessage({name: "updateApp", id: id}, "*");
+                    })
+                    .prop("title", lastUpdate)
+                );
+                // $("<label>").append(
+                //   $("<span>").text('Run by default:'),
+                //   $("<input type='checkbox'>")
+                //     .prop('checked', defaultApp == id)
+                //     .prop('title', "Launch by default")
+                //     .click(function() {
+                //       var value = $(this).prop("checked") ? id : null;
+                //       window.postMessage({name: "setDefaultApp", id: value}, "*");
+                //     })
+                //   )
+              }
+
+              var entry = $("<div class='app'>").append(
+                $("<div class='options'>").append(options),
+                $("<h4>").text(app.name).append(
+                  $('<small>').text(note)
+                )
+              );
+
+              if (app.removed) {
+                entry.addClass('removed');
+              } else {
+                entry.append(
                   $("<p>").append(
                     $("<a href='#'>")
                       .text("Open Location")
@@ -170,16 +191,21 @@ var Simulator = {
                     $("<span>")
                       .text(" (" + id + ")")
                   )
-                )
-              );
+                );
+              }
+
+              // FIXME: Make an actual list, add a template engine
+              container.append(entry);
             });
             break;
         }
       },
       false
     );
+
     window.postMessage({ name: "getIsRunning" }, "*");
-    window.postMessage({ name: "listApps" }, "*");
+    // Clears removed apps on reload
+    window.postMessage({ name: "listApps", flush: true }, "*");
     window.postMessage({ name: "listTabs" }, "*");
     window.postMessage({ name: "getPreference" }, "*");
   },
