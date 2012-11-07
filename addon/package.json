@@ -2,9 +2,14 @@
   "id": "r2d2b2g@mozilla.org",
   "name": "r2d2b2g",
   "version": "0.5.1",
-  "fullName": "Ready to Deliver to Boot to Gecko",
-  "description": "an experimental Firefox OS development environment",
-  "author": "Myk Melez <myk@mozilla.org>",
+  "fullName": "Firefox OS Simulator",
+  "description": "a Firefox OS simulator",
+  "author": "Myk Melez (https://github.com/mykmelez)",
+  "contributors": [
+    "Anant Narayanan (https://github.com/anantn)",
+    "Harald Kirschner (https://github.com/digitarald)",
+    "Matthew Riley MacPherson (https://github.com/tofumatt)"
+  ],
   "license": "MPL 2.0",
   "unpack": true,
   "dependencies": ["addon-kit",
