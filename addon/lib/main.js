@@ -659,7 +659,7 @@ let simulator = {
 
 switch (Self.loadReason) {
   case "install":
-    simulator.openHelperTab(true);
+    simulator.openHelperTab();
     break;
   case "downgrade":
   case "upgrade":
