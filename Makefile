@@ -13,13 +13,15 @@ ifneq (,$(findstring MINGW32_,$(SYS)))
 DISABLE_OOP = perl -p -i.bak -e 's|"debug\.oop\.disabled": false|"debug.oop.disabled": true|' gaia/profile/settings.json && rm gaia/profile/settings.json.bak
 endif
 
-build:
-	cd gaia && make
-	$(DISABLE_OOP)
-	rm -rf gaia/profile/startupCache
-	rm -rf addon/data/profile && mv gaia/profile addon/data/profile
+build: addon/data/profile
 	mkdir -p addon/data/profile/extensions && cd prosthesis/ && zip -r b2g-prosthesis\@mozilla.org.xpi content defaults locale skin chrome.manifest install.rdf && mv b2g-prosthesis@mozilla.org.xpi ../addon/data/profile/extensions/ && cd ..
 	python ./build.py $(PLATFORM_ARG)
+
+addon/data/profile: gaia
+	cd gaia && make
+	rm -rf gaia/profile/startupCache
+	rm -rf addon/data/profile && mv gaia/profile addon/data/profile
+	$(DISABLE_OOP)
 
 run:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx run
