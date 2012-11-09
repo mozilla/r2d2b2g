@@ -114,7 +114,7 @@ let simulator = {
 
       simulator.apps = apps;
 
-      this.updateApp(webappFile);
+      this.updateApp(webappFile, true);
     }
   },
 
@@ -125,7 +125,7 @@ let simulator = {
     }
   },
 
-  updateApp: function(id) {
+  updateApp: function(id, manual) {
     console.log("Simulator.updateApp " + id);
 
     let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
@@ -206,6 +206,11 @@ let simulator = {
           archiveDir(archiveFile, sourceDir);
 
           simulator.info(config.name + " (packaged app) installed in Firefox OS");
+
+          if (manual) {
+            simulator.defaultApp = id;
+            run();
+          }
         } else {
           let webappFile = File.join(webappDir, "manifest.webapp");
           File.open(webappFile, "w").writeAsync(JSON.stringify(config.manifest, null, 2), function(err) {
@@ -214,6 +219,11 @@ let simulator = {
             }
             console.log("Written manifest.webapp");
             simulator.info(config.name + " (hosted app) installed in Firefox OS");
+
+            if (manual) {
+              simulator.defaultApp = id;
+              run();
+            }
           });
         }
 
@@ -450,7 +460,7 @@ let simulator = {
 
     simulator.apps = apps;
 
-    this.updateApp(id);
+    this.updateApp(id, true);
   },
 
   sendListApps: function() {
@@ -543,9 +553,15 @@ let simulator = {
                                   isRunning: !!this.process });
         break;
       case "addAppByDirectory":
+        if (this.process) {
+          this.process.kill();
+        }
         this.addAppByDirectory();
         break;
       case "addAppByTab":
+        if (this.process) {
+          this.process.kill();
+        }
         this.addAppByTabUrl(message.url);
         break;
       case "listApps":
@@ -555,7 +571,10 @@ let simulator = {
         this.sendListApps();
         break;
       case "updateApp":
-        this.updateApp(message.id);
+        if (this.process) {
+          this.process.kill();
+        }
+        this.updateApp(message.id, true);
         break;
       case "removeApp":
         this.removeApp(message.id);
@@ -702,6 +721,7 @@ function run() {
 
   if (simulator.defaultApp != null) {
     args.push("--runapp", simulator.apps[simulator.defaultApp].name);
+    simulator.defaultApp = null;
   }
 
   if (simulator.process != null) {
