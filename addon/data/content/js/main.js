@@ -6,9 +6,6 @@ var Simulator = {
     "hosted": "Hosted App"
   },
 
-  CONFIRM_DELETE: "This will remove the app from Firefox OS Simulator " +
-    "and the Manager. Are you sure?",
-
   init: function() {
 
     this.toggler = $('#command-toggle')[0];
