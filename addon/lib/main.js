@@ -710,6 +710,19 @@ function run() {
   let executable = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
   executable.initWithPath(path);
 
+  // Support B2G binaries built without GAIADIR.
+  if (!executable.exists()) {
+    let executables = {
+      WINNT: "win32/b2g/b2g.exe",
+      Darwin: "mac64/B2G.app/Contents/MacOS/b2g",
+      Linux: (Runtime.XPCOMABI.indexOf("x86_64") == 0 ? "linux64" : "linux") +
+             "/b2g/b2g",
+    };
+    let url = Self.data.url(executables[Runtime.OS]);
+    let path = URL.toFilename(url);
+    executable.initWithPath(path);
+  }
+
   let args = [];
 
   let profile = URL.toFilename(Self.data.url("profile"));
