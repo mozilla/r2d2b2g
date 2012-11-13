@@ -23,21 +23,25 @@ profile:
 	make -C gaia
 	$(DISABLE_OOP)
 	rm -rf gaia/profile/startupCache
-	rm -rf addon/data/profile && mv gaia/profile addon/data/profile
+	rm -rf addon/template
+	mkdir -p addon/template
+	mv gaia/profile addon/template/
+	cp addon-sdk/python-lib/cuddlefish/app-extension/bootstrap.js addon/template/
+	cp addon-sdk/python-lib/cuddlefish/app-extension/install.rdf addon/template/
 
 prosthesis: profile
-	mkdir -p addon/data/profile/extensions
+	mkdir -p addon/template/profile/extensions
 	cd prosthesis && zip -r b2g-prosthesis\@mozilla.org.xpi content defaults locale skin chrome.manifest install.rdf
-	mv prosthesis/b2g-prosthesis@mozilla.org.xpi addon/data/profile/extensions
+	mv prosthesis/b2g-prosthesis@mozilla.org.xpi addon/template/profile/extensions
 
 b2g:
 	python ./build.py $(PLATFORM_ARG)
 
 run:
-	cd addon-sdk && . bin/activate && cd ../addon && cfx run
+	cd addon-sdk && . bin/activate && cd ../addon && cfx run --templatedir template/
 
 package:
-	cd addon-sdk && . bin/activate && cd ../addon && cfx xpi
+	cd addon-sdk && . bin/activate && cd ../addon && cfx xpi --templatedir template/
 
 help:
 	@echo 'Targets:'
