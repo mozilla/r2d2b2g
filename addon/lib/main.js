@@ -17,6 +17,9 @@ const SStorage = require("simple-storage");
 const WindowUtils = require("api-utils/window-utils");
 const Gcli = require('gcli');
 
+const { rootURI } = require('@loader/options');
+const profileURL = rootURI + "profile/";
+
 require("addon-page");
 
 let simulator = {
@@ -128,7 +131,7 @@ let simulator = {
   updateApp: function(id, manual) {
     console.log("Simulator.updateApp " + id);
 
-    let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
+    let webappsDir = URL.toFilename(profileURL + "webapps");
     let webappsFile = File.join(webappsDir, "webapps.json");
     let webapps = JSON.parse(File.read(webappsFile));
 
@@ -274,7 +277,7 @@ let simulator = {
     delete apps[id];
     simulator.apps = apps;
 
-    let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
+    let webappsDir = URL.toFilename(profileURL + "webapps");
     let webappsFile = File.join(webappsDir, "webapps.json");
     let webapps = JSON.parse(File.read(webappsFile));
 
@@ -725,7 +728,7 @@ function run() {
 
   let args = [];
 
-  let profile = URL.toFilename(Self.data.url("profile"));
+  let profile = URL.toFilename(profileURL);
   args.push("-profile", profile);
 
   if (simulator.jsConsoleEnabled) {
@@ -875,7 +878,7 @@ Gcli.addCommand({
 
 /*
 function create() {
-  let webappsDir = URL.toFilename(Self.data.url("profile/webapps"));
+  let webappsDir = URL.toFilename(profileURL + "webapps");
   let webappsFile = File.join(webappsDir, "webapps.json");
   let webapps = JSON.parse(File.read(webappsFile));
 
