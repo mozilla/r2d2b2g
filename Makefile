@@ -40,7 +40,7 @@ ifdef PLATFORM
 endif
 
 b2g:
-	python ./build.py $(DATE_ARG) $(PLATFORM_ARG)
+	python ./make-b2g.py $(DATE_ARG) $(PLATFORM_ARG)
 
 run:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx run --templatedir template/
