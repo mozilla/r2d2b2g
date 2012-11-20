@@ -15,7 +15,7 @@ with open(apps_file, 'r') as f:
 with open(overrides_file, 'r') as f:
   overrides = json.load(f)
 
-for key in overrides['blacklist']:
+for key in overrides['remove']:
   if key in apps:
     del apps[key]
   dir = 'gaia/profile/webapps/' + key

@@ -13,8 +13,9 @@ with open(settings_file, 'r') as f:
 with open(override_file, 'r') as f:
   overrides = json.load(f)
 
-for key in overrides.keys():
-  settings[key] = overrides[key]
+for key in overrides['remove']:
+  if key in settings:
+    del settings[key]
 
 with open(settings_file, 'wb') as f:
   json.dump(settings, f, indent=0)
