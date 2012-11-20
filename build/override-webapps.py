@@ -7,7 +7,7 @@ import os
 import shutil
 
 apps_file = 'gaia/profile/webapps/webapps.json'
-overrides_file = 'webapps-overrides.json'
+overrides_file = 'build/override-webapps.json'
 
 with open(apps_file, 'r') as f:
   apps = json.load(f)

@@ -5,7 +5,7 @@
 import json
 
 settings_file = 'gaia/profile/settings.json'
-override_file = 'settings.json'
+override_file = 'build/override-settings.json'
 
 with open(settings_file, 'r') as f:
   settings = json.load(f)
