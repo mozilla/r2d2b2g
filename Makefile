@@ -1,13 +1,12 @@
 .PHONY: build profile prosthesis b2g run package help
 
-ifdef PLATFORM
-PLATFORM_ARG = --platform $(PLATFORM)
-endif
-
 SYS=$(shell uname -s)
 ifneq (,$(findstring MINGW32_,$(SYS)))
 SYS=WINNT
 endif
+
+include default.mk
+-include local.mk
 
 # Disable OOP on Windows and Linux to work around repaint problems (bug 799768).
 # On Windows, disabling OOP also worked around a B2G startup crash (bug 795484),
@@ -34,8 +33,14 @@ prosthesis: profile
 	cd prosthesis && zip -r b2g-prosthesis\@mozilla.org.xpi content defaults locale skin chrome.manifest install.rdf
 	mv prosthesis/b2g-prosthesis@mozilla.org.xpi addon/template/profile/extensions
 
+DATE_ARG = --date $(DATE)
+
+ifdef PLATFORM
+  PLATFORM_ARG = --platform $(PLATFORM)
+endif
+
 b2g:
-	python ./build.py $(PLATFORM_ARG)
+	python ./make-b2g.py $(DATE_ARG) $(PLATFORM_ARG)
 
 run:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx run --templatedir template/
