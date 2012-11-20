@@ -21,6 +21,7 @@ build: profile prosthesis b2g
 profile:
 	make -C gaia
 	$(DISABLE_OOP)
+	python ./settings.py
 	rm -rf gaia/profile/startupCache
 	rm -rf addon/template
 	mkdir -p addon/template
