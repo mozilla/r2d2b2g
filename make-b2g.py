@@ -23,8 +23,13 @@ parser.add_option('--platform', '-p',
                   dest='platform',
                   choices=['win32', 'mac64', 'linux', 'linux64'],
                   metavar='PLATFORM',
-                  help='platform of the B2G Desktop build to download; '
+                  help='platform of the B2G build to download; '
                        'default: platform on which script is being run')
+parser.add_option('--date', '-d',
+                  dest='date',
+                  metavar='YYYY-MM-DD',
+                  help='date of the B2G build to download; '
+                       'default: the most recent nightly build')
 (options, args) = parser.parse_args()
 
 #tmpdir = tempfile.mkdtemp()
@@ -68,6 +73,7 @@ else:
 scraper_keywords = { 'application': 'b2g',
                      'branch': 'mozilla-aurora',
                      'platform': platform,
+                     'date': options.date,
                      'locale': 'en-US',
                      'version': None,
                      'directory': downloaddir }
