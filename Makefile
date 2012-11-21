@@ -5,23 +5,15 @@ ifneq (,$(findstring MINGW32_,$(SYS)))
 SYS=WINNT
 endif
 
-include default.mk
+include build/default.mk
 -include local.mk
-
-# Disable OOP on Windows and Linux to work around repaint problems (bug 799768).
-# On Windows, disabling OOP also worked around a B2G startup crash (bug 795484),
-# although it doesn't appear to be necessary anymore.
-DISABLE_OOP =
-ifneq (,$(filter WINNT Linux,$(SYS)))
-DISABLE_OOP = perl -p -i.bak -e 's|"debug\.oop\.disabled": false|"debug.oop.disabled": true|' gaia/profile/settings.json && rm gaia/profile/settings.json.bak
-endif
 
 build: profile prosthesis b2g
 
 profile:
 	make -C gaia
-	$(DISABLE_OOP)
-	python ./settings.py
+	python build/override-settings.py
+	python build/override-webapps.py
 	rm -rf gaia/profile/startupCache
 	rm -rf addon/template
 	mkdir -p addon/template
@@ -41,7 +33,7 @@ ifdef PLATFORM
 endif
 
 b2g:
-	python ./make-b2g.py $(DATE_ARG) $(PLATFORM_ARG)
+	python build/make-b2g.py $(DATE_ARG) $(PLATFORM_ARG)
 
 run:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx run --templatedir template/
