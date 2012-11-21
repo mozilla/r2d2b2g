@@ -25,4 +25,4 @@ if sys.platform == 'win32' or sys.platform.startswith('linux'):
   settings['debug.oop.disabled'] = True
 
 with open(settings_file, 'wb') as f:
-  json.dump(settings, f, indent=0)
+  json.dump(settings, f, indent=2)
