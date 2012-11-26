@@ -341,11 +341,11 @@ h2 {
 }
 .beta {
     position: absolute;
-    right: -58px;
-    top: -25px;
+    left: -20px;
+    top: 69px;
     text-align: center;
     transform-origin: 0 0;
-    transform: rotate(45deg);
+    transform: rotate(-45deg);
     box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
     background-color: rgba(255, 0, 0, 0.7);
     padding: 1px 40px;
