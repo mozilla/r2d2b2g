@@ -5,6 +5,7 @@ const Self = require("self");
 const URL = require("url");
 const Runtime = require("runtime");
 const Tabs = require("tabs");
+const PageMod = require("page-mod").PageMod;
 const UUID = require("api-utils/uuid");
 const File = require("file");
 const Menuitems = require("menuitems");
@@ -65,12 +66,16 @@ let simulator = {
   set worker(newVal) {
     this._worker = newVal;
 
-    if (this.worker) {
-      this.worker.on("message", this.onMessage.bind(this));
-      this.worker.on("detach",
+    if (this._worker) {
+      this._worker.on("message", this.onMessage.bind(this));
+      this._worker.on("detach",
                      (function(message) this._worker = null).bind(this));
     }
   },
+
+  get contentPage() Self.data.url("content/index.html"),
+
+  get contentScript() Self.data.url("content-script.js"),
 
   addAppByDirectory: function() {
     console.log("Simulator.addAppByDirectory");
@@ -111,7 +116,7 @@ let simulator = {
         xkey: null,
         name: webapp.name,
         icon: icon,
-        manifest: webapp
+        manifest: webapp,
       }
       console.log("Stored " + JSON.stringify(apps[webappFile]));
 
@@ -161,7 +166,7 @@ let simulator = {
       receipt: null,
       installTime: Date.now(),
       appStatus: (config.type == 'local') ? 3 : 1, // 3 = PRV & INSTALLED
-      localId: config.xid
+      localId: config.xid,
     };
 
     switch (config.type) {
@@ -359,7 +364,7 @@ let simulator = {
       name: title.substring(0, 18),
       description: title,
       default_locale: "en",
-      launch_path: url.path || '/'
+      launch_path: url.path || '/',
     };
     console.log("Generated manifest " + JSON.stringify(webapp, null, 2));
     // Possible icon? 'http://www.google.com/s2/favicons?domain=' + url.host
@@ -423,7 +428,7 @@ let simulator = {
         } else {
           simulator.worker.postMessage({
             name: "validateUrl",
-            err: err
+            err: err,
           });
         }
       }
@@ -457,7 +462,7 @@ let simulator = {
       icon: icon,
       manifest: webapp,
       origin: origin,
-      installOrigin: installOrigin
+      installOrigin: installOrigin,
     }
     console.log("Stored " + JSON.stringify(apps[id], null, 2));
 
@@ -489,31 +494,31 @@ let simulator = {
     });
   },
 
-  openTab: function(url, onReady, lax) {
+  openTab: function(url, lax) {
     for each (var tab in Tabs) {
-      if (tab.url == url || (lax && tab.url.indexOf(url) == 0)) {
+      if (tab.url === url || (lax && tab.url.indexOf(url) === 0)) {
         tab.activate();
         return;
       }
     }
 
     Tabs.open({
-      url: url,
-      onReady: function(tab) {
-        if (onReady) {
-          onReady(tab);
-        }
-      }
+      url: url
     });
   },
 
   openHelperTab: function() {
-    let url = Self.data.url("content/index.html");
-    this.openTab(url, function(tab) {
-      simulator.worker = tab.attach({
-        contentScriptFile: Self.data.url("content-script.js"),
-      });
-    }, true);
+    this.openTab(simulator.contentPage, true);
+  },
+
+  kill: function(onKilled) {
+    if (this.process && !this.shuttingDown) {
+      this.onKilled = onKilled;
+      this.shuttingDown = true;
+      this.process.kill();
+    } else if (onKilled) {
+      onKilled();
+    }
   },
 
   revealApp: function(id) {
@@ -556,16 +561,14 @@ let simulator = {
                                   isRunning: !!this.process });
         break;
       case "addAppByDirectory":
-        if (this.process) {
-          this.process.kill();
-        }
-        this.addAppByDirectory();
+        this.kill(function() {
+          simulator.addAppByDirectory();
+        });
         break;
       case "addAppByTab":
-        if (this.process) {
-          this.process.kill();
-        }
-        this.addAppByTabUrl(message.url);
+        this.kill(function() {
+          simulator.addAppByTabUrl(message.url);
+        });
         break;
       case "listApps":
         if (message.flush) {
@@ -574,19 +577,15 @@ let simulator = {
         this.sendListApps();
         break;
       case "updateApp":
-        if (this.process) {
-          this.process.kill();
-        }
-        this.updateApp(message.id, true);
+        this.kill(function() {
+          simulator.updateApp(message.id, true);
+        });
         break;
       case "removeApp":
         this.removeApp(message.id);
         break;
       case "revealApp":
         this.revealApp(message.id);
-        break;
-      case "removeApp":
-        this.removeApp(message.id);
         break;
       case "undoRemoveApp":
         this.undoRemoveApp(message.id);
@@ -605,9 +604,8 @@ let simulator = {
         break;
       case "toggle":
         if (this.process) {
-          this.process.kill();
-        }
-        else {
+          this.kill();
+        } else {
           run();
         }
         break;
@@ -651,6 +649,16 @@ let simulator = {
 
 };
 
+PageMod({
+  include: simulator.contentPage,
+  contentScriptFile: simulator.contentScript,
+  contentScriptWhen: 'start',
+  onAttach: function(worker) {
+    // TODO: Only allow 1 manager page
+    simulator.worker = worker;
+  },
+});
+
 //Widget({
 //  id: "r2d2b2g",
 //  label: "r2d2b2g",
@@ -689,12 +697,20 @@ switch (Self.loadReason) {
     break;
 }
 
+exports.onUnload = function(reason) {
+  simulator.kill();
+};
+
 Tabs.on('ready', function() {
   if (simulator.worker) {
     simulator.sendListTabs();
   }
 });
 Tabs.on('close', function() {
+  // Kill process when the last tab is gone
+  if (!Tabs.length) {
+    simulator.kill();
+  }
   if (simulator.worker) {
     simulator.sendListTabs();
   }
@@ -782,6 +798,11 @@ function run() {
     done: function(result) {
       console.log(executables[Runtime.OS] + " terminated with " + result.exitCode);
       simulator.process = null;
+      simulator.shuttingDown = false;
+      if (simulator.onKilled) {
+        simulator.onKilled();
+        simulator.onKilled = null;
+      }
     },
 
   });
@@ -799,7 +820,7 @@ ContextMenu.Item({
                  '});',
   onMessage: function (manifestUrl) {
     simulator.addManifestUrl(URL.URL(manifestUrl));
-  }
+  },
 });
 
 Menuitems.Menuitem({
@@ -809,7 +830,7 @@ Menuitems.Menuitem({
   label: "Firefox OS Simulator",
   onCommand: function() {
     simulator.openHelperTab();
-  }
+  },
 });
 
 Menuitems.Menuitem({
@@ -819,7 +840,7 @@ Menuitems.Menuitem({
   label: "Firefox OS Simulator",
   onCommand: function() {
     simulator.openHelperTab();
-  }
+  },
 });
 
 Gcli.addCommand({
@@ -833,7 +854,7 @@ Gcli.addCommand({
   params: [],
   exec: function(args, context) {
     simulator.openHelperTab();
-  }
+  },
 });
 
 Gcli.addCommand({
@@ -842,7 +863,7 @@ Gcli.addCommand({
   params: [],
   exec: function(args, context) {
     run();
-  }
+  },
 });
 
 Gcli.addCommand({
@@ -853,7 +874,7 @@ Gcli.addCommand({
     if (simulator.process) {
       simulator.process.kill();
     }
-  }
+  },
 });
 
 // Menuitems.Menuitem({

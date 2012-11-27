@@ -9,7 +9,7 @@ var Simulator = {
   init: function() {
 
     this.toggler = $('#command-toggle')[0];
-    $(this.toggler).on('change', function(evt) {
+    $(this.toggler).prop('checked', false).on('change', function(evt) {
       // FIXME: Change to actual checkbox state
       Simulator.toggle();
     });
@@ -62,7 +62,7 @@ var Simulator = {
 
     document.documentElement.addEventListener(
       "addon-message",
-      function isRunningListener(event) {
+      function addonMessageListener(event) {
         var message = event.detail;
         if (!("name" in message)) {
           return;
@@ -236,7 +236,7 @@ var Simulator = {
 
 };
 
-$(document).ready(function() {
+$(window).load(function() {
   Simulator.init();
 });
 
