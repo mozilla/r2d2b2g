@@ -34,7 +34,7 @@ let simulator = {
     if (this.worker) {
       this.worker.postMessage({
         name: "isRunning",
-        isRunning: !!this.process
+        isRunning: !!this.process,
       });
     }
   },
@@ -116,7 +116,7 @@ let simulator = {
         xkey: null,
         name: webapp.name,
         icon: icon,
-        manifest: webapp
+        manifest: webapp,
       }
       console.log("Stored " + JSON.stringify(apps[webappFile]));
 
@@ -166,7 +166,7 @@ let simulator = {
       receipt: null,
       installTime: Date.now(),
       appStatus: (config.type == 'local') ? 3 : 1, // 3 = PRV & INSTALLED
-      localId: config.xid
+      localId: config.xid,
     };
 
     switch (config.type) {
@@ -364,7 +364,7 @@ let simulator = {
       name: title.substring(0, 18),
       description: title,
       default_locale: "en",
-      launch_path: url.path || '/'
+      launch_path: url.path || '/',
     };
     console.log("Generated manifest " + JSON.stringify(webapp, null, 2));
     // Possible icon? 'http://www.google.com/s2/favicons?domain=' + url.host
@@ -428,7 +428,7 @@ let simulator = {
         } else {
           simulator.worker.postMessage({
             name: "validateUrl",
-            err: err
+            err: err,
           });
         }
       }
@@ -462,7 +462,7 @@ let simulator = {
       icon: icon,
       manifest: webapp,
       origin: origin,
-      installOrigin: installOrigin
+      installOrigin: installOrigin,
     }
     console.log("Stored " + JSON.stringify(apps[id], null, 2));
 
@@ -656,7 +656,7 @@ PageMod({
   onAttach: function(worker) {
     // TODO: Only allow 1 manager page
     simulator.worker = worker;
-  }
+  },
 });
 
 //Widget({
@@ -820,7 +820,7 @@ ContextMenu.Item({
                  '});',
   onMessage: function (manifestUrl) {
     simulator.addManifestUrl(URL.URL(manifestUrl));
-  }
+  },
 });
 
 Menuitems.Menuitem({
@@ -830,7 +830,7 @@ Menuitems.Menuitem({
   label: "Firefox OS Simulator",
   onCommand: function() {
     simulator.openHelperTab();
-  }
+  },
 });
 
 Menuitems.Menuitem({
@@ -840,7 +840,7 @@ Menuitems.Menuitem({
   label: "Firefox OS Simulator",
   onCommand: function() {
     simulator.openHelperTab();
-  }
+  },
 });
 
 Gcli.addCommand({
@@ -854,7 +854,7 @@ Gcli.addCommand({
   params: [],
   exec: function(args, context) {
     simulator.openHelperTab();
-  }
+  },
 });
 
 Gcli.addCommand({
@@ -863,7 +863,7 @@ Gcli.addCommand({
   params: [],
   exec: function(args, context) {
     run();
-  }
+  },
 });
 
 Gcli.addCommand({
@@ -874,7 +874,7 @@ Gcli.addCommand({
     if (simulator.process) {
       simulator.process.kill();
     }
-  }
+  },
 });
 
 // Menuitems.Menuitem({
