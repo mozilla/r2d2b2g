@@ -428,7 +428,7 @@ figure {
     color: #888;
 }
 .commands-options input {
-    padding-right: 5px;
+    margin-right: 5px;
 }
 
 .toggle {
