@@ -71,7 +71,7 @@ else:
 # Download latest build of B2G Desktop.
 
 scraper_keywords = { 'application': 'b2g',
-                     'branch': 'mozilla-aurora',
+                     'branch': 'mozilla-beta',
                      'platform': platform,
                      'date': options.date,
                      'locale': 'en-US',
