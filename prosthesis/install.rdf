@@ -8,7 +8,7 @@
   <Description about="urn:mozilla:install-manifest">
     <em:id>b2g-prosthesis@mozilla.org</em:id>
     <em:name>B2G Prosthesis</em:name>
-    <em:version>0.8</em:version>
+    <em:version>1.0</em:version>
     <em:type>2</em:type>
 
     <!-- B2G -->
