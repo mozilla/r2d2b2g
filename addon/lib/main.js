@@ -1039,3 +1039,69 @@ function archiveDir(zipFile, dirToArchive) {
 
   console.log("archived dir " + dirToArchive);
 }
+
+
+
+
+// FIXME: Hack
+
+let PermissionsInstaller = Cu.import("resource://gre/modules/PermissionsInstaller.jsm").PermissionsInstaller;
+
+let PermissionSettings = Cu.import("resource://gre/modules/PermissionSettings.jsm");
+let ManifestHelper = Cu.import("resource://gre/modules/AppsUtils.jsm").ManifestHelper;
+
+function CustomAddPermission(aData, aCallbacks) {
+  setTimeout(function() {
+    console.log("addPermission CALLED");
+    console.log(JSON.stringify(aData));
+  }, 10);
+}
+function CustomGetPermission(aPermission, aManifestURL, aOrigin, aBrowserFlag) {
+  setTimeout(function() {
+    console.log("getPermission: " + aPermission + ", " + aManifestURL + ", " + aOrigin);
+  });
+}
+
+PermissionSettings.addPermissionOld = PermissionSettings.addPermission;
+PermissionSettings.addPermission = CustomAddPermission;
+PermissionSettings.getPermissionOld = PermissionSettings.getPermission;
+PermissionSettings.getPermission = CustomGetPermission;
+PermissionSettings.OVERRIDDEN = true;
+
+console.log(PermissionSettings.OVERRIDDEN);
+console.log(PermissionSettings.addPermission);
+
+let manifest = {
+  "version": "1.0",
+  "name": "Rigid Balls Demo",
+  "description": "Let em bounce!",
+  "launch_path": "/sputflik/examples/rigid-device/index.html",
+  "icons": {
+    "256": "http://icons.iconarchive.com/icons/deleket/puck/256/Mozilla-Firefox-icon.png"
+  },
+  "developer": {
+    "name": "Harald Kirschner",
+    "url": "http://www.harald.me"
+  },
+  "type": "privileged",
+  "permissions": {
+    "systemXHR": {},
+    "settings":{ "access": "readonly" }
+  }
+};
+let origin = "http://localhost";
+
+// let helper = new ManifestHelper(manifest, origin);
+// console.log(JSON.stringify(helper.permissions));
+// console.log(helper.fullLaunchPath());
+
+PermissionsInstaller.installPermissions({
+    manifest: manifest,
+    manifestURL: "http://localhost/sputflik/examples/rigid-device/manifest.webapp",
+    origin: origin
+  },
+  true,
+  function() {
+    console.log("Installation FAILED");
+  }
+);
