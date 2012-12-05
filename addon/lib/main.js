@@ -165,7 +165,7 @@ let simulator = {
       installOrigin: config.origin,
       receipt: null,
       installTime: Date.now(),
-      appStatus: (config.type == 'local') ? 3 : 1, // 3 = PRV & INSTALLED
+      appStatus: (config.type == 'local') ? 2 : 1, // 2 = PRV & INSTALLED
       localId: config.xid,
     };
 
@@ -928,7 +928,7 @@ function create() {
     receipt: null,
     installTime: 132333986000,
     manifestURL: origin + "/manifest.webapp",
-    appStatus: 3,
+    appStatus: 2,
     localId: id,
   };
   File.open(webappsFile, "w").writeAsync(
