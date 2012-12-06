@@ -418,10 +418,10 @@ let simulator = {
           simulator.error("Missing mandatory property (name or description)");
           return;
         }
+
         let contentType = response.headers["Content-Type"];
         if (contentType !== "application/x-web-app-manifest+json") {
-          simulator.error("Unexpected Content-Type: " + contentType + ".");
-          return;
+          console.warn("Unexpected Content-Type: " + contentType + ".");
         }
 
         console.log("Fetched manifest " + JSON.stringify(response.json, null, 2));
@@ -445,7 +445,7 @@ let simulator = {
         } else {
           let contentType = response.headers["Content-Type"];
           if (contentType !== "application/x-web-app-manifest+json") {
-            err = "Unexpected Content-Type " + contentType;
+            console.warn("Unexpected Content-Type " + contentType);
           }
         }
 
