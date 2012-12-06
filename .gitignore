@@ -6,3 +6,7 @@ addon/data/win32
 addon/data/mac64
 addon/data/linux
 addon/data/linux64
+
+# ignore mac dmg files
+*.dmg
+
