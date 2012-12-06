@@ -261,12 +261,6 @@ let simulator = {
     );
   },
 
-  overridePermissionSettings: function(argument) {
-    console.log("overridePermissionSettings");
-    this.didOverridePermissionSettings = true;
-
-  },
-
   removeApp: function(id) {
     let apps = simulator.apps;
     let config = apps[id];
@@ -1087,62 +1081,51 @@ XPCOMUtils.defineLazyServiceGetter(this,
                                    "nsIAppsService");
 
 PermissionSettings.addPermission = function CustomAddPermission(aData, aCallbacks) {
-  console.log("PermissionSettings.addPermission CALLED");
-  try {
-    console.log(JSON.stringify(aData));
+  console.log("PermissionSettings.addPermission " + aData.origin);
 
-    let uri = Services.io.newURI(aData.origin, null, null);
+  let uri = Services.io.newURI(aData.origin, null, null);
 
-    console.log("Testing value: " + aData.value);
-
-    let action;
-    switch (aData.value)
-    {
-      case "unknown":
-        action = Ci.nsIPermissionManager.UNKNOWN_ACTION;
-        break;
-      case "allow":
-        action = Ci.nsIPermissionManager.ALLOW_ACTION;
-        break;
-      case "deny":
-        action = Ci.nsIPermissionManager.DENY_ACTION;
-        break;
-      case "prompt":
-        action = Ci.nsIPermissionManager.PROMPT_ACTION;
-        break;
-      default:
-        dump("Unsupported PermisionSettings Action: " + aData.value +"\n");
-        action = Ci.nsIPermissionManager.UNKNOWN_ACTION;
-    }
-    console.log("PermissionSettings.addPermission add: " + aData.origin + " " + action);
-
-    console.log(permissionManager);
-    permissionManager.add(uri, aData.type, action);
-  } catch (e) {
-    console.log(e);
+  let action;
+  switch (aData.value)
+  {
+    case "unknown":
+      action = Ci.nsIPermissionManager.UNKNOWN_ACTION;
+      break;
+    case "allow":
+      action = Ci.nsIPermissionManager.ALLOW_ACTION;
+      break;
+    case "deny":
+      action = Ci.nsIPermissionManager.DENY_ACTION;
+      break;
+    case "prompt":
+      action = Ci.nsIPermissionManager.PROMPT_ACTION;
+      break;
+    default:
+      dump("Unsupported PermisionSettings Action: " + aData.value +"\n");
+      action = Ci.nsIPermissionManager.UNKNOWN_ACTION;
   }
+  console.log("PermissionSettings.addPermission add: " + aData.origin + " " + action);
+
+  permissionManager.add(uri, aData.type, action);
 };
 
 PermissionSettings.getPermission = function CustomGetPermission(aPermission, aManifestURL, aOrigin, aBrowserFlag) {
   console.log("getPermission: " + aPermName + ", " + aManifestURL + ", " + aOrigin);
-  try {
-    let uri = Services.io.newURI(aOrigin, null, null);
-    let result = permissionManager.testExactPermission(uri, aPermName);
 
-    switch (result) {
-      case Ci.nsIPermissionManager.UNKNOWN_ACTION:
-        return "unknown";
-      case Ci.nsIPermissionManager.ALLOW_ACTION:
-        return "allow";
-      case Ci.nsIPermissionManager.DENY_ACTION:
-        return "deny";
-      case Ci.nsIPermissionManager.PROMPT_ACTION:
-        return "prompt";
-      default:
-        dump("Unsupported PermissionSettings Action!\n");
-        return "unknown";
-    }
-  } catch (e) {
-    console.log(e);
+  let uri = Services.io.newURI(aOrigin, null, null);
+  let result = permissionManager.testExactPermission(uri, aPermName);
+
+  switch (result) {
+    case Ci.nsIPermissionManager.UNKNOWN_ACTION:
+      return "unknown";
+    case Ci.nsIPermissionManager.ALLOW_ACTION:
+      return "allow";
+    case Ci.nsIPermissionManager.DENY_ACTION:
+      return "deny";
+    case Ci.nsIPermissionManager.PROMPT_ACTION:
+      return "prompt";
+    default:
+      dump("Unsupported PermissionSettings Action!\n");
+      return "unknown";
   }
 };
