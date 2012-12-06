@@ -6,7 +6,7 @@ const URL = require("url");
 const Runtime = require("runtime");
 const Tabs = require("tabs");
 const PageMod = require("page-mod").PageMod;
-const UUID = require("api-utils/uuid");
+const UUID = require("sdk/util/uuid");
 const File = require("file");
 const Menuitems = require("menuitems");
 const Prefs = require("preferences-service");
@@ -665,7 +665,6 @@ PageMod({
 //  content: "r2d2b2g",
 //  width: 50,
 //  onClick: function() {
-//    let addontab = require("addon-page");
 //    Tabs.open({
 //      url: Self.data.url("content/index.html"),
 //      onReady: function(tab) {
