@@ -15,7 +15,7 @@ const ContextMenu = require("context-menu");
 const Request = require('request').Request;
 const Notifications = require("notifications");
 const SStorage = require("simple-storage");
-const WindowUtils = require("api-utils/window-utils");
+const WindowUtils = require("sdk/deprecated/window-utils");
 const Gcli = require('gcli');
 
 const { rootURI } = require('@loader/options');
