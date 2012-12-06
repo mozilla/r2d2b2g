@@ -21,6 +21,9 @@ const Gcli = require('gcli');
 const { rootURI } = require('@loader/options');
 const profileURL = rootURI + "profile/";
 
+Cu.import("resource://gre/modules/XPCOMUtils.jsm");
+Cu.import("resource://gre/modules/Services.jsm");
+
 require("addon-page");
 
 let simulator = {
@@ -176,7 +179,7 @@ let simulator = {
       default:
         webappEntry.manifestURL = id;
     }
-    console.log("Creating webapp entry: " + JSON.stringify(webappEntry, null, 2))
+    console.log("Creating webapp entry: " + JSON.stringify(webappEntry, null, 2));
 
     // Create the webapp record and write it to the registry.
     webapps[config.xkey] = webappEntry;
@@ -220,6 +223,24 @@ let simulator = {
             run();
           }
         } else {
+
+
+          let PermissionsInstaller = Cu.import("resource://gre/modules/PermissionsInstaller.jsm").PermissionsInstaller;
+
+          // console.log(PermissionSettings.addPermission);
+
+          PermissionsInstaller.installPermissions(
+            {
+              manifest: config.manifest,
+              manifestURL: id,
+              origin: config.origin
+            },
+            false, // isReinstall, installation failed for true
+            function(e) {
+              console.error("PermissionInstaller FAILED for " + config.origin);
+            }
+          );
+
           let webappFile = File.join(webappDir, "manifest.webapp");
           File.open(webappFile, "w").writeAsync(JSON.stringify(config.manifest, null, 2), function(err) {
             if (err) {
@@ -238,6 +259,12 @@ let simulator = {
         simulator.sendListApps();
       }
     );
+  },
+
+  overridePermissionSettings: function(argument) {
+    console.log("overridePermissionSettings");
+    this.didOverridePermissionSettings = true;
+
   },
 
   removeApp: function(id) {
@@ -1041,67 +1068,81 @@ function archiveDir(zipFile, dirToArchive) {
 }
 
 
-
-
-// FIXME: Hack
-
-let PermissionsInstaller = Cu.import("resource://gre/modules/PermissionsInstaller.jsm").PermissionsInstaller;
-
-let PermissionSettings = Cu.import("resource://gre/modules/PermissionSettings.jsm");
-let ManifestHelper = Cu.import("resource://gre/modules/AppsUtils.jsm").ManifestHelper;
-
-function CustomAddPermission(aData, aCallbacks) {
-  setTimeout(function() {
-    console.log("addPermission CALLED");
-    console.log(JSON.stringify(aData));
-  }, 10);
-}
-function CustomGetPermission(aPermission, aManifestURL, aOrigin, aBrowserFlag) {
-  setTimeout(function() {
-    console.log("getPermission: " + aPermission + ", " + aManifestURL + ", " + aOrigin);
-  });
-}
+let PermissionSettings = Cu.import("resource://gre/modules/PermissionSettings.jsm").PermissionSettingsModule;
 
 PermissionSettings.addPermissionOld = PermissionSettings.addPermission;
-PermissionSettings.addPermission = CustomAddPermission;
 PermissionSettings.getPermissionOld = PermissionSettings.getPermission;
-PermissionSettings.getPermission = CustomGetPermission;
-PermissionSettings.OVERRIDDEN = true;
 
-console.log(PermissionSettings.OVERRIDDEN);
-console.log(PermissionSettings.addPermission);
+XPCOMUtils.defineLazyServiceGetter(this,
+                                   "permissionManager",
+                                   "@mozilla.org/permissionmanager;1",
+                                   "nsIPermissionManager");
+XPCOMUtils.defineLazyServiceGetter(this,
+                                   "secMan",
+                                   "@mozilla.org/scriptsecuritymanager;1",
+                                   "nsIScriptSecurityManager");
+XPCOMUtils.defineLazyServiceGetter(this,
+                                   "appsService",
+                                   "@mozilla.org/AppsService;1",
+                                   "nsIAppsService");
 
-let manifest = {
-  "version": "1.0",
-  "name": "Rigid Balls Demo",
-  "description": "Let em bounce!",
-  "launch_path": "/sputflik/examples/rigid-device/index.html",
-  "icons": {
-    "256": "http://icons.iconarchive.com/icons/deleket/puck/256/Mozilla-Firefox-icon.png"
-  },
-  "developer": {
-    "name": "Harald Kirschner",
-    "url": "http://www.harald.me"
-  },
-  "type": "privileged",
-  "permissions": {
-    "systemXHR": {},
-    "settings":{ "access": "readonly" }
+PermissionSettings.addPermission = function CustomAddPermission(aData, aCallbacks) {
+  console.log("PermissionSettings.addPermission CALLED");
+  try {
+    console.log(JSON.stringify(aData));
+
+    let uri = Services.io.newURI(aData.origin, null, null);
+
+    console.log("Testing value: " + aData.value);
+
+    let action;
+    switch (aData.value)
+    {
+      case "unknown":
+        action = Ci.nsIPermissionManager.UNKNOWN_ACTION;
+        break;
+      case "allow":
+        action = Ci.nsIPermissionManager.ALLOW_ACTION;
+        break;
+      case "deny":
+        action = Ci.nsIPermissionManager.DENY_ACTION;
+        break;
+      case "prompt":
+        action = Ci.nsIPermissionManager.PROMPT_ACTION;
+        break;
+      default:
+        dump("Unsupported PermisionSettings Action: " + aData.value +"\n");
+        action = Ci.nsIPermissionManager.UNKNOWN_ACTION;
+    }
+    console.log("PermissionSettings.addPermission add: " + aData.origin + " " + action);
+
+    console.log(permissionManager);
+    permissionManager.add(uri, aData.type, action);
+  } catch (e) {
+    console.log(e);
   }
 };
-let origin = "http://localhost";
 
-// let helper = new ManifestHelper(manifest, origin);
-// console.log(JSON.stringify(helper.permissions));
-// console.log(helper.fullLaunchPath());
+PermissionSettings.getPermission = function CustomGetPermission(aPermission, aManifestURL, aOrigin, aBrowserFlag) {
+  console.log("getPermission: " + aPermName + ", " + aManifestURL + ", " + aOrigin);
+  try {
+    let uri = Services.io.newURI(aOrigin, null, null);
+    let result = permissionManager.testExactPermission(uri, aPermName);
 
-PermissionsInstaller.installPermissions({
-    manifest: manifest,
-    manifestURL: "http://localhost/sputflik/examples/rigid-device/manifest.webapp",
-    origin: origin
-  },
-  true,
-  function() {
-    console.log("Installation FAILED");
+    switch (result) {
+      case Ci.nsIPermissionManager.UNKNOWN_ACTION:
+        return "unknown";
+      case Ci.nsIPermissionManager.ALLOW_ACTION:
+        return "allow";
+      case Ci.nsIPermissionManager.DENY_ACTION:
+        return "deny";
+      case Ci.nsIPermissionManager.PROMPT_ACTION:
+        return "prompt";
+      default:
+        dump("Unsupported PermissionSettings Action!\n");
+        return "unknown";
+    }
+  } catch (e) {
+    console.log(e);
   }
-);
+};
