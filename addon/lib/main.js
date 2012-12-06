@@ -21,6 +21,9 @@ const Gcli = require('gcli');
 const { rootURI } = require('@loader/options');
 const profileURL = rootURI + "profile/";
 
+Cu.import("resource://gre/modules/XPCOMUtils.jsm");
+Cu.import("resource://gre/modules/Services.jsm");
+
 require("addon-page");
 
 let simulator = {
@@ -176,7 +179,7 @@ let simulator = {
       default:
         webappEntry.manifestURL = id;
     }
-    console.log("Creating webapp entry: " + JSON.stringify(webappEntry, null, 2))
+    console.log("Creating webapp entry: " + JSON.stringify(webappEntry, null, 2));
 
     // Create the webapp record and write it to the registry.
     webapps[config.xkey] = webappEntry;
@@ -220,6 +223,24 @@ let simulator = {
             run();
           }
         } else {
+
+
+          let PermissionsInstaller = Cu.import("resource://gre/modules/PermissionsInstaller.jsm").PermissionsInstaller;
+
+          // console.log(PermissionSettings.addPermission);
+
+          PermissionsInstaller.installPermissions(
+            {
+              manifest: config.manifest,
+              manifestURL: id,
+              origin: config.origin
+            },
+            false, // isReinstall, installation failed for true
+            function(e) {
+              console.error("PermissionInstaller FAILED for " + config.origin);
+            }
+          );
+
           let webappFile = File.join(webappDir, "manifest.webapp");
           File.open(webappFile, "w").writeAsync(JSON.stringify(config.manifest, null, 2), function(err) {
             if (err) {
@@ -1039,3 +1060,72 @@ function archiveDir(zipFile, dirToArchive) {
 
   console.log("archived dir " + dirToArchive);
 }
+
+
+let PermissionSettings = Cu.import("resource://gre/modules/PermissionSettings.jsm").PermissionSettingsModule;
+
+PermissionSettings.addPermissionOld = PermissionSettings.addPermission;
+PermissionSettings.getPermissionOld = PermissionSettings.getPermission;
+
+XPCOMUtils.defineLazyServiceGetter(this,
+                                   "permissionManager",
+                                   "@mozilla.org/permissionmanager;1",
+                                   "nsIPermissionManager");
+XPCOMUtils.defineLazyServiceGetter(this,
+                                   "secMan",
+                                   "@mozilla.org/scriptsecuritymanager;1",
+                                   "nsIScriptSecurityManager");
+XPCOMUtils.defineLazyServiceGetter(this,
+                                   "appsService",
+                                   "@mozilla.org/AppsService;1",
+                                   "nsIAppsService");
+
+PermissionSettings.addPermission = function CustomAddPermission(aData, aCallbacks) {
+  console.log("PermissionSettings.addPermission " + aData.origin);
+
+  let uri = Services.io.newURI(aData.origin, null, null);
+
+  let action;
+  switch (aData.value)
+  {
+    case "unknown":
+      action = Ci.nsIPermissionManager.UNKNOWN_ACTION;
+      break;
+    case "allow":
+      action = Ci.nsIPermissionManager.ALLOW_ACTION;
+      break;
+    case "deny":
+      action = Ci.nsIPermissionManager.DENY_ACTION;
+      break;
+    case "prompt":
+      action = Ci.nsIPermissionManager.PROMPT_ACTION;
+      break;
+    default:
+      dump("Unsupported PermisionSettings Action: " + aData.value +"\n");
+      action = Ci.nsIPermissionManager.UNKNOWN_ACTION;
+  }
+  console.log("PermissionSettings.addPermission add: " + aData.origin + " " + action);
+
+  permissionManager.add(uri, aData.type, action);
+};
+
+PermissionSettings.getPermission = function CustomGetPermission(aPermission, aManifestURL, aOrigin, aBrowserFlag) {
+  console.log("getPermission: " + aPermName + ", " + aManifestURL + ", " + aOrigin);
+
+  let uri = Services.io.newURI(aOrigin, null, null);
+  let result = permissionManager.testExactPermission(uri, aPermName);
+
+  switch (result) {
+    case Ci.nsIPermissionManager.UNKNOWN_ACTION:
+      return "unknown";
+    case Ci.nsIPermissionManager.ALLOW_ACTION:
+      return "allow";
+    case Ci.nsIPermissionManager.DENY_ACTION:
+      return "deny";
+    case Ci.nsIPermissionManager.PROMPT_ACTION:
+      return "prompt";
+    default:
+      dump("Unsupported PermissionSettings Action!\n");
+      return "unknown";
+  }
+};
