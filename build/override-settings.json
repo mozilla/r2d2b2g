@@ -1,3 +1,6 @@
 {
+  "set": {
+    "debug.oop.disabled": true
+  },
   "remove": ["ftu.manifestURL"]
 }
