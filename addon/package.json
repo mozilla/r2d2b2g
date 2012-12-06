@@ -13,9 +13,7 @@
   ],
   "license": "MPL 2.0",
   "unpack": true,
-  "dependencies": ["addon-kit",
-                   "api-utils",
-                   "gcli",
+  "dependencies": ["gcli",
                    "menuitems",
                    "subprocess",
                    "vold-utils"]
