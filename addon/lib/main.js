@@ -6,7 +6,7 @@ const URL = require("url");
 const Runtime = require("runtime");
 const Tabs = require("tabs");
 const PageMod = require("page-mod").PageMod;
-const UUID = require("api-utils/uuid");
+const UUID = require("sdk/util/uuid");
 const File = require("file");
 const Menuitems = require("menuitems");
 const Prefs = require("preferences-service");
@@ -15,7 +15,7 @@ const ContextMenu = require("context-menu");
 const Request = require('request').Request;
 const Notifications = require("notifications");
 const SStorage = require("simple-storage");
-const WindowUtils = require("api-utils/window-utils");
+const WindowUtils = require("window/utils");
 const Gcli = require('gcli');
 
 const { rootURI } = require('@loader/options');
@@ -653,7 +653,7 @@ let simulator = {
   },
 
   info: function(msg) {
-    // let window = WindowUtils.activeBrowserWindow;
+    // let window = WindowUtils.getMostRecentBrowserWindow();
     // let nb = window.gBrowser.getNotificationBox();
     // nb.appendNotification(
     //   msg,
@@ -665,7 +665,7 @@ let simulator = {
   },
 
   error: function(msg) {
-    let window = WindowUtils.activeBrowserWindow;
+    let window = WindowUtils.getMostRecentBrowserWindow();
     let nb = window.gBrowser.getNotificationBox();
     nb.appendNotification(
       msg,
@@ -694,7 +694,6 @@ PageMod({
 //  content: "r2d2b2g",
 //  width: 50,
 //  onClick: function() {
-//    let addontab = require("addon-page");
 //    Tabs.open({
 //      url: Self.data.url("content/index.html"),
 //      onReady: function(tab) {
