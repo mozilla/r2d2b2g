@@ -18,8 +18,8 @@ profile:
 	rm -rf addon/template
 	mkdir -p addon/template
 	mv gaia/profile addon/template/
-	cp addon-sdk/python-lib/cuddlefish/app-extension/bootstrap.js addon/template/
-	cp addon-sdk/python-lib/cuddlefish/app-extension/install.rdf addon/template/
+	cp addon-sdk/app-extension/bootstrap.js addon/template/
+	cp addon-sdk/app-extension/install.rdf addon/template/
 
 prosthesis: profile
 	mkdir -p addon/template/profile/extensions
