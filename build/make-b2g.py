@@ -71,10 +71,10 @@ else:
 # Download latest build of B2G Desktop.
 
 scraper_keywords = { 'application': 'b2g',
-                     'branch': 'mozilla-beta',
+                     'branch': 'mozilla-b2g18',
                      'platform': platform,
                      'date': options.date,
-                     'locale': 'en-US',
+                     'locale': 'multi',
                      'version': None,
                      'directory': downloaddir }
 kwargs = scraper_keywords.copy()
