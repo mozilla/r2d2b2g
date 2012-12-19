@@ -1,0 +1,19 @@
+# We don't want Git to mess with line endings.
+#
+# Most files in this repository have Unix-style endings (\n), and Windows devs
+# have myriad options for editing them; thus it isn't necessary to convert line
+# endings when checking out files into a working directory.
+#
+# Meanwhile, some files *must* have Windows line endings (\r\n), like the jQuery
+# library, which must be bit-identical to the official release to avoid review
+# by AMO reviewers; thus they mustn't be converted when committed to the object
+# database.
+#
+# We could dicker with individual files or leave it up to individual developers,
+# but it's simpler and less trouble-prone to set a consistent policy, so we do.
+
+# Disable line-ending conversion for all files on older versions of Git.
+* -crlf
+
+# Disable line-ending conversion for all files on newer versions of Git.
+* -text
