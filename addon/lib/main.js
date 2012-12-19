@@ -45,7 +45,7 @@ let simulator = {
   _worker: null,
 
   get apps() {
-    return SStorage.storage.apps || {};
+    return SStorage.storage.apps || (SStorage.storage.apps = {});
   },
 
   set apps(list) {
@@ -54,7 +54,7 @@ let simulator = {
 
 
   get permissions() {
-    return SStorage.storage.permissions || {};
+    return SStorage.storage.permissions || (SStorage.storage.permissions = {});
   },
 
   set permissions(list) {
@@ -131,8 +131,6 @@ let simulator = {
         manifest: webapp,
       }
       console.log("Stored " + JSON.stringify(apps[webappFile]));
-
-      simulator.apps = apps;
 
       this.updateApp(webappFile, true);
     }
@@ -289,7 +287,6 @@ let simulator = {
     let needsDeletion = !config.removed;
     config.removed = true;
     apps[id] = config;
-    simulator.apps = apps;
 
     simulator.sendListApps();
   },
@@ -304,7 +301,6 @@ let simulator = {
 
     config.removed = false;
     apps[id] = config;
-    simulator.apps = apps;
 
     simulator.sendListApps();
   },
@@ -318,7 +314,6 @@ let simulator = {
     }
 
     delete apps[id];
-    simulator.apps = apps;
 
     let webappsDir = URL.toFilename(profileURL + "webapps");
     let webappsFile = File.join(webappsDir, "webapps.json");
@@ -332,7 +327,6 @@ let simulator = {
       });
       delete permissions[config.origin];
     }
-    simulator.permissions = permissions;
 
 
     // Delete the webapp record from the registry.
@@ -364,7 +358,6 @@ let simulator = {
         this.removeAppFinal(id);
       }
     }
-    simulator.apps = apps;
   },
 
   /**
@@ -515,8 +508,6 @@ let simulator = {
       installOrigin: installOrigin,
     }
     console.log("Stored " + JSON.stringify(apps[id], null, 2));
-
-    simulator.apps = apps;
 
     this.updateApp(id, true);
   },
