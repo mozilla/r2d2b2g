@@ -52,6 +52,15 @@ let simulator = {
     SStorage.storage.apps = list;
   },
 
+
+  get permissions() {
+    return SStorage.storage.permissions || {};
+  },
+
+  set permissions(list) {
+    SStorage.storage.permissions = list;
+  },
+
   get defaultApp() {
     return SStorage.storage.defaultApp || null;
   },
@@ -315,6 +324,17 @@ let simulator = {
     let webappsFile = File.join(webappsDir, "webapps.json");
     let webapps = JSON.parse(File.read(webappsFile));
 
+    let permissions = simulator.permissions;
+    if (permissions[config.origin]) {
+      let host = config.host;
+      permissions[config.origin].forEach(function(type) {
+        permissionManager.remove(host, type);
+      });
+      delete permissions[config.origin];
+    }
+    simulator.permissions = permissions;
+
+
     // Delete the webapp record from the registry.
     delete webapps[config.xkey];
     File.open(webappsFile, "w").writeAsync(
@@ -491,6 +511,7 @@ let simulator = {
       icon: icon,
       manifest: webapp,
       origin: origin,
+      host: manifestUrl.host,
       installOrigin: installOrigin,
     }
     console.log("Stored " + JSON.stringify(apps[id], null, 2));
@@ -1122,6 +1143,13 @@ if (PermissionSettings) {
     console.log("PermissionSettings.addPermission add: " + aData.origin + " " + action);
 
     permissionManager.add(uri, aData.type, action);
+
+    let permissions = simulator.permissions;
+    if (!permissions[aData.origin]) {
+      permissions[aData.origin] = [];
+    }
+    permissions[aData.origin].push(aData.type);
+    simulator.permissions = permissions;
   };
 
   PermissionSettings.getPermission = function CustomGetPermission(aPermission, aManifestURL, aOrigin, aBrowserFlag) {
