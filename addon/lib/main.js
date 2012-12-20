@@ -48,17 +48,8 @@ let simulator = {
     return SStorage.storage.apps || (SStorage.storage.apps = {});
   },
 
-  set apps(list) {
-    SStorage.storage.apps = list;
-  },
-
-
   get permissions() {
     return SStorage.storage.permissions || (SStorage.storage.permissions = {});
-  },
-
-  set permissions(list) {
-    SStorage.storage.permissions = list;
   },
 
   get defaultApp() {
