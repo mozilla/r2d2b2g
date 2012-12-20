@@ -45,11 +45,11 @@ let simulator = {
   _worker: null,
 
   get apps() {
-    return SStorage.storage.apps || {};
+    return SStorage.storage.apps || (SStorage.storage.apps = {});
   },
 
-  set apps(list) {
-    SStorage.storage.apps = list;
+  get permissions() {
+    return SStorage.storage.permissions || (SStorage.storage.permissions = {});
   },
 
   get defaultApp() {
@@ -122,8 +122,6 @@ let simulator = {
         manifest: webapp,
       }
       console.log("Stored " + JSON.stringify(apps[webappFile]));
-
-      simulator.apps = apps;
 
       this.updateApp(webappFile, true);
     }
@@ -280,7 +278,6 @@ let simulator = {
     let needsDeletion = !config.removed;
     config.removed = true;
     apps[id] = config;
-    simulator.apps = apps;
 
     simulator.sendListApps();
   },
@@ -295,7 +292,6 @@ let simulator = {
 
     config.removed = false;
     apps[id] = config;
-    simulator.apps = apps;
 
     simulator.sendListApps();
   },
@@ -309,11 +305,20 @@ let simulator = {
     }
 
     delete apps[id];
-    simulator.apps = apps;
 
     let webappsDir = URL.toFilename(profileURL + "webapps");
     let webappsFile = File.join(webappsDir, "webapps.json");
     let webapps = JSON.parse(File.read(webappsFile));
+
+    let permissions = simulator.permissions;
+    if (permissions[config.origin]) {
+      let host = config.host;
+      permissions[config.origin].forEach(function(type) {
+        permissionManager.remove(host, type);
+      });
+      delete permissions[config.origin];
+    }
+
 
     // Delete the webapp record from the registry.
     delete webapps[config.xkey];
@@ -344,7 +349,6 @@ let simulator = {
         this.removeAppFinal(id);
       }
     }
-    simulator.apps = apps;
   },
 
   /**
@@ -491,11 +495,10 @@ let simulator = {
       icon: icon,
       manifest: webapp,
       origin: origin,
+      host: manifestUrl.host,
       installOrigin: installOrigin,
     }
     console.log("Stored " + JSON.stringify(apps[id], null, 2));
-
-    simulator.apps = apps;
 
     this.updateApp(id, true);
   },
@@ -1122,6 +1125,13 @@ if (PermissionSettings) {
     console.log("PermissionSettings.addPermission add: " + aData.origin + " " + action);
 
     permissionManager.add(uri, aData.type, action);
+
+    let permissions = simulator.permissions;
+    if (!permissions[aData.origin]) {
+      permissions[aData.origin] = [];
+    }
+    permissions[aData.origin].push(aData.type);
+    simulator.permissions = permissions;
   };
 
   PermissionSettings.getPermission = function CustomGetPermission(aPermission, aManifestURL, aOrigin, aBrowserFlag) {
