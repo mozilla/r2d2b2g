@@ -19,12 +19,6 @@ import mozinstall
 
 usage = 'usage: %prog [options]'
 parser = OptionParser(usage=usage, description=__doc__)
-parser.add_option('--platform', '-p',
-                  dest='platform',
-                  choices=['win32', 'mac64', 'linux', 'linux64'],
-                  metavar='PLATFORM',
-                  help='platform of the B2G build to download; '
-                       'default: platform on which script is being run')
 parser.add_option('--type', '-t',
                   dest='type',
                   choices=['nightly', 'specific'],
@@ -32,6 +26,12 @@ parser.add_option('--type', '-t',
                   default='nightly',
                   help='type of build to use; '
                        'default: a nightly build')
+parser.add_option('--platform', '-p',
+                  dest='platform',
+                  choices=['win32', 'mac64', 'linux', 'linux64'],
+                  metavar='PLATFORM',
+                  help='the platform of the build; '
+                       'default: the current platform')
 
 # Option group for nightly builds.
 group = OptionGroup(parser, "nightly builds",
@@ -79,13 +79,10 @@ else:
     platform = sys.platform
 
 if   platform == 'win32':
-  file_extension = '.zip'
   installdirname = 'b2g'
 elif platform == 'mac64':
-  file_extension = '.dmg'
   installdirname = 'B2G.app'
 elif platform == 'linux' or platform == 'linux64':
-  file_extension = '.tar.bz2'
   installdirname = 'b2g'
 else:
   raise NotImplementedError('platform %s not supported' % platform)

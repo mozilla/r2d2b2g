@@ -31,7 +31,7 @@ endif
 endif
 endif
 
-# The date of the nightly build.
+# The date of the nightly B2G build.
 # Sometimes this is based on the latest stable nightly for Unagi according to
 # https://releases.mozilla.com/b2g/promoted_to_stable/ (private URL).
 #
@@ -41,9 +41,14 @@ endif
 #
 #B2G_DATE ?= 2012-12-13
 
-ifdef PLATFORM
-  PLATFORM_ARG = --platform $(PLATFORM)
-endif
+# The platform of the B2G build.
+# Options include 'win32', 'mac64', 'linux', and 'linux64', and the default is
+# the current platform (as determined by the make-b2g.py script, so we don't
+# have to set it here).  The reliability of this option is unclear.  Setting it
+# to 'mac64' on non-Mac is known to fail, because mozinstall doesn't know how to
+# install from a DMG on a non-Mac platform.  But setting it to one of the Linux
+# values on the other Linux platform works and is the main use case for it.
+#B2G_PLATFORM ?=
 
 ifdef B2G_TYPE
   B2G_TYPE_ARG = --type $(B2G_TYPE)
@@ -55,6 +60,10 @@ endif
 
 ifdef B2G_URL
   B2G_URL_ARG = --url $(B2G_URL)
+endif
+
+ifdef B2G_PLATFORM
+  B2G_PLATFORM_ARG = --platform $(B2G_PLATFORM)
 endif
 
 build: profile prosthesis b2g
@@ -76,7 +85,7 @@ prosthesis: profile
 	mv prosthesis/b2g-prosthesis@mozilla.org.xpi addon/template/profile/extensions
 
 b2g:
-	python build/make-b2g.py $(B2G_TYPE_ARG) $(B2G_DATE_ARG) $(B2G_URL_ARG) $(PLATFORM_ARG)
+	python build/make-b2g.py $(B2G_TYPE_ARG) $(B2G_DATE_ARG) $(B2G_URL_ARG) $(B2G_PLATFORM_ARG)
 
 run:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx run --templatedir template/
