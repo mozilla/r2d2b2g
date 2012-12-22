@@ -13,20 +13,45 @@ endif
 # B2G_DATE to the date of the build (default: the most recent nightly build).
 B2G_TYPE ?= specific
 
+# The platform of the B2G build.
+# Options include 'win32', 'mac64', 'linux64', and 'linux', and the default is
+# the current platform.  The reliability of this option is unclear.  Setting it
+# to 'mac64' on non-Mac is known to fail, because mozinstall doesn't know how to
+# install from a DMG on a non-Mac platform.  But setting it to one of the Linux
+# values on the other Linux platform works and is the main use case for it
+# (i.e. to create the dual-binary Linux packages).
+ifndef B2G_PLATFORM
+  ifeq (WINNT, $(SYS))
+    B2G_PLATFORM = win32
+  else
+  ifeq (Darwin, $(SYS))
+    B2G_PLATFORM = mac64
+  else
+  ifeq (Linux, $(SYS))
+    ifeq (x86_64, $(ARCH))
+      B2G_PLATFORM = linux64
+    else
+      B2G_PLATFORM = linux
+    endif
+  endif
+  endif
+  endif
+endif
+
 # The URL of the specific B2G build.
 B2G_URL_BASE ?= https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/
-ifeq (WINNT, $(SYS))
+ifeq (win32, $(B2G_PLATFORM))
   B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2012-12-17.en-US.win32.zip
 else
-ifeq (Darwin, $(SYS))
+ifeq (mac64, $(B2G_PLATFORM))
   B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2012-12-17.en-US.mac64.dmg
 else
-ifeq (Linux, $(SYS))
-  ifeq (x86_64, $(ARCH))
-    B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2012-12-17.en-US.linux-x86_64.tar.bz2
-  else
-    B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2012-12-17.en-US.linux-i686.tar.bz2
-  endif
+ifeq (linux64, $(B2G_PLATFORM))
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2012-12-17.en-US.linux-x86_64.tar.bz2
+else
+ifeq (linux, $(B2G_PLATFORM))
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2012-12-17.en-US.linux-i686.tar.bz2
+endif
 endif
 endif
 endif
@@ -41,29 +66,20 @@ endif
 #
 #B2G_DATE ?= 2012-12-13
 
-# The platform of the B2G build.
-# Options include 'win32', 'mac64', 'linux', and 'linux64', and the default is
-# the current platform (as determined by the make-b2g.py script, so we don't
-# have to set it here).  The reliability of this option is unclear.  Setting it
-# to 'mac64' on non-Mac is known to fail, because mozinstall doesn't know how to
-# install from a DMG on a non-Mac platform.  But setting it to one of the Linux
-# values on the other Linux platform works and is the main use case for it.
-#B2G_PLATFORM ?=
-
 ifdef B2G_TYPE
   B2G_TYPE_ARG = --type $(B2G_TYPE)
 endif
 
-ifdef B2G_DATE
-  B2G_DATE_ARG = --date $(B2G_DATE)
+ifdef B2G_PLATFORM
+  B2G_PLATFORM_ARG = --platform $(B2G_PLATFORM)
 endif
 
 ifdef B2G_URL
   B2G_URL_ARG = --url $(B2G_URL)
 endif
 
-ifdef B2G_PLATFORM
-  B2G_PLATFORM_ARG = --platform $(B2G_PLATFORM)
+ifdef B2G_DATE
+  B2G_DATE_ARG = --date $(B2G_DATE)
 endif
 
 build: profile prosthesis b2g
@@ -85,7 +101,7 @@ prosthesis: profile
 	mv prosthesis/b2g-prosthesis@mozilla.org.xpi addon/template/profile/extensions
 
 b2g:
-	python build/make-b2g.py $(B2G_TYPE_ARG) $(B2G_DATE_ARG) $(B2G_URL_ARG) $(B2G_PLATFORM_ARG)
+	python build/make-b2g.py $(B2G_TYPE_ARG) $(B2G_PLATFORM_ARG) $(B2G_DATE_ARG) $(B2G_URL_ARG)
 
 run:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx run --templatedir template/
