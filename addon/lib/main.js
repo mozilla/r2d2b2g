@@ -534,7 +534,13 @@ let simulator = {
   kill: function(onKilled) {
     if (onKilled)
       onKilled = onKilled.bind(this);
-    this.remoteSimulator.kill(onKilled);
+    // WORKAROUND: currently add and update an app will be executed
+    // as a simulator.kill callback
+    if (this.remoteSimulator.isRunning) {
+      this.remoteSimulator.kill(onKilled);
+    } else {
+      onKilled();
+    }
   },
 
   revealApp: function(id) {
