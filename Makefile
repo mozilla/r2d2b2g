@@ -82,6 +82,14 @@ ifdef B2G_DATE
   B2G_DATE_ARG = --date $(B2G_DATE)
 endif
 
+ifdef BIN
+  BIN_ARG = -b $(BIN)
+endif
+
+ifdef TEST
+  TEST_ARG = -f $(TEST)
+endif
+
 build: profile prosthesis b2g
 
 profile:
@@ -104,10 +112,13 @@ b2g:
 	python build/make-b2g.py $(B2G_TYPE_ARG) $(B2G_PLATFORM_ARG) $(B2G_DATE_ARG) $(B2G_URL_ARG)
 
 run:
-	cd addon-sdk && . bin/activate && cd ../addon && cfx run --templatedir template/
+	cd addon-sdk && . bin/activate && cd ../addon && cfx run --templatedir template/ $(BIN_ARG)
 
 package:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx xpi --templatedir template/
+
+test:
+	cd addon-sdk && . bin/activate && cd ../addon && cfx test --verbose --templatedir template/ $(BIN_ARG) $(TEST_ARG)
 
 help:
 	@echo 'Targets:'
