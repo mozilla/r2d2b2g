@@ -70,10 +70,7 @@ SimulatorActor.prototype = {
     let setReq = window.navigator.mozSettings
       .createLock().set({'lockscreen.enabled': false});
     setReq.onsuccess = function() {
-      // NOTE: 100ms is not enought
-      window.setTimeout(function() {
-        window.runAppObj.doRunApp();
-      }, 1000);
+      window.runAppObj.doRunApp();
     }
     return {
       message: "runApp request received"
@@ -171,8 +168,8 @@ SimulatorActor.prototype = {
       .getService(Ci.nsIWindowMediator)
       .getMostRecentWindow("navigator:browser");
     return window;
-  }
-}
+  },
+};
 
 /**
  * The request types this actor can handle.
