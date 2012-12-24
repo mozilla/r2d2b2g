@@ -126,7 +126,7 @@ const RemoteSimulatorClient = Class({
           console.debug("WORKAROUND run osascript to show b2g-desktop window"+
                         " on Runtime.OS=='Darwin'");
         // Escape double quotes and escape characters for use in AppleScript.
-        let path = remoteSimulator.b2gExecutable.path
+        let path = this.b2gExecutable.path
           .replace(/\\/g, "\\\\").replace(/\"/g, '\\"');
 
         Subprocess.call({
