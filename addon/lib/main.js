@@ -667,7 +667,7 @@ let simulator = {
 
         let cmd = function () {
           this.remoteSimulator.runApp(appName, function (response) {
-            console.log("RUNAPP RESPONSE: "+JSON.stringify(response));
+            console.debug("RUNAPP RESPONSE: "+JSON.stringify(response));
             // TODO: send feedback to manager tab
           });
         };

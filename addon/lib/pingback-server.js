@@ -39,12 +39,12 @@ const PingbackServer = Class({
   },
 
   onStopListening: function(aSrv, aStatus) {
-    console.log("ON STOP LISTENING");
+    console.debug("PingbackServer.onStopListening (port: "+this._port+")");
     emit(this, "exit", null);
   },
 
   onSocketAccepted: function (aSrv, aTransport) {
-    console.log("ON SOCKET ACCEPTED");
+    console.debug("PingbackServer.onSocketAccepted (port: "+this.port+")");
     emit(this, "completed", null);
     aTransport.close(Cr.NS_OK);
   },
@@ -55,8 +55,10 @@ const PingbackServer = Class({
   },
 
   get port() {
-    if (!!this.srv)
+    if (!!this.srv) {
+      this._port = this.srv.port;
       return this.srv.port;
+    } 
   }
 });
 

@@ -54,7 +54,7 @@ const RemoteSimulatorClient = Class({
     // on pingbackCompleted, track a completed pingback and start
     // debugger protocol connection
     this.on("pingbackCompleted", function() {
-      console.log("DEBUG rsc.onPingbackCompleted");
+      console.debug("rsc.onPingbackCompleted");
       this._pingbackCompleted = true;
       this.connectDebuggerClient();
     });
@@ -63,7 +63,7 @@ const RemoteSimulatorClient = Class({
     // on kill and send a "listTabs" debug protocol request, finally
     // emit a clientReady event on "listTabs" reply
     this.on("clientConnected", function (data) {
-      console.log("DEBUG rsc.onClientConnected");
+      console.debug("rsc.onClientConnected");
       let client = data.client;
       this.once("kill", function () client.close());
       client.request({to: "root", type: "listTabs"}, (function (reply) {
@@ -80,11 +80,11 @@ const RemoteSimulatorClient = Class({
     // on clientReady, track remote target, resubscribe old window manager
     // listeners and emit an high level "ready" event
     this.on("clientReady", function (remote) {
-      console.log("DEBUG rsc.onClientReady");
+      console.debug("rsc.onClientReady");
       this._remote = remote;
       this._unsubscribeWindowManagerEvents();
       this._subscribeWindowManagerEvents(function(packet) {
-        console.log("REMOTE WindowManager EVENT: "+JSON.stringify(packet));
+        console.debug("received a gaia WindowManager event: "+JSON.stringify(packet));
       });
       emit(this, "ready", null);
     });
@@ -92,7 +92,7 @@ const RemoteSimulatorClient = Class({
     // on clientClosed, untrack old remote target and emit 
     // an high level "disconnected" event
     this.on("clientClosed", function () {
-      console.log("DEBUG rsc.onClientClosed");
+      console.debug("rsc.onClientClosed");
       this._remote = null;
       emit(this, "disconnected", null);
     });
@@ -340,16 +340,13 @@ const RemoteSimulatorClient = Class({
     if (!this._pingbackServer) {
       this._pingbackServer = new PingbackServer({
         onCompleted: (function() {
-          console.log("PINGBACK COMPLETED");
           this._stopPingbackTimeout();
           emit(this, "pingbackCompleted", null);
         }).bind(this),
         onTimeout: (function() {
-          console.log("PINGBACK TIMEOUT");
           emit(this, "pingbackTimeout", null);
         }).bind(this),
         onExit: (function() {
-          console.log("PINGBACK EXIT");
           emit(this, "pingbackExit", null);
         }).bind(this)
       });
@@ -370,7 +367,7 @@ const RemoteSimulatorClient = Class({
       .createInstance(Ci.nsIServerSocket);
     serv.init(-1, true, -1);
     var found = serv.port;
-    console.log("FOUND FREE PORT:", found);
+    console.log("rsc.remoteDebuggerPort: found free port ", found);
     this.remoteDebuggerPort = found;
     serv.close();
     return found;
