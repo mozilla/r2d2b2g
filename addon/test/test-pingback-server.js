@@ -91,6 +91,7 @@ exports["test:PingbackServer stopTimeout"] = function(test, done) {
   pbs.stopTimeout();
 
   setTimeout(function () {
+    test.pass("stopTimeout is working correctly");
     done();
   }, 800);
 };
