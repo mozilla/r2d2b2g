@@ -1,3 +1,8 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. 
+ */
+
 const { Cc, Ci, Cr, Cu } = require("chrome");
 
 const Widget = require("widget").Widget;
@@ -26,22 +31,9 @@ Cu.import("resource://gre/modules/Services.jsm");
 
 require("addon-page");
 
+const RemoteSimulatorClient = require("remote-simulator-client");
+
 let simulator = {
-  _process: null,
-
-  get process() this._process,
-
-  set process(newVal) {
-    this._process = newVal;
-
-    if (this.worker) {
-      this.worker.postMessage({
-        name: "isRunning",
-        isRunning: !!this.process,
-      });
-    }
-  },
-
   _worker: null,
 
   get apps() {
@@ -218,7 +210,7 @@ let simulator = {
 
           if (manual) {
             simulator.defaultApp = id;
-            run();
+            simulator.run();
           }
         } else {
           // Hosted App
@@ -257,7 +249,7 @@ let simulator = {
 
             if (manual) {
               simulator.defaultApp = id;
-              run();
+              simulator.run();
             }
           });
         }
@@ -544,11 +536,11 @@ let simulator = {
   },
 
   kill: function(onKilled) {
-    if (this.process && !this.shuttingDown) {
-      this.onKilled = onKilled;
-      this.shuttingDown = true;
-      this.process.kill();
-    } else if (onKilled) {
+    // WORKAROUND: currently add and update an app will be executed
+    // as a simulator.kill callback
+    if (this.remoteSimulator.isRunning) {
+      this.remoteSimulator.kill(onKilled);
+    } else if (typeof onKilled === "function") {
       onKilled();
     }
   },
@@ -585,12 +577,58 @@ let simulator = {
     });
   },
 
+  run: function () {
+    let appName = null;
+    if (this.defaultApp) {
+      appName = this.apps[this.defaultApp].name
+      this.defaultApp = null;
+    }
+
+    this.remoteSimulator.run({
+      defaultApp: appName
+    });
+  },
+
+  get isRunning() {
+    return this.remoteSimulator.isRunning;
+  },
+  
+  get remoteSimulator() {
+    if (this._remoteSimulator)
+      return this._remoteSimulator;
+
+    let simulator = this;
+    let remoteSimulator = new RemoteSimulatorClient({
+      onStdout: function (data) dump(data),
+      onStderr: function (data) dump(data),
+      onReady: function () {
+        if (simulator.worker) {
+          simulator.worker.postMessage({
+            name: "isRunning",
+            isRunning: true
+          });
+        }
+      },
+      onExit: function () {
+        if (simulator.worker) {
+          simulator.worker.postMessage({
+            name: "isRunning",
+            isRunning: false
+          });
+        }
+      }
+    });
+    
+    this._remoteSimulator = remoteSimulator;
+    return remoteSimulator;
+  },
+
   onMessage: function onMessage(message) {
     console.log("Simulator.onMessage " + message.name);
     switch (message.name) {
       case "getIsRunning":
         this.worker.postMessage({ name: "isRunning",
-                                  isRunning: !!this.process });
+                                  isRunning: this.isRunning });
         break;
       case "addAppByDirectory":
         this.kill(function() {
@@ -612,6 +650,26 @@ let simulator = {
         this.kill(function() {
           simulator.updateApp(message.id, true);
         });
+        break;
+      case "runApp":
+        let appName = this.apps[message.id].name;
+
+        let cmd = function () {
+          this.remoteSimulator.runApp(appName, function (response) {
+            console.debug("RUNAPP RESPONSE: "+JSON.stringify(response));
+            // TODO: send feedback to manager tab
+          });
+        };
+        cmd = cmd.bind(this);
+
+        // NOTE: if a b2g instance is already running send request
+        //       or start a new instance and send request on ready
+        if (this.isRunning) {
+          cmd();
+        } else {
+          this.remoteSimulator.once("ready", function() cmd());
+          this.run();
+        }
         break;
       case "removeApp":
         this.removeApp(message.id);
@@ -635,10 +693,10 @@ let simulator = {
         simulator.getPreference();
         break;
       case "toggle":
-        if (this.process) {
+        if (this.isRunning) {
           this.kill();
         } else {
-          run();
+          simulator.run();
         }
         break;
       case "listTabs":
@@ -706,7 +764,7 @@ PageMod({
 //        worker.on("message", function(data) {
 //          switch(data) {
 //            case "run":
-//              run();
+//              simulator.run();
 //              worker.postMessage("B2G was started!");
 //              break;
 //          }
@@ -746,99 +804,6 @@ Tabs.on('close', function() {
     simulator.sendListTabs();
   }
 });
-
-function run() {
-  let executables = {
-    WINNT: "win32/b2g/b2g-bin.exe",
-    Darwin: "mac64/B2G.app/Contents/MacOS/b2g-bin",
-    Linux: (Runtime.XPCOMABI.indexOf("x86_64") == 0 ? "linux64" : "linux") +
-           "/b2g/b2g-bin",
-  };
-  let url = Self.data.url(executables[Runtime.OS]);
-  let path = URL.toFilename(url);
-
-  let executable = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
-  executable.initWithPath(path);
-
-  // Support B2G binaries built without GAIADIR.
-  if (!executable.exists()) {
-    let executables = {
-      WINNT: "win32/b2g/b2g.exe",
-      Darwin: "mac64/B2G.app/Contents/MacOS/b2g",
-      Linux: (Runtime.XPCOMABI.indexOf("x86_64") == 0 ? "linux64" : "linux") +
-             "/b2g/b2g",
-    };
-    let url = Self.data.url(executables[Runtime.OS]);
-    let path = URL.toFilename(url);
-    executable.initWithPath(path);
-  }
-
-  let args = [];
-
-  let profile = URL.toFilename(profileURL);
-  args.push("-profile", profile);
-
-  if (simulator.jsConsoleEnabled) {
-    args.push("-jsconsole");
-  }
-
-  if (simulator.defaultApp != null) {
-    args.push("--runapp", simulator.apps[simulator.defaultApp].name);
-    simulator.defaultApp = null;
-  }
-
-  if (simulator.process != null) {
-    simulator.process.kill();
-  }
-
-  simulator.process = Subprocess.call({
-    command: executable,
-    arguments: args,
-
-    // Whether or not the app has been activated.  Mac-specific, and custom
-    // to our implementation (not used by subprocess).  See below for usage.
-    activated: false,
-
-    stdout: function(data) {
-      dump(data);
-
-      // On Mac, tell the application to activate, as it opens in the background
-      // by default.  This can race process instantiation, in which case
-      // osascript will instantiate a duplicate process (but without supplying
-      // necessary args, so the process will be hung).  Thus we wait until
-      // the first output to do it.
-      if (Runtime.OS == "Darwin" && !this.activated) {
-        // Escape double quotes and escape characters for use in AppleScript.
-        let path = executable.path.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-
-        Subprocess.call({
-          command: "/usr/bin/osascript",
-          arguments: ["-e", 'tell application "' + path + '" to activate'],
-        });
-
-        this.activated = true;
-
-      }
-
-    },
-
-    stderr: function(data) {
-      dump(data);
-    },
-
-    done: function(result) {
-      console.log(executables[Runtime.OS] + " terminated with " + result.exitCode);
-      simulator.process = null;
-      simulator.shuttingDown = false;
-      if (simulator.onKilled) {
-        simulator.onKilled();
-        simulator.onKilled = null;
-      }
-    },
-
-  });
-
-}
 
 ContextMenu.Item({
   label: "Install Manifest as Firefox OS App",
@@ -893,7 +858,7 @@ Gcli.addCommand({
   description: "Start Firefox OS Simulator (restarts if running)",
   params: [],
   exec: function(args, context) {
-    run();
+    simulator.run();
   },
 });
 
@@ -902,8 +867,8 @@ Gcli.addCommand({
   description: "Stop Firefox OS Simulator",
   params: [],
   exec: function(args, context) {
-    if (simulator.process) {
-      simulator.process.kill();
+    if (simulator.isRunning) {
+      simulator.kill();
     }
   },
 });
@@ -914,7 +879,7 @@ Gcli.addCommand({
 //   insertbefore: "sanitizeSeparator",
 //   label: "Launch B2G Desktop",
 //   onCommand: function() {
-//     run();
+//     simulator.run();
 //   },
 // });
 

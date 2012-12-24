@@ -152,7 +152,12 @@ var Simulator = {
                     .click(function(evt) {
                       window.postMessage({name: "updateApp", id: id}, "*");
                     })
-                    .prop("title", lastUpdate)
+                    .prop("title", lastUpdate),
+                  $("<button>")
+                    .text("Run")
+                    .click(function(evt) {
+                      window.postMessage({name: "runApp", id: id}, "*");
+                    })
                 );
                 // $("<label>").append(
                 //   $("<span>").text('Run by default:'),
