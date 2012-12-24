@@ -615,14 +615,6 @@ let simulator = {
           });
         }
       },
-      onTimeout: function () {
-        if (simulator.worker) {
-          simulator.worker.postMessage({
-            name: "remoteDeveloperToolboxLog",
-            msg: "ERROR: Simulator Instance Timeout\n"
-          });
-        }
-      },
       onExit: function () {
         if (simulator.worker) {
           simulator.worker.postMessage({
@@ -635,11 +627,6 @@ let simulator = {
     
     this._remoteSimulator = remoteSimulator;
     return remoteSimulator;
-  },
-
-  connectRemoteDeveloperToolbox: function() {
-    console.log("Simulator.connectRemoteDeveloperToolbox");
-    this.remoteSimulator.connectDeveloperTools();
   },
 
   onMessage: function onMessage(message) {

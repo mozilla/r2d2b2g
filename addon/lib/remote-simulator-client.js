@@ -155,36 +155,6 @@ const RemoteSimulatorClient = Class({
     }
   },  
 
-  // create a new remote debugger connection and open remote Developer Toolbox
-  // NOTE: currently this will work only on nightly
-  connectDeveloperTools: function () {
-    if (!this.process) {
-      emit(this, "error", "ERROR: Simulator not running.\n");
-      return false;
-    }
-
-    let transport = debuggerSocketConnect("127.0.0.1", this.remoteDebuggerPort);
-    let devtoolsClient = new DebuggerClient(transport);
-    devtoolsClient.addListener("closed", function () { 
-      console.log("DEBUGGER CLIENT: connection closed"); 
-    });
-    devtoolsClient.connect((function () {
-      devtoolsClient.request({to: "root", type: "listTabs"}, (function (reply) {
-        this._openDeveloperToolbox(devtoolsClient, reply, "webconsole", true);
-      }).bind(this));
-    }).bind(this));
-  },
-
-  // open a remote Developer Toolbox helper
-  _openDeveloperToolbox: function(client, form, toolname, chrome) {
-    Cu.import("resource:///modules/devtools/Target.jsm");
-    Cu.import("resource:///modules/devtools/Toolbox.jsm");
-    Cu.import("resource:///modules/devtools/gDevTools.jsm");
-
-    let target = TargetFactory.forRemote(form, client, chrome);
-    gDevTools.showToolbox(target, toolname, Toolbox.HostType.WINDOW);
-  },
-
   // connect simulator using debugging protocol
   // NOTE: this control channel will be auto-created on every b2g instance run
   connectDebuggerClient: function() {
