@@ -412,4 +412,4 @@ const RemoteSimulatorClient = Class({
   }
 });
 
-exports = RemoteSimulatorClient;
+module.exports = RemoteSimulatorClient;
