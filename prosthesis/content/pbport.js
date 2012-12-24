@@ -11,7 +11,7 @@ window.addEventListener("ContentStart", function() {
   let args = window.arguments[0].QueryInterface(Ci.nsICommandLine);
   let pbport;
  
-   // Get the --screen argument from the command line
+   // Get the --pbport argument from the command line
    try {
      pbport = args.handleFlagWithParam('pbport', false);
  

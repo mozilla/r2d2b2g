@@ -12,7 +12,7 @@ window.addEventListener("ContentStart", function() {
   let args = window.arguments[0].QueryInterface(Ci.nsICommandLine);
   let dbgport;
  
-   // Get the --screen argument from the command line
+   // Get the --dbgport argument from the command line
    try {
      dbgport = args.handleFlagWithParam('dbgport', false);
  
