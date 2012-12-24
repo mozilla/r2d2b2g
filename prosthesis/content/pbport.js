@@ -46,7 +46,6 @@ window.addEventListener("ContentStart", function() {
     Services.startup.quit(Ci.nsIAppStartup.eAttemptQuit);
   }
 
-  function log(msg) dump(msg+"\n")
   function fail(msg) {
     log(msg);
     Services.startup.quit(Ci.nsIAppStartup.eAttemptQuit);
