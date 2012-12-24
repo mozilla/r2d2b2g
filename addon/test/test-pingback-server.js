@@ -4,7 +4,7 @@
 
 'use strict';
 
-const { PingbackServer } = require("pingback-server");
+const PingbackServer = require("pingback-server");
 const { setTimeout, clearTimeout } = require('sdk/timers')
 
 var { Cu, Cc, Ci } = require("chrome");

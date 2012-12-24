@@ -4,7 +4,7 @@
 
 'use strict';
 
-const { RemoteSimulatorClient } = require("remote-simulator-client");
+const RemoteSimulatorClient = require("remote-simulator-client");
 
 exports["test:RemoteSimulatorClient run/onReady/onStdout/onExit"] = function(test, done) {
   var timeout = false;

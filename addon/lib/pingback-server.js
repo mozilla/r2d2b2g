@@ -53,4 +53,4 @@ const PingbackServer = Class({
   }
 });
 
-exports.PingbackServer = PingbackServer;
+exports = PingbackServer;

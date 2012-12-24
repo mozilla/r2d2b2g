@@ -26,8 +26,7 @@ Cu.import("resource://gre/modules/Services.jsm");
 
 require("addon-page");
 
-const RemoteSimulatorClient = require("remote-simulator-client").RemoteSimulatorClient;
-const PingbackServer = require("pingback-server").PingbackServer;
+const RemoteSimulatorClient = require("remote-simulator-client");
 
 let simulator = {
   _worker: null,

@@ -15,7 +15,7 @@ const { Cc, Ci, Cu, ChromeWorker } = require("chrome");
 const { rootURI } = require('@loader/options');
 const profileURL = rootURI + "profile/";
 
-const { PingbackServer } = require("pingback-server");
+const PingbackServer = require("pingback-server");
 
 // import debuggerSocketConnect and DebuggerClient
 Cu.import("resource://gre/modules/devtools/dbg-client.jsm");
@@ -412,4 +412,4 @@ const RemoteSimulatorClient = Class({
   }
 });
 
-exports.RemoteSimulatorClient = RemoteSimulatorClient;
+exports = RemoteSimulatorClient;
