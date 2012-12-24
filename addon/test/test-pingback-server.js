@@ -79,10 +79,9 @@ exports["test:PingbackServer startTimeout/onTimeout"] = function(test, done) {
 };
 
 exports["test:PingbackServer stopTimeout"] = function(test, done) {
-  var pingback_timeout = false;
   var pbs = new PingbackServer({
     onTimeout: function () {
-      test.pass("onTimeout callback");
+      test.fail("onTimeout callback should not be called");
       pingback_timeout = true;
     }
   });
@@ -92,7 +91,6 @@ exports["test:PingbackServer stopTimeout"] = function(test, done) {
   pbs.stopTimeout();
 
   setTimeout(function () {
-    test.ok(!pingback_timeout, "onTimeout should not be called");
     done();
   }, 800);
 };
