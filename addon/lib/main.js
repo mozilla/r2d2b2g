@@ -531,15 +531,11 @@ let simulator = {
   },
 
   kill: function(onKilled) {
-    if (onKilled)
-      onKilled = onKilled.bind(this);
-    else
-      onKilled = function () {}; // dummy callback function
     // WORKAROUND: currently add and update an app will be executed
     // as a simulator.kill callback
     if (this.remoteSimulator.isRunning) {
       this.remoteSimulator.kill(onKilled);
-    } else {
+    } else if (typeof onKilled === "function") {
       onKilled();
     }
   },

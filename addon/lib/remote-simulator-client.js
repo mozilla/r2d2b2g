@@ -41,23 +41,23 @@ const RemoteSimulatorClient = Class({
 
     // on pinbackTimeout, emit an high level "timeout" event
     // and kill the stalled instance
-    this.once("pingbackTimeout", (function() {
+    this.once("pingbackTimeout", function() {
       emit(this, "timeout", null);
       this.kill();
-    }).bind(this));
+    });
 
     // on pingbackCompleted, track a completed pingback and start
     // debugger protocol connection
-    this.on("pingbackCompleted", (function() {
+    this.on("pingbackCompleted", function() {
       console.log("DEBUG rsc.onPingbackCompleted");
       this._pingbackCompleted = true;
       this.connectDebuggerClient();
-    }).bind(this));
+    });
 
     // on clientConnected, register an handler to close current connection 
     // on kill and send a "listTabs" debug protocol request, finally
     // emit a clientReady event on "listTabs" reply
-    this.on("clientConnected", (function (data) {
+    this.on("clientConnected", function (data) {
       console.log("DEBUG rsc.onClientConnected");
       let client = data.client;
       this.once("kill", function () client.close());
@@ -70,11 +70,11 @@ const RemoteSimulatorClient = Class({
           simulator: reply.simulatorActor
         });
       }).bind(this));
-    }).bind(this));
+    });
 
     // on clientReady, track remote target, resubscribe old window manager
     // listeners and emit an high level "ready" event
-    this.on("clientReady", (function (remote) {
+    this.on("clientReady", function (remote) {
       console.log("DEBUG rsc.onClientReady");
       this._remote = remote;
       this._unsubscribeWindowManagerEvents();
@@ -82,15 +82,15 @@ const RemoteSimulatorClient = Class({
         console.log("REMOTE WindowManager EVENT: "+JSON.stringify(packet));
       });
       emit(this, "ready", null);
-    }).bind(this));
+    });
 
     // on clientClosed, untrack old remote target and emit 
     // an high level "disconnected" event
-    this.on("clientClosed", (function () {
+    this.on("clientClosed", function () {
       console.log("DEBUG rsc.onClientClosed");
       this._remote = null;
       emit(this, "disconnected", null);
-    }).bind(this));
+    });
   },
   // run({defaultApp: "Appname", pingbackTimeout: 15000})
   // will spawn a b2g instance, optionally run an application
@@ -149,7 +149,7 @@ const RemoteSimulatorClient = Class({
     if (this.process && !this.shuttingDown) {
       emit(this, "kill", null);
       this.shuttingDown = true;
-      if (onKilled)
+      if (typeof onKilled === "function")
         this.once("exit", onKilled);
       this.process.kill();
     }
@@ -245,7 +245,7 @@ const RemoteSimulatorClient = Class({
 
     let remote = this._remote;
     remote.client.request({to: remote.simulator, type: "subscribeWindowManagerEvents"}, 
-                          onEvent.bind(this));
+                          onEvent);
   },
 
   // send a unsubscribeWindowManagerEvents request to the remote simulator actor
