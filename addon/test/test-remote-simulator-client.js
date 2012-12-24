@@ -7,10 +7,17 @@
 const RemoteSimulatorClient = require("remote-simulator-client");
 
 exports["test:RemoteSimulatorClient run/onReady/onStdout/onExit"] = function(test, done) {
+  // WORKAROUND: random timeouts on Mac
+  test._log.waitUntilDone(30000);
+
   var timeout = false;
   var stdout = false;
   var rsc = new RemoteSimulatorClient({
-    onStdout: function (data) { if (data.search("__test_stdout__") >= 0) stdout = true; },
+    onStdout: function (data) { 
+      if (data.search("__test_stdout__") >= 0) {
+        stdout = true;
+      }
+    },
     onReady: function () {      
       test.pass("emulator ready");
       rsc.logStdout("__test_stdout__", function () {
