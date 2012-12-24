@@ -121,6 +121,21 @@ const RemoteSimulatorClient = Class({
     // start pingback timeout handler
     this._startPingbackTimeout();
 
+    this.once("stdout", function () {
+      if (Runtime.OS == "Darwin") {
+          console.debug("WORKAROUND run osascript to show b2g-desktop window"+
+                        " on Runtime.OS=='Darwin'");
+        // Escape double quotes and escape characters for use in AppleScript.
+        let path = remoteSimulator.b2gExecutable.path
+          .replace(/\\/g, "\\\\").replace(/\"/g, '\\"');
+
+        Subprocess.call({
+          command: "/usr/bin/osascript",
+          arguments: ["-e", 'tell application "' + path + '" to activate'],
+        });
+      }
+    });    
+
     // spawn a b2g instance
     this.process = Subprocess.call({
       command: this.b2gExecutable,

@@ -608,17 +608,6 @@ let simulator = {
             isRunning: true
           });
         }
-
-        if (Runtime.OS == "Darwin") {
-          // Escape double quotes and escape characters for use in AppleScript.
-          let path = remoteSimulator.b2gExecutable.path
-            .replace(/\\/g, "\\\\").replace(/\"/g, '\\"');
-
-          Subprocess.call({
-            command: "/usr/bin/osascript",
-            arguments: ["-e", 'tell application "' + path + '" to activate'],
-          });
-        }
       },
       onExit: function () {
         if (simulator.worker) {
