@@ -360,7 +360,7 @@ const RemoteSimulatorClient = Class({
     var port = this._foundRemoteDebuggerPort;
 
     if (port) {
-      return port
+      return port;
     }
      
     var serv = Cc['@mozilla.org/network/server-socket;1']
