@@ -10,15 +10,15 @@ window.addEventListener("ContentStart", function() {
 
   log("patch startDebugger");
 
-  presimulator_startDebugger = startDebugger;
+  var presimulator_startDebugger = window.startDebugger;
   window.startDebugger = function startDebugger() {
     presimulator_startDebugger();
     DebuggerServer.addActors('chrome://prosthesis/content/simulator-actors.js');
     pingback();
   }
 
-  log("start debugger");
-  startDebugger();
+  log("enable and start debugger");
+  window.navigator.mozSettings.createLock().set({"devtools.debugger.remote-enabled": true});
 
   function pingback() {
     log("sending pingback");
