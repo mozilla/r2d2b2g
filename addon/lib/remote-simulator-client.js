@@ -31,6 +31,10 @@ const RemoteSimulatorClient = Class({
     EventTarget.prototype.initialize.call(this, options);
     this._hookInternalEvents();
   },
+  // check if b2g is running and connected
+  get isConnected() {
+    return !!this.process && !this._clientConnected;
+  },
   // check if b2g is running
   get isRunning() {
     return !!this.process;
@@ -47,6 +51,8 @@ const RemoteSimulatorClient = Class({
     // on pinbackTimeout, emit an high level "timeout" event
     // and kill the stalled instance
     this.once("pingbackTimeout", function() {
+      this._pingbackCompleted = false;
+      this._clientConnecting = false;
       emit(this, "timeout", null);
       this.kill();
     });
@@ -54,7 +60,7 @@ const RemoteSimulatorClient = Class({
     // on pingbackCompleted, track a completed pingback and start
     // debugger protocol connection
     this.on("pingbackCompleted", function() {
-      console.debug("rsc.onPingbackCompleted");
+      console.debug("rsc.onPingbackCompleted");      
       this._pingbackCompleted = true;
       this.connectDebuggerClient();
     });
@@ -64,6 +70,8 @@ const RemoteSimulatorClient = Class({
     // emit a clientReady event on "listTabs" reply
     this.on("clientConnected", function (data) {
       console.debug("rsc.onClientConnected");
+      this._clientConnecting = false;
+      this._clientConnected = true;
       let client = data.client;
       this.once("kill", function () client.close());
       client.request({to: "root", type: "listTabs"}, (function (reply) {
@@ -93,6 +101,8 @@ const RemoteSimulatorClient = Class({
     // an high level "disconnected" event
     this.on("clientClosed", function () {
       console.debug("rsc.onClientClosed");
+      this._clientConnected = false;
+      this._clientConnecting = false;
       this._remote = null;
       emit(this, "disconnected", null);
     });
@@ -178,6 +188,13 @@ const RemoteSimulatorClient = Class({
   // connect simulator using debugging protocol
   // NOTE: this control channel will be auto-created on every b2g instance run
   connectDebuggerClient: function() {
+    if (this._clientConnected || this._clientConnecting) {
+      console.debug("remote-simulator-client: already connected.");
+      return
+    }
+
+    this._clientConnecting = true;
+
     let transport = debuggerSocketConnect("127.0.0.1", this.remoteDebuggerPort);
 
     let client = new DebuggerClient(transport);
