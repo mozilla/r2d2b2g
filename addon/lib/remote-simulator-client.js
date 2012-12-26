@@ -32,17 +32,12 @@ const RemoteSimulatorClient = Class({
     this._hookInternalEvents();
   },
   // check if b2g is running and connected
-  get isConnected() {
-    return !!this.process && !this._clientConnected;
-  },
+  get isConnected() this._clientConnected,
   // check if b2g is running
-  get isRunning() {
-    return !!this.process;
-  },
+  get isRunning() !!this.process, 
   // check if b2g exited without reach a ready state
-  get isExitedWithoutReady() {
-    return !this.process && !this._pingbackCompleted;
-  },
+  get isExitedWithoutReady() !this.process && !this._pingbackCompleted;
+  
   _hookInternalEvents: function () {
     // NOTE: remote all listeners (currently disabled cause this function
     //       will be called only once)
@@ -60,7 +55,7 @@ const RemoteSimulatorClient = Class({
     // on pingbackCompleted, track a completed pingback and start
     // debugger protocol connection
     this.on("pingbackCompleted", function() {
-      console.debug("rsc.onPingbackCompleted");      
+      console.debug("rsc.onPingbackCompleted");
       this._pingbackCompleted = true;
       this.connectDebuggerClient();
     });
@@ -189,8 +184,8 @@ const RemoteSimulatorClient = Class({
   // NOTE: this control channel will be auto-created on every b2g instance run
   connectDebuggerClient: function() {
     if (this._clientConnected || this._clientConnecting) {
-      console.debug("remote-simulator-client: already connected.");
-      return
+      console.warn("remote-simulator-client: already connected.");
+      return;
     }
 
     this._clientConnecting = true;
@@ -327,7 +322,7 @@ const RemoteSimulatorClient = Class({
       executableFilename = executables[Runtime.OS];
     }
 
-    this._executable = executable
+    this._executable = executable;
     this._executableFilename = executableFilename;
 
     return executable;
