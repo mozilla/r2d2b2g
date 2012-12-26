@@ -18,14 +18,25 @@ window.addEventListener("ContentStart", function() {
   }
 
   log("enable and start debugger");
-  window.navigator.mozSettings.createLock().set({"devtools.debugger.remote-enabled": true});
+  let lock = window.navigator.mozSettings.createLock();
+  try {
+    let getReq = lock.get("devtools.debugger.remote-enabled");
+    getReq.onsuccess(enable);
+
+    function enable() {
+      if (getReq.result["devtools.debugger.remote-enabled"] !== true)
+        lock.set({"devtools.debugger.remote-enabled": true});
+    }
+  } catch(e) {
+    lock.set({"devtools.debugger.remote-enabled": true});
+  }
 
   function pingback() {
     log("sending pingback");
 
     let pprefs = Cc['@mozilla.org/preferences-service;1']
       .getService(Ci.nsIPrefService).getBranch("devtools.prosthesis.");
-    var pbport = pprefs.getIntPref("pingback-port");
+    let pbport = pprefs.getIntPref("pingback-port");
     
     if (pbport) {
       try {
