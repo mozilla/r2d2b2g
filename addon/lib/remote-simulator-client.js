@@ -36,7 +36,7 @@ const RemoteSimulatorClient = Class({
   // check if b2g is running
   get isRunning() !!this.process, 
   // check if b2g exited without reach a ready state
-  get isExitedWithoutReady() !this.process && !this._pingbackCompleted;
+  get isExitedWithoutReady() { return !this.process && !this._pingbackCompleted; },
   
   _hookInternalEvents: function () {
     // NOTE: remote all listeners (currently disabled cause this function
