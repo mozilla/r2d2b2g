@@ -1,31 +1,28 @@
 // patch startDebugger to add simulator-actors and pingback simulator manager
 // on ready.
-window.addEventListener("ContentStart", function() {
-  function log(msg) {
+{
+  let log = function log(msg) {
     var DEBUG_LOG = true;
 
     if (DEBUG_LOG)
       dump("prosthesis:"+msg+"\n");
-  }
+  };
 
   log("patch startDebugger");
 
-  presimulator_startDebugger = startDebugger;
+  let presimulator_startDebugger = window.startDebugger;
   window.startDebugger = function startDebugger() {
     presimulator_startDebugger();
     DebuggerServer.addActors('chrome://prosthesis/content/simulator-actors.js');
     pingback();
   }
 
-  log("start debugger");
-  startDebugger();
-
-  function pingback() {
+  let pingback = function pingback() {
     log("sending pingback");
 
     let pprefs = Cc['@mozilla.org/preferences-service;1']
       .getService(Ci.nsIPrefService).getBranch("devtools.prosthesis.");
-    var pbport = pprefs.getIntPref("pingback-port");
+    let pbport = pprefs.getIntPref("pingback-port");
     
     if (pbport) {
       try {
@@ -47,4 +44,4 @@ window.addEventListener("ContentStart", function() {
       }
     }
   }
-});
+}

@@ -183,4 +183,5 @@ SimulatorActor.prototype.requestTypes = {
   "unsubscribeWindowManagerEvents": SimulatorActor.prototype.onUnsubscribeWindowManagerEvents,
 };
 
+DebuggerServer.removeGlobalActor(SimulatorActor);
 DebuggerServer.addGlobalActor(SimulatorActor,"simulatorActor");
