@@ -12,5 +12,4 @@ user_pref("general.useragent.override", "Mozilla/5.0 (Mobile; rv:18.0) Gecko/18.
 user_pref("power.screen.timeout", 86400);
 
 // Enable remote debugging and other tools.
-user_pref("devtools.debugger.remote-enabled", true);
 user_pref("marionette.defaultPrefs.enabled", false);

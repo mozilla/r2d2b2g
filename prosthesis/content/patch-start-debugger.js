@@ -1,37 +1,23 @@
 // patch startDebugger to add simulator-actors and pingback simulator manager
 // on ready.
-window.addEventListener("ContentStart", function() {
-  function log(msg) {
+{
+  let log = function log(msg) {
     var DEBUG_LOG = true;
 
     if (DEBUG_LOG)
       dump("prosthesis:"+msg+"\n");
-  }
+  };
 
   log("patch startDebugger");
 
-  var presimulator_startDebugger = window.startDebugger;
+  let presimulator_startDebugger = window.startDebugger;
   window.startDebugger = function startDebugger() {
     presimulator_startDebugger();
     DebuggerServer.addActors('chrome://prosthesis/content/simulator-actors.js');
     pingback();
   }
 
-  log("enable and start debugger");
-  let lock = window.navigator.mozSettings.createLock();
-  try {
-    let getReq = lock.get("devtools.debugger.remote-enabled");
-    getReq.onsuccess(enable);
-
-    function enable() {
-      if (getReq.result["devtools.debugger.remote-enabled"] !== true)
-        lock.set({"devtools.debugger.remote-enabled": true});
-    }
-  } catch(e) {
-    lock.set({"devtools.debugger.remote-enabled": true});
-  }
-
-  function pingback() {
+  let pingback = function pingback() {
     log("sending pingback");
 
     let pprefs = Cc['@mozilla.org/preferences-service;1']
@@ -58,4 +44,4 @@ window.addEventListener("ContentStart", function() {
       }
     }
   }
-});
+}
