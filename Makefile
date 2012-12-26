@@ -44,7 +44,8 @@ ifeq (win32, $(B2G_PLATFORM))
   B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2012-12-17.en-US.win32.zip
 else
 ifeq (mac64, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2012-12-17.en-US.mac64.dmg
+  B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/latest-mozilla-b2g18/
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.multi.mac64.dmg
 else
 ifeq (linux64, $(B2G_PLATFORM))
   B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2012-12-17.en-US.linux-x86_64.tar.bz2
