@@ -39,18 +39,21 @@ ifndef B2G_PLATFORM
 endif
 
 # The URL of the specific B2G build.
-B2G_URL_BASE ?= https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/
 ifeq (win32, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2012-12-17.en-US.win32.zip
+  B2G_URL_BASE ?= https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2012-12-26-07-02-02-mozilla-b2g18/
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.multi.win32.zip
 else
 ifeq (mac64, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2012-12-17.en-US.mac64.dmg
+  B2G_URL_BASE ?= https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2012-12-26-07-02-02-mozilla-b2g18/
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.multi.mac64.dmg
 else
 ifeq (linux64, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2012-12-17.en-US.linux-x86_64.tar.bz2
+  B2G_URL_BASE ?= https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2012-12-26.en-US.linux-x86_64.tar.bz2
 else
 ifeq (linux, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2012-12-17.en-US.linux-i686.tar.bz2
+  B2G_URL_BASE ?= https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2012-12-26.en-US.linux-i686.tar.bz2
 endif
 endif
 endif
