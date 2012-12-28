@@ -1,6 +1,7 @@
 {
   "set": {
-    "debug.oop.disabled": true
+    "debug.oop.disabled": true,
+    "devtools.debugger.remote-enabled": true
   },
   "remove": ["ftu.manifestURL"]
 }
