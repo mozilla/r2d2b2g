@@ -44,8 +44,8 @@ ifeq (win32, $(B2G_PLATFORM))
   B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.multi.win32.zip
 else
 ifeq (mac64, $(B2G_PLATFORM))
-  B2G_URL_BASE ?= https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2012-12-26-07-02-02-mozilla-b2g18/
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.multi.mac64.dmg
+  B2G_URL_BASE ?= https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2012-12-31-07-02-01-mozilla-b2g18/
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.multi.mac64-localizer.dmg
 else
 ifeq (linux64, $(B2G_PLATFORM))
   B2G_URL_BASE ?= https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/
