@@ -36,10 +36,10 @@ parser.add_option('--platform', '-p',
 # Option group for nightly builds.
 group = OptionGroup(parser, "nightly builds",
                     "extra options for nightly builds")
-group.add_option('--date', '-d',
-                 dest='date',
-                 metavar='YYYY-MM-DD',
-                 help='the date of the nightly build; '
+group.add_option('--id', None,
+                 dest='id',
+                 metavar='YYYYMMDDHHMMSS',
+                 help='the ID of the nightly build; '
                       'default: the most recent nightly build')
 parser.add_option_group(group)
 
@@ -100,7 +100,7 @@ scraper_keywords = {
 scraper_options = {
   'nightly': {
     'branch': 'mozilla-b2g18',
-    'date': options.date
+    'build_id': options.id
   },
   'specific': {}
 }
