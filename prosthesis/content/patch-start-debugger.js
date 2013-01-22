@@ -8,14 +8,23 @@
       dump("prosthesis:"+msg+"\n");
   };
 
-  log("patch startDebugger");
+  log("patch RemoteDebugger.start");
 
-  let presimulator_startDebugger = window.startDebugger;
-  window.startDebugger = function startDebugger() {
-    presimulator_startDebugger();
+  // add simulator actors
+  let presimulator_RemoteDebugger_start = RemoteDebugger.start.bind(RemoteDebugger);
+  RemoteDebugger.start = function simulatorRemoteDebuggerStart() {
+    presimulator_RemoteDebugger_start(); // call original RemoteDebugger.start
     DebuggerServer.addActors('chrome://prosthesis/content/simulator-actors.js');
     pingback();
   }
+
+  // allow remote debugger connection without any user confirmation
+  RemoteDebugger.prompt = function() {
+    this._promptDone = true;
+    this._promptAnswer = true;
+    return true;
+  };
+
 
   let pingback = function pingback() {
     log("sending pingback");
