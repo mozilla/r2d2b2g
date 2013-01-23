@@ -246,24 +246,32 @@ let simulator = {
         );
       }
       
-      let webappFile = File.join(TmpDwebappsDir, "manifest.webapp");
+      let webappFile = File.join(webappDir, "manifest.webapp");
       File.open(webappFile, "w").writeAsync(JSON.stringify(config.manifest, null, 2), function(err) {
         if (err) {
           console.error("Error while writing manifest.webapp " + err);
         }
         console.log("Written manifest.webapp");
-        simulator.info(config.name + " (hosted app) installed in Firefox OS");
+
+        let metadataFile = File.join(webappDir, "metadata.json");
+        let metadata = {
+          origin: config.origin,
+          manifestURL: id,
+        };
+        File.open(metadataFile, "w").writeAsync(JSON.stringify(metadata, null, 2), function(err) {
+          simulator.info(config.name + " (hosted app) installed in Firefox OS");
         
-        // Complete install (Hosted)
-        if (manual) {
-          simulator.defaultApp = null; // id; // DISABLED: because on the first run the app will be not already installed
-          simulator.run(function() {
-            console.log("INSTALLING ",config.xkey);
-            simulator.remoteSimulator.install(config.xkey, null, function(res) {
-              console.debug("INSTALL RESPONSE: ",JSON.stringify(res));
+          // Complete install (Hosted)
+          if (manual) {
+            simulator.defaultApp = null; // id; // DISABLED: because on the first run the app will be not already installed
+            simulator.run(function() {
+              console.log("INSTALLING ",config.xkey);
+              simulator.remoteSimulator.install(config.xkey, null, function(res) {
+                console.debug("INSTALL RESPONSE: ",JSON.stringify(res));
+              });
             });
-          });
-        }
+          }
+        });
       });
     }
     
