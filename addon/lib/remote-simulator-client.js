@@ -75,7 +75,8 @@ const RemoteSimulatorClient = Class({
           globals: reply,
           tabs: reply.tabs,
           selected: reply.selected,
-          simulator: reply.simulatorActor
+          simulator: reply.simulatorActor,
+          webapps: reply.webappsActor
         });
       }).bind(this));
     });
@@ -222,6 +223,15 @@ const RemoteSimulatorClient = Class({
     let remote = this._remote;
 
     remote.client.request({to: remote.simulator, type: "runApp", appname: appname}, 
+                          onResponse);
+  },
+
+  // send an install request to the remote webappsActor
+  install: function(appId, appType, onResponse) {
+    let remote = this._remote;
+
+    remote.client.request({to: remote.webapps, type: "install", appId: appId,
+                           appType: appType}, 
                           onResponse);
   },
 

@@ -126,10 +126,19 @@ let simulator = {
     }
   },
 
+  get webappsDir() {
+    let sandbox = {};
+    XPCOMUtils.defineLazyServiceGetter(sandbox, "gDirService",
+                                       "@mozilla.org/file/directory_service;1",
+                                       "nsIProperties");
+    return File.join(URL.toFilename("file://"+sandbox.gDirService.get("TmpD", Ci.nsILocalFile).path), "b2g");
+  },
+
   updateApp: function(id, manual) {
     console.log("Simulator.updateApp " + id);
 
     let webappsDir = URL.toFilename(profileURL + "webapps");
+    let TmpDwebappsDir = this.webappsDir;
     let webappsFile = File.join(webappsDir, "webapps.json");
     let webapps = JSON.parse(File.read(webappsFile));
 
@@ -173,90 +182,92 @@ let simulator = {
 
     // Create the webapp record and write it to the registry.
     webapps[config.xkey] = webappEntry;
-    File.open(webappsFile, "w").writeAsync(
-      JSON.stringify(webapps, null, 2) + "\n",
-      function(error) {
-        if (error) {
-          console.error("error writing webapp record to registry: " + error);
-          return
+
+    // Create target folder
+    let webappDir = File.join(TmpDwebappsDir, config.xkey);
+    // if (File.exists(webappDir)) {
+    //   File.rmdir(webappDir);
+    // }
+    File.mkpath(webappDir);
+    console.log("Created " + webappDir);
+    
+    if (config.type == "local") {
+      // Copy manifest
+      let manifestFile = Cc['@mozilla.org/file/local;1'].
+        createInstance(Ci.nsIFile);
+      manifestFile.initWithPath(id);
+      let webappDir_nsIFile = Cc['@mozilla.org/file/local;1'].
+        createInstance(Ci.nsIFile);
+      webappDir_nsIFile.initWithPath(webappDir);
+      manifestFile.copyTo(webappDir_nsIFile, "manifest.webapp");
+      
+      // Archive source folder to target folder
+      let sourceDir = id.replace(/[\/\\][^\/\\]*$/, "");
+      let archiveFile = File.join(webappDir, "application.zip");
+      
+      console.log("Zipping " + sourceDir + " to " + archiveFile);
+      archiveDir(archiveFile, sourceDir);
+      
+      simulator.info(config.name + " (packaged app) installed in Firefox OS");
+      // Complete install (Packaged)
+      if (manual) {
+        simulator.defaultApp = null; //id; // DISABLED: because on the first run the app will be not already installed
+        console.log("INSTALLING ",config.xkey);
+        simulator.run(function() {
+          simulator.remoteSimulator.install(config.xkey, null, function(res) {
+            console.debug("INSTALL RESPONSE: ",JSON.stringify(res));
+          });
+        });
+      }
+    } else {
+      // Hosted App
+      
+      let PermissionsInstaller;
+      try {
+        PermissionsInstaller =
+          Cu.import("resource://gre/modules/PermissionsInstaller.jsm").
+          PermissionsInstaller;
+      } catch(e) {
+        // PermissionsInstaller doesn't exist on Firefox 17 (and 18/19?),
+        // so catch and ignore an exception importing it.
+      }
+      
+      if (PermissionsInstaller) {
+        PermissionsInstaller.installPermissions(
+          {
+            manifest: config.manifest,
+            manifestURL: id,
+            origin: config.origin
+          },
+          false, // isReinstall, installation failed for true
+          function(e) {
+            console.error("PermissionInstaller FAILED for " + config.origin);
+          }
+        );
+      }
+      
+      let webappFile = File.join(TmpDwebappsDir, "manifest.webapp");
+      File.open(webappFile, "w").writeAsync(JSON.stringify(config.manifest, null, 2), function(err) {
+        if (err) {
+          console.error("Error while writing manifest.webapp " + err);
         }
-
-        // Create target folder
-        let webappDir = File.join(webappsDir, config.xkey);
-        // if (File.exists(webappDir)) {
-        //   File.rmdir(webappDir);
-        // }
-        File.mkpath(webappDir);
-        console.log("Created " + webappDir);
-
-        if (config.type == "local") {
-          // Copy manifest
-          let manifestFile = Cc['@mozilla.org/file/local;1'].
-                          createInstance(Ci.nsIFile);
-          manifestFile.initWithPath(id);
-          let webappDir_nsIFile = Cc['@mozilla.org/file/local;1'].
-                                   createInstance(Ci.nsIFile);
-          webappDir_nsIFile.initWithPath(webappDir);
-          manifestFile.copyTo(webappDir_nsIFile, "manifest.webapp");
-
-          // Archive source folder to target folder
-          let sourceDir = id.replace(/[\/\\][^\/\\]*$/, "");
-          let archiveFile = File.join(webappDir, "application.zip");
-
-          console.log("Zipping " + sourceDir + " to " + archiveFile);
-          archiveDir(archiveFile, sourceDir);
-
-          simulator.info(config.name + " (packaged app) installed in Firefox OS");
-
-          if (manual) {
-            simulator.defaultApp = id;
-            simulator.run();
-          }
-        } else {
-          // Hosted App
-
-          let PermissionsInstaller;
-          try {
-            PermissionsInstaller =
-              Cu.import("resource://gre/modules/PermissionsInstaller.jsm").
-              PermissionsInstaller;
-          } catch(e) {
-            // PermissionsInstaller doesn't exist on Firefox 17 (and 18/19?),
-            // so catch and ignore an exception importing it.
-          }
-
-          if (PermissionsInstaller) {
-            PermissionsInstaller.installPermissions(
-              {
-                manifest: config.manifest,
-                manifestURL: id,
-                origin: config.origin
-              },
-              false, // isReinstall, installation failed for true
-              function(e) {
-                console.error("PermissionInstaller FAILED for " + config.origin);
-              }
-            );
-          }
-
-          let webappFile = File.join(webappDir, "manifest.webapp");
-          File.open(webappFile, "w").writeAsync(JSON.stringify(config.manifest, null, 2), function(err) {
-            if (err) {
-              console.error("Error while writing manifest.webapp " + err);
-            }
-            console.log("Written manifest.webapp");
-            simulator.info(config.name + " (hosted app) installed in Firefox OS");
-
-            if (manual) {
-              simulator.defaultApp = id;
-              simulator.run();
-            }
+        console.log("Written manifest.webapp");
+        simulator.info(config.name + " (hosted app) installed in Firefox OS");
+        
+        // Complete install (Hosted)
+        if (manual) {
+          simulator.defaultApp = null; // id; // DISABLED: because on the first run the app will be not already installed
+          simulator.run(function() {
+            console.log("INSTALLING ",config.xkey);
+            simulator.remoteSimulator.install(config.xkey, null, function(res) {
+              console.debug("INSTALL RESPONSE: ",JSON.stringify(res));
+            });
           });
         }
-
-        simulator.sendListApps();
-      }
-    );
+      });
+    }
+    
+    simulator.sendListApps();
   },
 
   removeApp: function(id) {
@@ -577,16 +588,24 @@ let simulator = {
     });
   },
 
-  run: function () {
+  run: function (cb) {
     let appName = null;
     if (this.defaultApp) {
       appName = this.apps[this.defaultApp].name
       this.defaultApp = null;
     }
 
-    this.remoteSimulator.run({
-      defaultApp: appName
-    });
+    if (this.isRunning) {
+      if (typeof cb === "function")
+        cb();
+    } else {
+      if (typeof cb === "function")
+        this.remoteSimulator.once("ready", cb);
+
+      this.remoteSimulator.run({
+        defaultApp: appName
+      });
+    }
   },
 
   get isRunning() {
@@ -664,12 +683,7 @@ let simulator = {
 
         // NOTE: if a b2g instance is already running send request
         //       or start a new instance and send request on ready
-        if (this.isRunning) {
-          cmd();
-        } else {
-          this.remoteSimulator.once("ready", function() cmd());
-          this.run();
-        }
+        this.run(cmd);
         break;
       case "removeApp":
         this.removeApp(message.id);
