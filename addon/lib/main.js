@@ -22,6 +22,7 @@ const Notifications = require("notifications");
 const SStorage = require("simple-storage");
 const WindowUtils = require("window/utils");
 const Gcli = require('gcli');
+const Timer = require("timer");
 
 const { rootURI } = require('@loader/options');
 const profileURL = rootURI + "profile/";
@@ -125,10 +126,19 @@ let simulator = {
   },
 
   updateAll: function() {
-    apps = simulator.apps;
-    for (var id in apps) {
-      simulator.updateApp(id);
-    }
+    this.run(function () {
+      function next() {
+        // Call iterator.next() in a timeout to ensure updateApp() has returned;
+        // otherwise we might raise "TypeError: already executing generator".
+        Timer.setTimeout(function() {
+          try {
+            iterator.next();
+          } catch (err if err instanceof StopIteration) {}
+        }, 0);
+      }
+      let iterator = (simulator.updateApp(id, next) for (id in simulator.apps));
+      next();
+    });
   },
 
   get tempDir() {
@@ -136,7 +146,7 @@ let simulator = {
     return File.join(basePath, "b2g");
   },
 
-  updateApp: function(id, manual) {
+  updateApp: function(id, next) {
     console.log("Simulator.updateApp " + id);
 
     let webappsDir = URL.toFilename(profileURL + "webapps");
@@ -148,7 +158,12 @@ let simulator = {
     let config = apps[id];
 
     if (!config) {
-      simulator.sendListApps();
+      if (this.worker) {
+        this.sendListApps();
+      }
+      if (next) {
+        next();
+      }
       return;
     }
 
@@ -217,6 +232,9 @@ let simulator = {
       simulator.run(function() {
         simulator.remoteSimulator.install(config.xkey, null, function(res) {
           console.debug("INSTALL RESPONSE: ",JSON.stringify(res));
+          if (next) {
+            next();
+          }
         });
       });
     } else {
@@ -273,6 +291,9 @@ let simulator = {
                 console.log("INSTALLING ",config.xkey);
                 simulator.remoteSimulator.install(config.xkey, null, function(res) {
                   console.debug("INSTALL RESPONSE: ",JSON.stringify(res));
+                  if (next) {
+                    next();
+                  }
                 });
               });
             }); // END writeAsync metadataFile
