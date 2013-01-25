@@ -126,10 +126,16 @@ let simulator = {
     }
   },
 
+  get tempDir() {
+    let basePath = Services.dirsvc.get("TmpD", Ci.nsIFile).path;
+    return File.join(basePath, "b2g");
+  },
+
   updateApp: function(id, manual) {
     console.log("Simulator.updateApp " + id);
 
     let webappsDir = URL.toFilename(profileURL + "webapps");
+    let tempDir = this.tempDir;
     let webappsFile = File.join(webappsDir, "webapps.json");
     let webapps = JSON.parse(File.read(webappsFile));
 
@@ -143,7 +149,12 @@ let simulator = {
 
     if (!config.xid) {
       config.xid = ++[id for each ({ localId: id } in webapps)].sort(function(a, b) b - a)[0];
-      config.xkey = "myapp" + config.xid + ".gaiamobile.org";
+
+      // NOTE: we can't currently use localId as code because webappsActor
+      // if the emulator doesn't exit clean DOMApplicationRegistry._nextLocalId
+      // will not be able to serialize "dom.mozApps.maxLocalId" and will be the
+      // same for new app installed
+      config.xkey = UUID.uuid().toString(); //"myapp" + config.xid + ".gaiamobile.org";
 
       if (!config.origin) {
         config.origin = "app://" + config.xkey;
@@ -153,110 +164,117 @@ let simulator = {
     config.lastUpdate = Date.now();
     simulator.apps[id] = config;
 
-    let webappEntry = {
-      origin: config.origin,
-      installOrigin: config.origin,
-      receipt: null,
-      installTime: Date.now(),
-      appStatus: (config.type == 'local') ? 2 : 1, // 2 = PRV & INSTALLED
-      localId: config.xid,
-    };
-
     switch (config.type) {
       case 'local':
-        webappEntry.manifestURL = config.origin + "/manifest.webapp";
+        config.manifestURL = config.origin + "/manifest.webapp";
         break;
       default:
-        webappEntry.manifestURL = id;
+        config.manifestURL = id;
     }
-    console.log("Creating webapp entry: " + JSON.stringify(webappEntry, null, 2));
+    console.log("Updating webapp entry: " + JSON.stringify(config, null, 2));
 
     // Create the webapp record and write it to the registry.
-    webapps[config.xkey] = webappEntry;
-    File.open(webappsFile, "w").writeAsync(
-      JSON.stringify(webapps, null, 2) + "\n",
-      function(error) {
-        if (error) {
-          console.error("error writing webapp record to registry: " + error);
-          return
-        }
+    // NOTE: we don't need this anymore
+    webapps[config.xkey] = config;
 
-        // Create target folder
-        let webappDir = File.join(webappsDir, config.xkey);
-        // if (File.exists(webappDir)) {
-        //   File.rmdir(webappDir);
-        // }
-        File.mkpath(webappDir);
-        console.log("Created " + webappDir);
+    // Create target folder
+    let tempWebappDir = File.join(tempDir, config.xkey);
+    // if (File.exists(webappDir)) {
+    //   File.rmdir(webappDir);
+    // }
+    File.mkpath(tempWebappDir);
+    console.log("Created " + tempWebappDir);
 
-        if (config.type == "local") {
-          // Copy manifest
-          let manifestFile = Cc['@mozilla.org/file/local;1'].
-                          createInstance(Ci.nsIFile);
-          manifestFile.initWithPath(id);
-          let webappDir_nsIFile = Cc['@mozilla.org/file/local;1'].
-                                   createInstance(Ci.nsIFile);
-          webappDir_nsIFile.initWithPath(webappDir);
-          manifestFile.copyTo(webappDir_nsIFile, "manifest.webapp");
+    if (config.type == "local") {
+      // Copy manifest
+      let manifestFile = Cc['@mozilla.org/file/local;1'].
+        createInstance(Ci.nsIFile);
+      manifestFile.initWithPath(id);
+      let tempWebappDir_nsIFile = Cc['@mozilla.org/file/local;1'].
+        createInstance(Ci.nsIFile);
+      tempWebappDir_nsIFile.initWithPath(tempWebappDir);
+      manifestFile.copyTo(tempWebappDir_nsIFile, "manifest.webapp");
 
-          // Archive source folder to target folder
-          let sourceDir = id.replace(/[\/\\][^\/\\]*$/, "");
-          let archiveFile = File.join(webappDir, "application.zip");
+      // Archive source folder to target folder
+      let sourceDir = id.replace(/[\/\\][^\/\\]*$/, "");
+      let archiveFile = File.join(tempWebappDir, "application.zip");
 
-          console.log("Zipping " + sourceDir + " to " + archiveFile);
-          archiveDir(archiveFile, sourceDir);
+      console.log("Zipping " + sourceDir + " to " + archiveFile);
+      archiveDir(archiveFile, sourceDir);
 
-          simulator.info(config.name + " (packaged app) installed in Firefox OS");
+      simulator.info(config.name + " (packaged app) installed in Firefox OS");
+      // Complete install (Packaged)
 
-          if (manual) {
-            simulator.defaultApp = id;
-            simulator.run();
-          }
-        } else {
-          // Hosted App
+      // NOTE: remote simulator.defaultApp because on the first run the app
+      //       will be not already installed
+      simulator.defaultApp = null;
+      console.log("INSTALLING ",config.xkey);
+      simulator.run(function() {
+        simulator.remoteSimulator.install(config.xkey, null, function(res) {
+          console.debug("INSTALL RESPONSE: ",JSON.stringify(res));
+        });
+      });
+    } else {
+      // Hosted App
 
-          let PermissionsInstaller;
-          try {
-            PermissionsInstaller =
-              Cu.import("resource://gre/modules/PermissionsInstaller.jsm").
-              PermissionsInstaller;
-          } catch(e) {
-            // PermissionsInstaller doesn't exist on Firefox 17 (and 18/19?),
-            // so catch and ignore an exception importing it.
-          }
-
-          if (PermissionsInstaller) {
-            PermissionsInstaller.installPermissions(
-              {
-                manifest: config.manifest,
-                manifestURL: id,
-                origin: config.origin
-              },
-              false, // isReinstall, installation failed for true
-              function(e) {
-                console.error("PermissionInstaller FAILED for " + config.origin);
-              }
-            );
-          }
-
-          let webappFile = File.join(webappDir, "manifest.webapp");
-          File.open(webappFile, "w").writeAsync(JSON.stringify(config.manifest, null, 2), function(err) {
-            if (err) {
-              console.error("Error while writing manifest.webapp " + err);
-            }
-            console.log("Written manifest.webapp");
-            simulator.info(config.name + " (hosted app) installed in Firefox OS");
-
-            if (manual) {
-              simulator.defaultApp = id;
-              simulator.run();
-            }
-          });
-        }
-
-        simulator.sendListApps();
+      let PermissionsInstaller;
+      try {
+        PermissionsInstaller =
+          Cu.import("resource://gre/modules/PermissionsInstaller.jsm").
+          PermissionsInstaller;
+      } catch(e) {
+        // PermissionsInstaller doesn't exist on Firefox 17 (and 18/19?),
+        // so catch and ignore an exception importing it.
       }
-    );
+
+      if (PermissionsInstaller) {
+        PermissionsInstaller.installPermissions(
+          {
+            manifest: config.manifest,
+            manifestURL: id,
+            origin: config.origin
+          },
+          false, // isReinstall, installation failed for true
+          function(e) {
+            console.error("PermissionInstaller FAILED for " + config.origin);
+          }
+        );
+      }
+
+      let webappFile = File.join(tempWebappDir, "manifest.webapp");
+      File.open(webappFile, "w").
+        writeAsync(JSON.stringify(config.manifest, null, 2), function(err) {
+          if (err) {
+            console.error("Error while writing manifest.webapp " + err);
+          }
+          console.log("Written manifest.webapp");
+
+          let metadataFile = File.join(tempWebappDir, "metadata.json");
+          let metadata = {
+            origin: config.origin,
+            manifestURL: id,
+          };
+
+          console.log("metadata.json", JSON.stringify(metadata));
+
+          File.open(metadataFile, "w").
+            writeAsync(JSON.stringify(metadata, null, 2), function(err) {
+              simulator.info(config.name + " (hosted app) installed in Firefox OS");
+
+              // Complete install (Hosted)
+              // DISABLED: because on the first run the app will be not already installed
+              simulator.defaultApp = null;
+              simulator.run(function() {
+                console.log("INSTALLING ",config.xkey);
+                simulator.remoteSimulator.install(config.xkey, null, function(res) {
+                  console.debug("INSTALL RESPONSE: ",JSON.stringify(res));
+                });
+              });
+            }); // END writeAsync metadataFile
+        }); // END writeAsync manifest.webapp
+    }
+
+    simulator.sendListApps();
   },
 
   removeApp: function(id) {
@@ -577,16 +595,26 @@ let simulator = {
     });
   },
 
-  run: function () {
+  run: function (cb) {
     let appName = null;
     if (this.defaultApp) {
       appName = this.apps[this.defaultApp].name
       this.defaultApp = null;
     }
 
-    this.remoteSimulator.run({
-      defaultApp: appName
-    });
+    // NOTE: if a b2g instance is already running send request
+    //       or start a new instance and send request on ready
+    if (this.isRunning) {
+      if (typeof cb === "function")
+        cb();
+    } else {
+      if (typeof cb === "function")
+        this.remoteSimulator.once("ready", cb);
+
+      this.remoteSimulator.run({
+        defaultApp: appName
+      });
+    }
   },
 
   get isRunning() {
@@ -631,14 +659,10 @@ let simulator = {
                                   isRunning: this.isRunning });
         break;
       case "addAppByDirectory":
-        this.kill(function() {
-          simulator.addAppByDirectory();
-        });
+        simulator.addAppByDirectory();
         break;
       case "addAppByTab":
-        this.kill(function() {
-          simulator.addAppByTabUrl(message.url);
-        });
+        simulator.addAppByTabUrl(message.url);
         break;
       case "listApps":
         if (message.flush) {
@@ -647,9 +671,7 @@ let simulator = {
         this.sendListApps();
         break;
       case "updateApp":
-        this.kill(function() {
-          simulator.updateApp(message.id, true);
-        });
+        simulator.updateApp(message.id, true);
         break;
       case "runApp":
         let appName = this.apps[message.id].name;
@@ -661,15 +683,7 @@ let simulator = {
           });
         };
         cmd = cmd.bind(this);
-
-        // NOTE: if a b2g instance is already running send request
-        //       or start a new instance and send request on ready
-        if (this.isRunning) {
-          cmd();
-        } else {
-          this.remoteSimulator.once("ready", function() cmd());
-          this.run();
-        }
+        this.run(cmd);
         break;
       case "removeApp":
         this.removeApp(message.id);
