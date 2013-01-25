@@ -602,6 +602,8 @@ let simulator = {
       this.defaultApp = null;
     }
 
+    // NOTE: if a b2g instance is already running send request
+    //       or start a new instance and send request on ready
     if (this.isRunning) {
       if (typeof cb === "function")
         cb();
@@ -657,14 +659,10 @@ let simulator = {
                                   isRunning: this.isRunning });
         break;
       case "addAppByDirectory":
-        this.kill(function() {
-          simulator.addAppByDirectory();
-        });
+        simulator.addAppByDirectory();
         break;
       case "addAppByTab":
-        this.kill(function() {
-          simulator.addAppByTabUrl(message.url);
-        });
+        simulator.addAppByTabUrl(message.url);
         break;
       case "listApps":
         if (message.flush) {
@@ -673,9 +671,7 @@ let simulator = {
         this.sendListApps();
         break;
       case "updateApp":
-        this.kill(function() {
-          simulator.updateApp(message.id, true);
-        });
+        simulator.updateApp(message.id, true);
         break;
       case "runApp":
         let appName = this.apps[message.id].name;
@@ -687,9 +683,6 @@ let simulator = {
           });
         };
         cmd = cmd.bind(this);
-
-        // NOTE: if a b2g instance is already running send request
-        //       or start a new instance and send request on ready
         this.run(cmd);
         break;
       case "removeApp":
