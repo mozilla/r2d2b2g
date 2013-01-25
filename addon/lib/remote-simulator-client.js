@@ -228,11 +228,11 @@ const RemoteSimulatorClient = Class({
 
   // send an install request to the remote webappsActor
   install: function(appId, appType, onResponse) {
-    let remote = this._remote;
-
-    remote.client.request({to: remote.webapps, type: "install", appId: appId,
-                           appType: appType}, 
-                          onResponse);
+    this._remote.client.request({ to: this._remote.webapps,
+                                  type: "install",
+                                  appId: appId,
+                                  appType: appType},
+                                onResponse);
   },
 
   // send a ping request to the remote simulator actor
