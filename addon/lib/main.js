@@ -33,6 +33,11 @@ require("addon-page");
 
 const RemoteSimulatorClient = require("remote-simulator-client");
 
+const PR_RDWR = 0x04;
+const PR_CREATE_FILE = 0x08;
+const PR_TRUNCATE = 0x20;
+const PR_USEC_PER_MSEC = 1000;
+
 let simulator = {
   _worker: null,
 
@@ -1040,11 +1045,6 @@ function create() {
 
 }
 */
-
-const PR_RDWR = 0x04;
-const PR_CREATE_FILE = 0x08;
-const PR_TRUNCATE = 0x20;
-const PR_USEC_PER_MSEC = 1000;
 
 function addDirToArchive(writer, dir, basePath) {
   let files = dir.directoryEntries;
