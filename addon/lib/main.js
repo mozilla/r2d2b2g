@@ -127,12 +127,7 @@ let simulator = {
   },
 
   get tempDir() {
-    let sandbox = {};
-    XPCOMUtils.defineLazyServiceGetter(sandbox, "gDirService",
-                                       "@mozilla.org/file/directory_service;1",
-                                       "nsIProperties");
-
-    let basePath = sandbox.gDirService.get("TmpD", Ci.nsIFile).path;
+    let basePath = Services.dirsvc.get("TmpD", Ci.nsIFile).path;
     return File.join(basePath, "b2g");
   },
 
