@@ -22,6 +22,7 @@ const Notifications = require("notifications");
 const SStorage = require("simple-storage");
 const WindowUtils = require("window/utils");
 const Gcli = require('gcli');
+const Timer = require("timer");
 
 const { rootURI } = require('@loader/options');
 const profileURL = rootURI + "profile/";
@@ -32,6 +33,11 @@ Cu.import("resource://gre/modules/Services.jsm");
 require("addon-page");
 
 const RemoteSimulatorClient = require("remote-simulator-client");
+
+const PR_RDWR = 0x04;
+const PR_CREATE_FILE = 0x08;
+const PR_TRUNCATE = 0x20;
+const PR_USEC_PER_MSEC = 1000;
 
 let simulator = {
   _worker: null,
@@ -120,10 +126,19 @@ let simulator = {
   },
 
   updateAll: function() {
-    apps = simulator.apps;
-    for (var id in apps) {
-      simulator.updateApp(id);
-    }
+    this.run(function () {
+      function next() {
+        // Call iterator.next() in a timeout to ensure updateApp() has returned;
+        // otherwise we might raise "TypeError: already executing generator".
+        Timer.setTimeout(function() {
+          try {
+            iterator.next();
+          } catch (err if err instanceof StopIteration) {}
+        }, 0);
+      }
+      let iterator = (simulator.updateApp(id, next) for (id in simulator.apps));
+      next();
+    });
   },
 
   get tempDir() {
@@ -131,7 +146,7 @@ let simulator = {
     return File.join(basePath, "b2g");
   },
 
-  updateApp: function(id, manual) {
+  updateApp: function(id, next) {
     console.log("Simulator.updateApp " + id);
 
     let webappsDir = URL.toFilename(profileURL + "webapps");
@@ -143,7 +158,12 @@ let simulator = {
     let config = apps[id];
 
     if (!config) {
-      simulator.sendListApps();
+      if (this.worker) {
+        this.sendListApps();
+      }
+      if (next) {
+        next();
+      }
       return;
     }
 
@@ -212,6 +232,9 @@ let simulator = {
       simulator.run(function() {
         simulator.remoteSimulator.install(config.xkey, null, function(res) {
           console.debug("INSTALL RESPONSE: ",JSON.stringify(res));
+          if (next) {
+            next();
+          }
         });
       });
     } else {
@@ -268,13 +291,18 @@ let simulator = {
                 console.log("INSTALLING ",config.xkey);
                 simulator.remoteSimulator.install(config.xkey, null, function(res) {
                   console.debug("INSTALL RESPONSE: ",JSON.stringify(res));
+                  if (next) {
+                    next();
+                  }
                 });
               });
             }); // END writeAsync metadataFile
         }); // END writeAsync manifest.webapp
     }
 
-    simulator.sendListApps();
+    if (this.worker) {
+      this.sendListApps();
+    }
   },
 
   removeApp: function(id) {
@@ -790,12 +818,50 @@ PageMod({
 //  }
 //});
 
+/**
+ * Ensure app xkeys are unique.
+ */
+function ensureXkeysUnique() {
+  for (let key in simulator.apps) {
+    let app = simulator.apps[key];
+
+    // Give the app a new unique xkey.
+    app.xkey = UUID.uuid().toString();
+
+    // For "local" (i.e. packaged) apps, make the origin and manifest URL match
+    // the xkey, since we'll use the xkey as the ID of the app in
+    // DOMApplicationRegistry, which expects each packaged app's origin to match
+    // its ID.
+    if (app.type == "local") {
+      app.origin = "app://" + app.xkey;
+      app.manifestURL = app.origin + "/manifest.webapp";
+    }
+  }
+}
+
+// Retrieve the last addon version from storage, and update storage if it
+// has changed, so we can do work on addon upgrade/downgrade that depends on
+// the last version the user used.
+let lastVersion = SStorage.storage.lastVersion || 0;
+if (SStorage.storage.lastVersion != Self.version) {
+  SStorage.storage.lastVersion = Self.version;
+}
+
 switch (Self.loadReason) {
   case "install":
     simulator.openHelperTab();
     break;
   case "downgrade":
+    simulator.updateAll();
+    break;
   case "upgrade":
+    // If the last version the user used was older than 2.0pre5, then ensure
+    // app xkeys are unique, since older versions sometimes reused them, causing
+    // B2G to conflate apps.
+    if (Services.vc.compare(lastVersion, "2.0pre5") < 0) {
+      ensureXkeysUnique();
+    }
+
     simulator.updateAll();
     break;
 }
@@ -1000,11 +1066,6 @@ function create() {
 
 }
 */
-
-const PR_RDWR = 0x04;
-const PR_CREATE_FILE = 0x08;
-const PR_TRUNCATE = 0x20;
-const PR_USEC_PER_MSEC = 1000;
 
 function addDirToArchive(writer, dir, basePath) {
   let files = dir.directoryEntries;
