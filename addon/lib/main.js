@@ -274,7 +274,9 @@ let simulator = {
         }); // END writeAsync manifest.webapp
     }
 
-    simulator.sendListApps();
+    if (this.worker) {
+      this.sendListApps();
+    }
   },
 
   removeApp: function(id) {
@@ -790,12 +792,50 @@ PageMod({
 //  }
 //});
 
+/**
+ * Ensure app xkeys are unique.
+ */
+function ensureXkeysUnique() {
+  for (let key in simulator.apps) {
+    let app = simulator.apps[key];
+
+    // Give the app a new unique xkey.
+    app.xkey = UUID.uuid().toString();
+
+    // For "local" (i.e. packaged) apps, make the origin and manifest URL match
+    // the xkey, since we'll use the xkey as the ID of the app in
+    // DOMApplicationRegistry, which expects each packaged app's origin to match
+    // its ID.
+    if (app.type == "local") {
+      app.origin = "app://" + app.xkey;
+      app.manifestURL = app.origin + "/manifest.webapp";
+    }
+  }
+}
+
+// Retrieve the last addon version from storage, and update storage if it
+// has changed, so we can do work on addon upgrade/downgrade that depends on
+// the last version the user used.
+let lastVersion = SStorage.storage.lastVersion || 0;
+if (SStorage.storage.lastVersion != Self.version) {
+  SStorage.storage.lastVersion = Self.version;
+}
+
 switch (Self.loadReason) {
   case "install":
     simulator.openHelperTab();
     break;
   case "downgrade":
+    simulator.updateAll();
+    break;
   case "upgrade":
+    // If the last version the user used was older than 2.0pre5, then ensure
+    // app xkeys are unique, since older versions sometimes reused them, causing
+    // B2G to conflate apps.
+    if (Services.vc.compare(lastVersion, "2.0pre5") < 0) {
+      ensureXkeysUnique();
+    }
+
     simulator.updateAll();
     break;
 }
