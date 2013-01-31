@@ -683,7 +683,9 @@ let simulator = {
     console.log("Simulator.onMessage " + message.name);
     switch (message.name) {
       case "getIsRunning":
+        let port = this.remoteSimulator.remoteDebuggerPort;
         this.worker.postMessage({ name: "isRunning",
+                                  remoteDebuggerPort: port,
                                   isRunning: this.isRunning });
         break;
       case "addAppByDirectory":

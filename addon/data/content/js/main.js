@@ -71,11 +71,16 @@ var Simulator = {
         switch (message.name) {
           case "isRunning":
             $(Simulator.toggler).prop('indeterminate', false);
+            var remoteDebuggerPortEl = $('#commands-preference-remote-debugger-port');
             if (message.isRunning) {
               $(Simulator.toggler).prop('checked', true);
+              remoteDebuggerPortEl.html(message.remoteDebuggerPort);
+              remoteDebuggerPortEl.parents('label').show();
             }
             else {
               $(Simulator.toggler).prop('checked', false);
+              $('#commands-preference-remote-debugger-port').html(message.remoteDebuggerPort);
+              remoteDebuggerPortEl.parents('label').hide();
             }
             break;
           case "listTabs":
