@@ -76,6 +76,12 @@ var Simulator = {
               $(Simulator.toggler).prop('checked', true);
               remoteDebuggerPortEl.html(message.remoteDebuggerPort);
               remoteDebuggerPortEl.parents('label').show();
+              // NOTE: show connect devtools buttons only when it's supported
+              if (message.hasConnectDevTools) {
+                $("#open-connect-devtools").show();
+              } else {
+                $("#open-connect-devtools").hide();
+              }
             }
             else {
               $(Simulator.toggler).prop('checked', false);
