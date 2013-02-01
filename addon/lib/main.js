@@ -121,7 +121,7 @@ let simulator = {
       }
       console.log("Stored " + JSON.stringify(apps[webappFile]));
 
-      this.updateApp(webappFile, true);
+      this.updateApp(webappFile);
     }
   },
 
@@ -317,6 +317,12 @@ let simulator = {
     config.removed = true;
     apps[id] = config;
 
+    simulator.run(function() {
+      simulator.remoteSimulator.uninstall(config.origin, function() {
+        // TODO: show info to user  
+      });
+    });
+
     simulator.sendListApps();
   },
 
@@ -330,6 +336,8 @@ let simulator = {
 
     config.removed = false;
     apps[id] = config;
+
+    simulator.updateApp(id);
 
     simulator.sendListApps();
   },
@@ -356,28 +364,6 @@ let simulator = {
       });
       delete permissions[config.origin];
     }
-
-
-    // Delete the webapp record from the registry.
-    delete webapps[config.xkey];
-    File.open(webappsFile, "w").writeAsync(
-      JSON.stringify(webapps, null, 2) + "\n",
-      function(error) {
-        if (error) {
-          console.error("Error writing webapp record to registry: " + error);
-          return;
-        }
-
-        // Delete target folder if it exists
-        let webappDir = File.join(webappsDir, config.xkey);
-        let webappDir_nsIFile = Cc['@mozilla.org/file/local;1'].
-                                 createInstance(Ci.nsIFile);
-        webappDir_nsIFile.initWithPath(webappDir);
-        if (webappDir_nsIFile.exists() && webappDir_nsIFile.isDirectory()) {
-          webappDir_nsIFile.remove(true);
-        }
-      }
-    );
   },
 
   flushRemovedApps: function() {
@@ -538,7 +524,7 @@ let simulator = {
     }
     console.log("Stored " + JSON.stringify(apps[id], null, 2));
 
-    this.updateApp(id, true);
+    this.updateApp(id);
   },
 
   sendListApps: function() {
@@ -699,7 +685,7 @@ let simulator = {
         this.sendListApps();
         break;
       case "updateApp":
-        simulator.updateApp(message.id, true);
+        simulator.updateApp(message.id);
         break;
       case "runApp":
         let appName = this.apps[message.id].name;
