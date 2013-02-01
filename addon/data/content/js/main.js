@@ -242,6 +242,10 @@ var Simulator = {
 
   addAppByDirectory: function() {
     window.postMessage({ name: "addAppByDirectory" }, "*");
+  },
+
+  openConnectDevTools: function() {
+    window.postMessage({ name: "openConnectDevTools" }, "*");
   }
 
 };

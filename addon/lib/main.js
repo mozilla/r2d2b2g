@@ -581,6 +581,19 @@ let simulator = {
     this.openTab(simulator.contentPage, true);
   },
 
+  openConnectDevTools: function() {
+    let port = this.remoteSimulator.remoteDebuggerPort;
+    Tabs.open({
+      url: "chrome://browser/content/devtools/connect.xhtml",
+      onReady: function(tab) {
+        // NOTE: inject the allocated remoteDebuggerPort on the opened tab
+        tab.attach({
+          contentScript: "window.addEventListener('load', function() { document.getElementById('port').value = '"+port+"'; }, true);"
+        });
+      }
+    });
+  },
+
   kill: function(onKilled) {
     // WORKAROUND: currently add and update an app will be executed
     // as a simulator.kill callback
@@ -682,6 +695,9 @@ let simulator = {
   onMessage: function onMessage(message) {
     console.log("Simulator.onMessage " + message.name);
     switch (message.name) {
+      case "openConnectDevTools":
+        simulator.openConnectDevTools();
+        break;
       case "getIsRunning":
         let port = this.remoteSimulator.remoteDebuggerPort;
         this.worker.postMessage({ name: "isRunning",
