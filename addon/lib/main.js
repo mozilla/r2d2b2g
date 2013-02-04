@@ -32,6 +32,14 @@ Cu.import("resource://gre/modules/Services.jsm");
 
 require("addon-page");
 
+const xulapp = require("sdk/system/xul-app");
+// NOTE: detect if developer toolbox feature can be enabled
+const HAS_CONNECT_DEVTOOLS = xulapp.is("Firefox") &&
+  xulapp.versionInRange(xulapp.platformVersion, "20.0a1", "*");
+
+console.debug("XULAPP: ", xulapp.name,xulapp.version, xulapp.platformVersion);
+console.debug("HAS_CONNECT_DEVTOOLS: ", HAS_CONNECT_DEVTOOLS);
+
 const RemoteSimulatorClient = require("remote-simulator-client");
 
 const PR_RDWR = 0x04;
@@ -581,6 +589,19 @@ let simulator = {
     this.openTab(simulator.contentPage, true);
   },
 
+  openConnectDevtools: function() {
+    let port = this.remoteSimulator.remoteDebuggerPort;
+    Tabs.open({
+      url: "chrome://browser/content/devtools/connect.xhtml",
+      onReady: function(tab) {
+        // NOTE: inject the allocated remoteDebuggerPort on the opened tab
+        tab.attach({
+          contentScript: "window.addEventListener('load', function() { document.getElementById('port').value = '"+port+"'; }, true);"
+        });
+      }
+    });
+  },
+
   kill: function(onKilled) {
     // WORKAROUND: currently add and update an app will be executed
     // as a simulator.kill callback
@@ -649,6 +670,21 @@ let simulator = {
     return this.remoteSimulator.isRunning;
   },
   
+  postIsRunning: function() {
+    if (simulator.worker) {
+      let port = simulator.isRunning ?
+        simulator.remoteSimulator.remoteDebuggerPort :
+        null;
+
+      simulator.worker.postMessage({
+        name: "isRunning",
+        isRunning: simulator.isRunning,
+        remoteDebuggerPort: port,
+        hasConnectDevtools: HAS_CONNECT_DEVTOOLS,
+      });
+    }
+  },
+
   get remoteSimulator() {
     if (this._remoteSimulator)
       return this._remoteSimulator;
@@ -658,20 +694,10 @@ let simulator = {
       onStdout: function (data) dump(data),
       onStderr: function (data) dump(data),
       onReady: function () {
-        if (simulator.worker) {
-          simulator.worker.postMessage({
-            name: "isRunning",
-            isRunning: true
-          });
-        }
+        simulator.postIsRunning();
       },
       onExit: function () {
-        if (simulator.worker) {
-          simulator.worker.postMessage({
-            name: "isRunning",
-            isRunning: false
-          });
-        }
+        simulator.postIsRunning();
       }
     });
     
@@ -682,9 +708,11 @@ let simulator = {
   onMessage: function onMessage(message) {
     console.log("Simulator.onMessage " + message.name);
     switch (message.name) {
+      case "openConnectDevtools":
+        simulator.openConnectDevtools();
+        break;
       case "getIsRunning":
-        this.worker.postMessage({ name: "isRunning",
-                                  isRunning: this.isRunning });
+        simulator.postIsRunning();
         break;
       case "addAppByDirectory":
         simulator.addAppByDirectory();
