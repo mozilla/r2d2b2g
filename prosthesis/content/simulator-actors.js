@@ -77,6 +77,34 @@ SimulatorActor.prototype = {
     };
   },
 
+  onUninstallApp: function(aRequest) {
+    log("simulator actor received 'uninstallApp' command: "+aRequest.origin);
+    let window = this.simulatorWindow;
+
+    let runnable = {
+      run: function() {
+        try {
+          let mgmt = window.navigator.mozApps.mgmt;
+          let req = mgmt.uninstall({origin: aRequest.origin});
+          req.onsuccess = function () {
+            log("uninstallApp success: "+req.result);
+          }
+          req.onerror = function () {
+            log("uninstallApp error: "+req.error.name);
+          }
+        } catch(e) {
+          log(e);
+        }
+      }
+    };
+
+    Services.tm.currentThread.dispatch(runnable,
+                                       Ci.nsIThread.DISPATCH_NORMAL);
+    return {
+      message: "uninstallApp request received"
+    };
+  },
+
   onSubscribeWindowManagerEvents: function (aRequest) {
     log("simulator actor received a 'subscribeWindowManagerEvents' command");
     let ok = this._subscribeWindowManagerEvents();
@@ -179,6 +207,7 @@ SimulatorActor.prototype.requestTypes = {
   "getBuildID": SimulatorActor.prototype.onGetBuildID,
   "logStdout": SimulatorActor.prototype.onLogStdout,
   "runApp": SimulatorActor.prototype.onRunApp,
+  "uninstallApp": SimulatorActor.prototype.onUninstallApp,
   "subscribeWindowManagerEvents": SimulatorActor.prototype.onSubscribeWindowManagerEvents,
   "unsubscribeWindowManagerEvents": SimulatorActor.prototype.onUnsubscribeWindowManagerEvents,
 };
