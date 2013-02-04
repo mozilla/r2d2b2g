@@ -80,10 +80,12 @@ var Simulator = {
               //       and show allocated debugger port on previous firefox releases
               if (message.hasConnectDevtools) {
                 $("#show-debugger-port").hide();
+                $("#open-connect-devtools").prop("disabled", false);
                 $("#open-connect-devtools").show();
               } else {
                 $("#show-debugger-port").show();
                 $("#open-connect-devtools").hide();
+                $("#open-connect-devtools").prop("disabled", true);
               }
             }
             else {
