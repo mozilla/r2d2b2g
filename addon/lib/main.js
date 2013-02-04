@@ -33,12 +33,12 @@ Cu.import("resource://gre/modules/Services.jsm");
 require("addon-page");
 
 const xulapp = require("sdk/system/xul-app");
-// NOTE: detect is developer toolbox feature can be enabled
+// NOTE: detect if developer toolbox feature can be enabled
 const HAS_CONNECT_DEVTOOLS = xulapp.is("Firefox") &&
   xulapp.versionInRange(xulapp.platformVersion, "20.0a1", "*");
 
-console.debug("XULAPP: ",xulapp.name,xulapp.version,xulapp.platformVersion);
-console.debug("HAS_CONNECT_DEVTOOLS: ",HAS_CONNECT_DEVTOOLS);
+console.debug("XULAPP: ", xulapp.name,xulapp.version, xulapp.platformVersion);
+console.debug("HAS_CONNECT_DEVTOOLS: ", HAS_CONNECT_DEVTOOLS);
 
 const RemoteSimulatorClient = require("remote-simulator-client");
 
@@ -589,7 +589,7 @@ let simulator = {
     this.openTab(simulator.contentPage, true);
   },
 
-  openConnectDevTools: function() {
+  openConnectDevtools: function() {
     let port = this.remoteSimulator.remoteDebuggerPort;
     Tabs.open({
       url: "chrome://browser/content/devtools/connect.xhtml",
@@ -674,13 +674,13 @@ let simulator = {
     if (simulator.worker) {
       let port = simulator.isRunning ?
         simulator.remoteSimulator.remoteDebuggerPort :
-        "none";
+        null;
 
       simulator.worker.postMessage({
         name: "isRunning",
         isRunning: simulator.isRunning,
         remoteDebuggerPort: port,
-        hasConnectDevTools: HAS_CONNECT_DEVTOOLS,
+        hasConnectDevtools: HAS_CONNECT_DEVTOOLS,
       });
     }
   },
@@ -708,8 +708,8 @@ let simulator = {
   onMessage: function onMessage(message) {
     console.log("Simulator.onMessage " + message.name);
     switch (message.name) {
-      case "openConnectDevTools":
-        simulator.openConnectDevTools();
+      case "openConnectDevtools":
+        simulator.openConnectDevtools();
         break;
       case "getIsRunning":
         simulator.postIsRunning();

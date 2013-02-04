@@ -76,10 +76,13 @@ var Simulator = {
               $(Simulator.toggler).prop('checked', true);
               remoteDebuggerPortEl.html(message.remoteDebuggerPort);
               remoteDebuggerPortEl.parents('label').show();
-              // NOTE: show connect devtools buttons only when it's supported
-              if (message.hasConnectDevTools) {
+              // NOTE: show connect devtools buttons where it's supported
+              //       and show allocated debugger port on previous firefox releases
+              if (message.hasConnectDevtools) {
+                $("#show-debugger-port").hide();
                 $("#open-connect-devtools").show();
               } else {
+                $("#show-debugger-port").show();
                 $("#open-connect-devtools").hide();
               }
             }
@@ -250,8 +253,8 @@ var Simulator = {
     window.postMessage({ name: "addAppByDirectory" }, "*");
   },
 
-  openConnectDevTools: function() {
-    window.postMessage({ name: "openConnectDevTools" }, "*");
+  openConnectDevtools: function() {
+    window.postMessage({ name: "openConnectDevtools" }, "*");
   }
 
 };
