@@ -29,8 +29,17 @@
                         <input type="checkbox" id="commands-preference-jsconsole" />Console
                     </label>
                     <label class="commands-options" style="display: none">
-                        Run:
-                        <span id="commands-preference-default-app"></span>
+                        <div id="show-debugger-port">
+                          Remote Debugger Port:
+                          <span id="commands-preference-remote-debugger-port"></span>
+                        </div>
+                        <button id="open-connect-devtools" title="Connect Developer Tools&hellip;"
+                                onclick="Simulator.openConnectDevtools()">Connect&hellip;</button>
+                    </label>
+                    <label class="commands-options" style="display: none">
+                      Run:
+                      <span id="commands-preference-default-app"></span>
+                    </label>
                 </fieldset>
                 <!--<small>B2G v0.8</small>-->
                 <nav>

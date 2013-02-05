@@ -235,6 +235,14 @@ const RemoteSimulatorClient = Class({
                                 onResponse);
   },
 
+  uninstall: function(appOrigin, onResponse) {
+    this._remote.client.request({ to: this._remote.simulator,
+                                  type: "uninstallApp",
+                                  origin: appOrigin,
+                                },
+                                onResponse);
+  },
+
   // send a ping request to the remote simulator actor
   ping: function(onResponse) {
     let remote = this._remote;

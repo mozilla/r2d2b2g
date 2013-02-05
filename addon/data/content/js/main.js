@@ -71,11 +71,27 @@ var Simulator = {
         switch (message.name) {
           case "isRunning":
             $(Simulator.toggler).prop('indeterminate', false);
+            var remoteDebuggerPortEl = $('#commands-preference-remote-debugger-port');
             if (message.isRunning) {
               $(Simulator.toggler).prop('checked', true);
+              remoteDebuggerPortEl.html(message.remoteDebuggerPort);
+              remoteDebuggerPortEl.parents('label').show();
+              // NOTE: show connect devtools buttons where it's supported
+              //       and show allocated debugger port on previous firefox releases
+              if (message.hasConnectDevtools) {
+                $("#show-debugger-port").hide();
+                $("#open-connect-devtools").prop("disabled", false);
+                $("#open-connect-devtools").show();
+              } else {
+                $("#show-debugger-port").show();
+                $("#open-connect-devtools").hide();
+                $("#open-connect-devtools").prop("disabled", true);
+              }
             }
             else {
               $(Simulator.toggler).prop('checked', false);
+              $('#commands-preference-remote-debugger-port').html(message.remoteDebuggerPort);
+              remoteDebuggerPortEl.parents('label').hide();
             }
             break;
           case "listTabs":
@@ -237,6 +253,10 @@ var Simulator = {
 
   addAppByDirectory: function() {
     window.postMessage({ name: "addAppByDirectory" }, "*");
+  },
+
+  openConnectDevtools: function() {
+    window.postMessage({ name: "openConnectDevtools" }, "*");
   }
 
 };

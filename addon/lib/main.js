@@ -12,7 +12,7 @@ const Runtime = require("runtime");
 const Tabs = require("tabs");
 const PageMod = require("page-mod").PageMod;
 const UUID = require("sdk/util/uuid");
-const File = require("file");
+const File = require("./file");
 const Menuitems = require("menuitems");
 const Prefs = require("preferences-service");
 const Subprocess = require("subprocess");
@@ -31,6 +31,14 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 
 require("addon-page");
+
+const xulapp = require("sdk/system/xul-app");
+// NOTE: detect if developer toolbox feature can be enabled
+const HAS_CONNECT_DEVTOOLS = xulapp.is("Firefox") &&
+  xulapp.versionInRange(xulapp.platformVersion, "20.0a1", "*");
+
+console.debug("XULAPP: ", xulapp.name,xulapp.version, xulapp.platformVersion);
+console.debug("HAS_CONNECT_DEVTOOLS: ", HAS_CONNECT_DEVTOOLS);
 
 const RemoteSimulatorClient = require("remote-simulator-client");
 
@@ -121,15 +129,25 @@ let simulator = {
       }
       console.log("Stored " + JSON.stringify(apps[webappFile]));
 
-      this.updateApp(webappFile, true);
+      this.updateApp(webappFile, function next(error, appId) {
+        // app reinstall completed
+        // success/error detection and report to the user
+        if (error) {
+          simulator.error(error);
+        }
+        simulator.sendListApps();
+      });
     }
   },
 
   updateAll: function() {
     this.run(function () {
-      function next() {
+      function next(error, appId) {
         // Call iterator.next() in a timeout to ensure updateApp() has returned;
         // otherwise we might raise "TypeError: already executing generator".
+        if (error) {
+          simulator.error(error);
+        }
         Timer.setTimeout(function() {
           try {
             iterator.next();
@@ -228,12 +246,18 @@ let simulator = {
       // NOTE: remote simulator.defaultApp because on the first run the app
       //       will be not already installed
       simulator.defaultApp = null;
-      console.log("INSTALLING ",config.xkey);
+      console.log("Requesting webappsActor to install packaged app: ",config.xkey);
       simulator.run(function() {
         simulator.remoteSimulator.install(config.xkey, null, function(res) {
-          console.debug("INSTALL RESPONSE: ",JSON.stringify(res));
+          console.debug("webappsActor install packaged app reply: ",
+                        JSON.stringify(res));
           if (next) {
-            next();
+            // detect success/error and report to the "next" callback
+            if (res.error) {
+              next(res.error + ": "+res.message, res.appId);
+            } else {
+              next(null, res.appId);
+            }
           }
         });
       });
@@ -288,11 +312,17 @@ let simulator = {
               // DISABLED: because on the first run the app will be not already installed
               simulator.defaultApp = null;
               simulator.run(function() {
-                console.log("INSTALLING ",config.xkey);
+                console.log("Requesting webappsActor to install hosted app: ",config.xkey);
                 simulator.remoteSimulator.install(config.xkey, null, function(res) {
-                  console.debug("INSTALL RESPONSE: ",JSON.stringify(res));
+                  console.debug("webappsActor install hosted app reply: ",
+                                JSON.stringify(res));
                   if (next) {
-                    next();
+                    // detect success/error and report to the "next" callback
+                    if (res.error) {
+                      next(res.error + ": "+res.message, res.appId);
+                    } else {
+                      next(null, res.appId);
+                    }
                   }
                 });
               });
@@ -317,7 +347,13 @@ let simulator = {
     config.removed = true;
     apps[id] = config;
 
-    simulator.sendListApps();
+    simulator.run(function() {
+      simulator.remoteSimulator.uninstall(config.origin, function() {
+        // app uninstall completed
+        // TODO: add success/error detection and report to the user
+        simulator.sendListApps();
+      });
+    });
   },
 
   undoRemoveApp: function(id) {
@@ -331,7 +367,14 @@ let simulator = {
     config.removed = false;
     apps[id] = config;
 
-    simulator.sendListApps();
+    simulator.updateApp(id, function next(error, appId) {
+      // app reinstall completed
+      // success/error detection and report to the user
+      if (error) {
+        simulator.error(error);
+      }
+      simulator.sendListApps();
+    });
   },
 
   removeAppFinal: function(id) {
@@ -342,12 +385,10 @@ let simulator = {
       return;
     }
 
+    // remove from the registered app list
     delete apps[id];
 
-    let webappsDir = URL.toFilename(profileURL + "webapps");
-    let webappsFile = File.join(webappsDir, "webapps.json");
-    let webapps = JSON.parse(File.read(webappsFile));
-
+    // cleanup registered permissions
     let permissions = simulator.permissions;
     if (permissions[config.origin]) {
       let host = config.host;
@@ -356,28 +397,6 @@ let simulator = {
       });
       delete permissions[config.origin];
     }
-
-
-    // Delete the webapp record from the registry.
-    delete webapps[config.xkey];
-    File.open(webappsFile, "w").writeAsync(
-      JSON.stringify(webapps, null, 2) + "\n",
-      function(error) {
-        if (error) {
-          console.error("Error writing webapp record to registry: " + error);
-          return;
-        }
-
-        // Delete target folder if it exists
-        let webappDir = File.join(webappsDir, config.xkey);
-        let webappDir_nsIFile = Cc['@mozilla.org/file/local;1'].
-                                 createInstance(Ci.nsIFile);
-        webappDir_nsIFile.initWithPath(webappDir);
-        if (webappDir_nsIFile.exists() && webappDir_nsIFile.isDirectory()) {
-          webappDir_nsIFile.remove(true);
-        }
-      }
-    );
   },
 
   flushRemovedApps: function() {
@@ -538,7 +557,12 @@ let simulator = {
     }
     console.log("Stored " + JSON.stringify(apps[id], null, 2));
 
-    this.updateApp(id, true);
+    this.updateApp(id, function next(error, appId) {
+      // success/error detection and report to the user
+      if (error) {
+        simulator.error(error);
+      }
+    });
   },
 
   sendListApps: function() {
@@ -579,6 +603,19 @@ let simulator = {
 
   openHelperTab: function() {
     this.openTab(simulator.contentPage, true);
+  },
+
+  openConnectDevtools: function() {
+    let port = this.remoteSimulator.remoteDebuggerPort;
+    Tabs.open({
+      url: "chrome://browser/content/devtools/connect.xhtml",
+      onReady: function(tab) {
+        // NOTE: inject the allocated remoteDebuggerPort on the opened tab
+        tab.attach({
+          contentScript: "window.addEventListener('load', function() { document.getElementById('port').value = '"+port+"'; }, true);"
+        });
+      }
+    });
   },
 
   kill: function(onKilled) {
@@ -649,6 +686,21 @@ let simulator = {
     return this.remoteSimulator.isRunning;
   },
   
+  postIsRunning: function() {
+    if (simulator.worker) {
+      let port = simulator.isRunning ?
+        simulator.remoteSimulator.remoteDebuggerPort :
+        null;
+
+      simulator.worker.postMessage({
+        name: "isRunning",
+        isRunning: simulator.isRunning,
+        remoteDebuggerPort: port,
+        hasConnectDevtools: HAS_CONNECT_DEVTOOLS,
+      });
+    }
+  },
+
   get remoteSimulator() {
     if (this._remoteSimulator)
       return this._remoteSimulator;
@@ -658,20 +710,10 @@ let simulator = {
       onStdout: function (data) dump(data),
       onStderr: function (data) dump(data),
       onReady: function () {
-        if (simulator.worker) {
-          simulator.worker.postMessage({
-            name: "isRunning",
-            isRunning: true
-          });
-        }
+        simulator.postIsRunning();
       },
       onExit: function () {
-        if (simulator.worker) {
-          simulator.worker.postMessage({
-            name: "isRunning",
-            isRunning: false
-          });
-        }
+        simulator.postIsRunning();
       }
     });
     
@@ -682,9 +724,11 @@ let simulator = {
   onMessage: function onMessage(message) {
     console.log("Simulator.onMessage " + message.name);
     switch (message.name) {
+      case "openConnectDevtools":
+        simulator.openConnectDevtools();
+        break;
       case "getIsRunning":
-        this.worker.postMessage({ name: "isRunning",
-                                  isRunning: this.isRunning });
+        simulator.postIsRunning();
         break;
       case "addAppByDirectory":
         simulator.addAppByDirectory();
@@ -699,7 +743,12 @@ let simulator = {
         this.sendListApps();
         break;
       case "updateApp":
-        simulator.updateApp(message.id, true);
+        simulator.updateApp(message.id, function next(error, appId) {
+          // success/error detection and report to the user
+          if (error) {
+            simulator.error(error);
+          }
+        });
         break;
       case "runApp":
         let appName = this.apps[message.id].name;
