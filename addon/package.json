@@ -1,7 +1,7 @@
 {
   "id": "r2d2b2g@mozilla.org",
   "name": "r2d2b2g",
-  "version": "2.0pre7dev",
+  "version": "2.0",
   "fullName": "Firefox OS Simulator",
   "description": "a Firefox OS simulator",
   "author": "Myk Melez (https://github.com/mykmelez)",
