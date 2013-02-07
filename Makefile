@@ -54,7 +54,7 @@ ifeq (win32, $(B2G_PLATFORM))
 else
 ifeq (mac64, $(B2G_PLATFORM))
   B2G_TYPE ?= nightly
-  B2G_ID ?= 20130118070201
+  B2G_ID ?= 20130206070203
 else
 # Currently we use custom Linux builds because nightlies have bug 815805.
 ifeq (linux64, $(B2G_PLATFORM))
