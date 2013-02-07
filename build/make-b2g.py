@@ -99,7 +99,7 @@ scraper_keywords = {
 
 scraper_options = {
   'nightly': {
-    'branch': 'mozilla-b2g18',
+    'branch': 'mozilla-b2g18_v1_0_0',
     'build_id': options.id
   },
   'specific': {}
