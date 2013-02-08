@@ -41,7 +41,7 @@ const PR_CREATE_FILE = 0x08;
 const PR_TRUNCATE = 0x20;
 const PR_USEC_PER_MSEC = 1000;
 
-let worker;
+let worker, remoteSimulator;
 
 let simulator = exports.simulator = {
   get apps() {
@@ -695,11 +695,11 @@ let simulator = exports.simulator = {
   },
 
   get remoteSimulator() {
-    if (this._remoteSimulator)
-      return this._remoteSimulator;
+    if (remoteSimulator)
+      return remoteSimulator;
 
     let simulator = this;
-    let remoteSimulator = new RemoteSimulatorClient({
+    remoteSimulator = new RemoteSimulatorClient({
       onStdout: function (data) dump(data),
       onStderr: function (data) dump(data),
       onReady: function () {
@@ -710,7 +710,6 @@ let simulator = exports.simulator = {
       }
     });
 
-    this._remoteSimulator = remoteSimulator;
     return remoteSimulator;
   },
 
