@@ -247,10 +247,6 @@ var Simulator = {
     window.postMessage({ name: "toggle" }, "*");
   },
 
-  create: function() {
-    window.postMessage({ name: "create" }, "*");
-  },
-
   addAppByDirectory: function() {
     window.postMessage({ name: "addAppByDirectory" }, "*");
   },
