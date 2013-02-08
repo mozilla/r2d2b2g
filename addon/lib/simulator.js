@@ -41,9 +41,9 @@ const PR_CREATE_FILE = 0x08;
 const PR_TRUNCATE = 0x20;
 const PR_USEC_PER_MSEC = 1000;
 
-let simulator = exports.simulator = {
-  _worker: null,
+let worker;
 
+let simulator = exports.simulator = {
   get apps() {
     return SStorage.storage.apps || (SStorage.storage.apps = {});
   },
@@ -64,15 +64,14 @@ let simulator = exports.simulator = {
     return Prefs.get("extensions.r2d2b2g.jsconsole", false);
   },
 
-  get worker() this._worker,
+  get worker() worker,
 
   set worker(newVal) {
-    this._worker = newVal;
+    worker = newVal;
 
-    if (this._worker) {
-      this._worker.on("message", this.onMessage.bind(this));
-      this._worker.on("detach",
-                     (function(message) this._worker = null).bind(this));
+    if (worker) {
+      worker.on("message", this.onMessage.bind(this));
+      worker.on("detach", (function(message) worker = null).bind(this));
     }
   },
 
