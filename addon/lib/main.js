@@ -840,33 +840,6 @@ PageMod({
   },
 });
 
-//Widget({
-//  id: "r2d2b2g",
-//  label: "r2d2b2g",
-//  content: "r2d2b2g",
-//  width: 50,
-//  onClick: function() {
-//    Tabs.open({
-//      url: Self.data.url("content/index.html"),
-//      onReady: function(tab) {
-//        let worker = tab.attach({
-//          contentScriptFile: Self.data.url("content-script.js")
-//        });
-//        worker.on("message", function(data) {
-//          switch(data) {
-//            case "run":
-//              simulator.run();
-//              worker.postMessage("B2G was started!");
-//              break;
-//          }
-//        });
-//      }
-//    });
-//    return;
-//
-//  }
-//});
-
 /**
  * Ensure app xkeys are unique.
  */
