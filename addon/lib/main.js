@@ -975,26 +975,6 @@ Gcli.addCommand({
   },
 });
 
-// Menuitems.Menuitem({
-//   id: "launchB2G",
-//   menuid: "menu_ToolsPopup",
-//   insertbefore: "sanitizeSeparator",
-//   label: "Launch B2G Desktop",
-//   onCommand: function() {
-//     simulator.run();
-//   },
-// });
-
-// Menuitems.Menuitem({
-//   id: "appifyPage",
-//   menuid: "menu_ToolsPopup",
-//   insertbefore: "sanitizeSeparator",
-//   label: "Install Page in FxOS Simulator",
-//   onCommand: function() {
-//     simulator.addActiveTab();
-//   },
-// });
-
 /*
 function create() {
   let webappsDir = URL.toFilename(profileURL + "webapps");
