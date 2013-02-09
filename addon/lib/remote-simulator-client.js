@@ -5,6 +5,8 @@
 
 'use strict';
 
+const { Cc, Ci, Cu, ChromeWorker } = require("chrome");
+
 const { EventTarget } = require("sdk/event/target");
 const { emit, off } = require("sdk/event/core");
 const { Class } = require("sdk/core/heritage");
@@ -14,8 +16,6 @@ const Self = require("self");
 const URL = require("url");
 const Subprocess = require("subprocess");
 const Prefs = require("preferences-service");
-
-const { Cc, Ci, Cu, ChromeWorker } = require("chrome");
 
 const { rootURI: ROOT_URI } = require('@loader/options');
 const PROFILE_URL = ROOT_URI + "profile/";
