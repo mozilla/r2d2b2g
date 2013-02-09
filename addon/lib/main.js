@@ -15,19 +15,19 @@ const ContextMenu = require("context-menu");
 const Request = require('request').Request;
 const SStorage = require("simple-storage");
 const Gcli = require('gcli');
-const simulator = require("simulator.js");
+const Simulator = require("simulator.js");
 require("addon-page");
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 
 PageMod({
-  include: simulator.contentPage,
-  contentScriptFile: simulator.contentScript,
+  include: Simulator.contentPage,
+  contentScriptFile: Simulator.contentScript,
   contentScriptWhen: 'start',
   onAttach: function(worker) {
     // TODO: Only allow 1 manager page
-    simulator.worker = worker;
+    Simulator.worker = worker;
   },
 });
 
@@ -35,8 +35,8 @@ PageMod({
  * Ensure app xkeys are unique.
  */
 function ensureXkeysUnique() {
-  for (let key in simulator.apps) {
-    let app = simulator.apps[key];
+  for (let key in Simulator.apps) {
+    let app = Simulator.apps[key];
 
     // Give the app a new unique xkey.
     app.xkey = UUID.uuid().toString();
@@ -62,10 +62,10 @@ if (SStorage.storage.lastVersion != Self.version) {
 
 switch (Self.loadReason) {
   case "install":
-    simulator.openHelperTab();
+    Simulator.openHelperTab();
     break;
   case "downgrade":
-    simulator.updateAll();
+    Simulator.updateAll();
     break;
   case "upgrade":
     // If the last version the user used was older than 2.0pre5, then ensure
@@ -75,26 +75,26 @@ switch (Self.loadReason) {
       ensureXkeysUnique();
     }
 
-    simulator.updateAll();
+    Simulator.updateAll();
     break;
 }
 
 exports.onUnload = function(reason) {
-  simulator.kill();
+  Simulator.kill();
 };
 
 Tabs.on('ready', function() {
-  if (simulator.worker) {
-    simulator.sendListTabs();
+  if (Simulator.worker) {
+    Simulator.sendListTabs();
   }
 });
 Tabs.on('close', function() {
   // Kill process when the last tab is gone
   if (!Tabs.length) {
-    simulator.kill();
+    Simulator.kill();
   }
-  if (simulator.worker) {
-    simulator.sendListTabs();
+  if (Simulator.worker) {
+    Simulator.sendListTabs();
   }
 });
 
@@ -108,7 +108,7 @@ ContextMenu.Item({
                  '  self.postMessage(node.href)' +
                  '});',
   onMessage: function (manifestUrl) {
-    simulator.addManifestUrl(URL.URL(manifestUrl));
+    Simulator.addManifestUrl(URL.URL(manifestUrl));
   },
 });
 
@@ -118,7 +118,7 @@ Menuitems.Menuitem({
   insertbefore: "devToolsEndSeparator",
   label: "Firefox OS Simulator",
   onCommand: function() {
-    simulator.openHelperTab();
+    Simulator.openHelperTab();
   },
 });
 
@@ -128,7 +128,7 @@ Menuitems.Menuitem({
   insertbefore: "appmenu_devToolsEndSeparator",
   label: "Firefox OS Simulator",
   onCommand: function() {
-    simulator.openHelperTab();
+    Simulator.openHelperTab();
   },
 });
 
@@ -142,7 +142,7 @@ Gcli.addCommand({
   description: "Open the Firefox OS Simulator Manager",
   params: [],
   exec: function(args, context) {
-    simulator.openHelperTab();
+    Simulator.openHelperTab();
   },
 });
 
@@ -151,7 +151,7 @@ Gcli.addCommand({
   description: "Start Firefox OS Simulator (restarts if running)",
   params: [],
   exec: function(args, context) {
-    simulator.run();
+    Simulator.run();
   },
 });
 
@@ -160,8 +160,8 @@ Gcli.addCommand({
   description: "Stop Firefox OS Simulator",
   params: [],
   exec: function(args, context) {
-    if (simulator.isRunning) {
-      simulator.kill();
+    if (Simulator.isRunning) {
+      Simulator.kill();
     }
   },
 });
@@ -221,12 +221,12 @@ if (PermissionSettings) {
 
     permissionManager.add(uri, aData.type, action);
 
-    let permissions = simulator.permissions;
+    let permissions = Simulator.permissions;
     if (!permissions[aData.origin]) {
       permissions[aData.origin] = [];
     }
     permissions[aData.origin].push(aData.type);
-    simulator.permissions = permissions;
+    Simulator.permissions = permissions;
   };
 
   PermissionSettings.getPermission = function CustomGetPermission(aPermission, aManifestURL, aOrigin, aBrowserFlag) {
