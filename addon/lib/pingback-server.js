@@ -55,10 +55,7 @@ const PingbackServer = Class({
   },
 
   get port() {
-    if (!!this.srv) {
-      this._port = this.srv.port;
-      return this.srv.port;
-    } 
+    return !!this.srv ? (this._port = this.srv.port) : null;
   }
 });
 
