@@ -5,6 +5,8 @@
 
 'use strict';
 
+const { Cc, Ci, Cu, ChromeWorker } = require("chrome");
+
 const { EventTarget } = require("sdk/event/target");
 const { emit, off } = require("sdk/event/core");
 const { Class } = require("sdk/core/heritage");
@@ -15,10 +17,8 @@ const URL = require("url");
 const Subprocess = require("subprocess");
 const Prefs = require("preferences-service");
 
-const { Cc, Ci, Cu, ChromeWorker } = require("chrome");
-
-const { rootURI } = require('@loader/options');
-const profileURL = rootURI + "profile/";
+const { rootURI: ROOT_URI } = require('@loader/options');
+const PROFILE_URL = ROOT_URI + "profile/";
 
 const PingbackServer = require("pingback-server");
 
@@ -305,7 +305,7 @@ const RemoteSimulatorClient = Class({
 
   // compute current b2g filename
   get b2gFilename() {
-    if (this._executable) return this._executableFilename;
+    return this._executable ? this._executableFilename : "B2G";
   },
 
   // compute current b2g file handle
@@ -350,7 +350,7 @@ const RemoteSimulatorClient = Class({
   get b2gArguments() {
     let args = [];
 
-    let profile = URL.toFilename(profileURL);
+    let profile = URL.toFilename(PROFILE_URL);
     args.push("-profile", profile);
 
     // NOTE: push dbgport option on the b2g-desktop commandline
