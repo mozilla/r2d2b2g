@@ -305,7 +305,7 @@ const RemoteSimulatorClient = Class({
 
   // compute current b2g filename
   get b2gFilename() {
-    if (this._executable) return this._executableFilename;
+    return this._executable ? this._executableFilename : "B2G";
   },
 
   // compute current b2g file handle
