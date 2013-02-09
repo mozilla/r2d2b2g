@@ -15,7 +15,7 @@ const ContextMenu = require("context-menu");
 const Request = require('request').Request;
 const SStorage = require("simple-storage");
 const Gcli = require('gcli');
-const simulator = require("simulator.js").simulator;
+const simulator = require("simulator.js");
 require("addon-page");
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");

@@ -43,7 +43,7 @@ const PR_USEC_PER_MSEC = 1000;
 
 let worker, remoteSimulator;
 
-let simulator = exports.simulator = {
+let simulator = module.exports = {
   get apps() {
     return SStorage.storage.apps || (SStorage.storage.apps = {});
   },
