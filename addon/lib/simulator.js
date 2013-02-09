@@ -113,7 +113,7 @@ let simulator = module.exports = {
         icon = webapp.icons[size];
       }
 
-      apps = simulator.apps;
+      let apps = simulator.apps;
       apps[webappFile] = {
         type: "local",
         xid: null,
@@ -538,7 +538,7 @@ let simulator = module.exports = {
 
     let id = generated ? (origin + webapp.launch_path) : manifestUrl.toString();
 
-    apps = simulator.apps;
+    let apps = simulator.apps;
     apps[id] = {
       type: (generated) ? "generated" : "hosted",
       xid: null,
