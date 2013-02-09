@@ -61,10 +61,75 @@ SimulatorActor.prototype = {
   },
 
   onRunApp: function(aRequest) {
-    log("simulator actor received a 'runApp' command");
+    log("simulator actor received a 'runApp' command:"+aRequest.origin);
     let window = this.simulatorWindow;
-    let appName = aRequest.appname;
+    let appOrigin = aRequest.origin;
 
+    let runnable = {
+      run: function() {
+        try {
+          runnable.unlockScreen(function(e) {
+            if (e) {
+              log("ERROR: "+e);
+              return;
+            }
+            runnable.findAppByOrigin(appOrigin, function (e, app) {
+              if (e) {
+                log("ERROR: "+e);
+                return;
+              }
+              try {
+                log("RUNAPP LAUNCHING:"+app.origin);
+                app.launch();
+                log("RUNAPP SUCCESS:"+appOrigin);
+              } catch(e) {
+                log("EXCEPTION: "+e);
+              }
+            });
+          });
+        } catch(e) {
+          log("EXCEPTION: "+e);
+        }
+      },
+      unlockScreen: function(cb) {
+        let setReq = window.navigator.mozSettings
+          .createLock().set({'lockscreen.enabled': false});
+        setReq.onsuccess = function() {
+          cb();
+        };
+        setReq.onerror = function() {
+          cb("unlock error");
+        };
+      },
+      findAppByOrigin: function(origin, cb) {
+        let mgmt = window.navigator.mozApps.mgmt;
+        let req = mgmt.getAll();
+        req.onsuccess = function() {
+          let found = req.result.filter(function (app) {
+            if (app.origin === origin) {
+              return true;
+            }
+          });
+
+          if (found.length == 0) {
+            cb("app not found");
+          } else {
+            cb(null, found[0]);
+          }
+        };
+        req.onerror = function() {
+          cb(req.error.name);
+        };
+      }
+    };
+
+    Services.tm.currentThread.dispatch(runnable,
+                                       Ci.nsIThread.DISPATCH_NORMAL);
+    return {
+      message: "runApp request received: "+appOrigin
+    };
+
+    /*
     window.runAppObj = new window.AppRunner(appName);
 
     let setReq = window.navigator.mozSettings
@@ -75,6 +140,7 @@ SimulatorActor.prototype = {
     return {
       message: "runApp request received"
     };
+    */
   },
 
   onUninstallApp: function(aRequest) {

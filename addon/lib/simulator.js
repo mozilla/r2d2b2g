@@ -754,10 +754,10 @@ let simulator = module.exports = {
         });
         break;
       case "runApp":
-        let appName = this.apps[message.id].name;
+        let appOrigin = this.apps[message.id].origin;
 
         let cmd = function () {
-          this.remoteSimulator.runApp(appName, function (response) {
+          this.remoteSimulator.runApp(appOrigin, function (response) {
             console.debug("RUNAPP RESPONSE: "+JSON.stringify(response));
             // TODO: send feedback to manager tab
           });

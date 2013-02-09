@@ -219,10 +219,10 @@ const RemoteSimulatorClient = Class({
   },
 
   // send a runApp request to the remote simulator actor
-  runApp: function(appname, onResponse) {
+  runApp: function(appOrigin, onResponse) {
     let remote = this._remote;
 
-    remote.client.request({to: remote.simulator, type: "runApp", appname: appname}, 
+    remote.client.request({to: remote.simulator, type: "runApp", origin: appOrigin},
                           onResponse);
   },
 
