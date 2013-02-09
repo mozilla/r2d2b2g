@@ -3,6 +3,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+'use strict';
+
 const { Cc, Ci, Cr, Cu } = require("chrome");
 
 const Self = require("self");
@@ -393,7 +395,7 @@ let simulator = module.exports = {
   },
 
   flushRemovedApps: function() {
-    apps = simulator.apps;
+    let apps = simulator.apps;
     for (var id in apps) {
       if (apps[id].removed) {
         this.removeAppFinal(id);
