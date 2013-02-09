@@ -17,8 +17,8 @@ const Prefs = require("preferences-service");
 
 const { Cc, Ci, Cu, ChromeWorker } = require("chrome");
 
-const { rootURI } = require('@loader/options');
-const profileURL = rootURI + "profile/";
+const { rootURI: ROOT_URI } = require('@loader/options');
+const PROFILE_URL = ROOT_URI + "profile/";
 
 const PingbackServer = require("pingback-server");
 
@@ -350,7 +350,7 @@ const RemoteSimulatorClient = Class({
   get b2gArguments() {
     let args = [];
 
-    let profile = URL.toFilename(profileURL);
+    let profile = URL.toFilename(PROFILE_URL);
     args.push("-profile", profile);
 
     // NOTE: push dbgport option on the b2g-desktop commandline

@@ -20,8 +20,8 @@ const Timer = require("timer");
 const RemoteSimulatorClient = require("remote-simulator-client");
 const xulapp = require("sdk/system/xul-app");
 
-const { rootURI } = require('@loader/options');
-const profileURL = rootURI + "profile/";
+const { rootURI: ROOT_URI } = require('@loader/options');
+const PROFILE_URL = ROOT_URI + "profile/";
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
@@ -162,7 +162,7 @@ let simulator = module.exports = {
   updateApp: function(id, next) {
     console.log("Simulator.updateApp " + id);
 
-    let webappsDir = URL.toFilename(profileURL + "webapps");
+    let webappsDir = URL.toFilename(PROFILE_URL + "webapps");
     let tempDir = this.tempDir;
     let webappsFile = File.join(webappsDir, "webapps.json");
     let webapps = JSON.parse(File.read(webappsFile));
