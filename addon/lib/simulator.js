@@ -233,29 +233,37 @@ let simulator = module.exports = {
       let archiveFile = File.join(tempWebappDir, "application.zip");
 
       console.log("Zipping " + sourceDir + " to " + archiveFile);
-      archiveDir(archiveFile, sourceDir, function() {
-        simulator.info(config.name + " (packaged app) installed in Firefox OS");
-        // Complete install (Packaged)
+      archiveDir(archiveFile, sourceDir, function(error) {
+        if (error) {
+          if (next) {
+            next(error);
+          }
+        } else {
+          simulator.info(config.name +
+                         " (packaged app) installed in Firefox OS");
+          // Complete install (Packaged)
 
-        // NOTE: remote simulator.defaultApp because on the first run the app
-        //       will be not already installed
-        simulator.defaultApp = null;
-        console.log("Requesting webappsActor to install packaged app: ",
-                    config.xkey);
-        simulator.run(function() {
-          simulator.remoteSimulator.install(config.xkey, null, function(res) {
-            console.debug("webappsActor install packaged app reply: ",
-                          JSON.stringify(res));
-            if (next) {
-              // detect success/error and report to the "next" callback
-              if (res.error) {
-                next(res.error + ": "+res.message, res.appId);
-              } else {
-                next(null, res.appId);
+          // NOTE: remote simulator.defaultApp because on the first run the app
+          //       will be not already installed
+          simulator.defaultApp = null;
+          console.log("Requesting webappsActor to install packaged app: ",
+                      config.xkey);
+          simulator.run(function() {
+            simulator.remoteSimulator.install(config.xkey, null, function(res) {
+              console.debug("webappsActor install packaged app reply: ",
+                            JSON.stringify(res));
+              if (next) {
+                // detect success/error and report to the "next" callback
+                if (res.error) {
+                  next(res.error + ": " + res.message, res.appId);
+                } else {
+                  next(null, res.appId);
+                }
               }
-            }
+            });
           });
-        });
+        }
+
       });
     } else {
       // Hosted App
@@ -820,6 +828,20 @@ let simulator = module.exports = {
 
 };
 
+/**
+ * Convert an XPConnect result code to its name and message.
+ * We have to extract them from an exception per bug 637307 comment 5.
+ */
+function getResultText(code) {
+  let regexp =
+    /^\[Exception... "(.*)"  nsresult: "0x[0-9a-fA-F]* \((.*)\)"  location: ".*"  data: .*\]$/;
+  let ex = Cc["@mozilla.org/js/xpc/Exception;1"].
+           createInstance(Ci.nsIXPCException);
+  ex.initialize(null, code, null, null, null, null);
+  let [, message, name] = regexp.exec(ex.toString());
+  return { name: name, message: message };
+}
+
 function addDirToArchive(writer, dir, basePath) {
   let files = dir.directoryEntries;
 
@@ -868,7 +890,8 @@ function archiveDir(zipFile, dirToArchive, callback) {
         callback();
       }
       else {
-        throw status;
+        let { name, message } = getResultText(status);
+        callback(name + ": " + message);
       }
     }
   }, null);
