@@ -128,19 +128,6 @@ SimulatorActor.prototype = {
     return {
       message: "runApp request received: "+appOrigin
     };
-
-    /*
-    window.runAppObj = new window.AppRunner(appName);
-
-    let setReq = window.navigator.mozSettings
-      .createLock().set({'lockscreen.enabled': false});
-    setReq.onsuccess = function() {
-      window.runAppObj.doRunApp();
-    }
-    return {
-      message: "runApp request received"
-    };
-    */
   },
 
   onUninstallApp: function(aRequest) {
