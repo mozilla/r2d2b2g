@@ -15,3 +15,8 @@ document.getElementById("homeButton").addEventListener("mouseup", function() {
                      event.DOM_VK_HOME, 0);
   window.dispatchEvent(event);
 }, false);
+
+document.getElementById("rotateButton").addEventListener("click", function() {
+  Cu.import("resource://prosthesis/modules/GlobalSimulatorScreen.jsm");
+  GlobalSimulatorScreen.flipScreen();
+}, false);

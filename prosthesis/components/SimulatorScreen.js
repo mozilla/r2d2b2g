@@ -19,17 +19,16 @@ SimulatorScreen.prototype = {
   QueryInterface:  XPCOMUtils.generateQI([Ci.nsIDOMGlobalPropertyInitializer,
                                           Ci.nsISupportsWeakReference]),
   classInfo: XPCOMUtils.generateCI({
-    classID: Components.ID("{c83c02c0-5d43-4e3e-987f-9173b313e880}"), 
-    contractID: "@mozilla.org/simulator-screen;1", 
-    classDescription: "mozSimulatorScreen", 
+    classID: Components.ID("{c83c02c0-5d43-4e3e-987f-9173b313e880}"),
+    contractID: "@mozilla.org/simulator-screen;1",
+    classDescription: "mozSimulatorScreen",
     interfaces: [Ci.nsIDOMGlobalPropertyInitializer,
-                 Ci.nsISupportsWeakReference], 
+                 Ci.nsISupportsWeakReference],
     flags: Ci.nsIClassInfo.DOM_OBJECT
   }),
 
   init: function (aWindow) {
     dump("SIMULATOR SCREEN INIT CALLED\n");
-    dump("aWindow: "+aWindow);
     //this._aWindow = Cu.getWeakReference(aWindow);
     this._aWindow = XPCNativeWrapper.unwrap(aWindow);
     this._winUtils = this._aWindow.
@@ -76,23 +75,21 @@ SimulatorScreen.prototype = {
         return self._globalScreen.mozOrientation;
       },
       addEventListener: self._aWindow.addEventListener,
-      removeEventListener: self._aWindow.removeEventListener,      
+      removeEventListener: self._aWindow.removeEventListener,
       set onmozorientationchange(value) {
         if(self._onmozorientationchange) {
           self._aWindow.removeEventListener(self._onmozorientationchange);
-        } 
+        }
         self._onmozorientationchange = value;
-        self._aWindow.addEventListener("mozorientationchange", value, true);    
-      },      
+        self._aWindow.addEventListener("mozorientationchange", value, true);
+      },
       mozLockOrientation: function(orientation) {
         dump("REQUEST ORIENTATION LOCK: "+orientation+"\n");
         let changed = orientation !== self._globalScreen.mozOrientation;
 
         if (orientation.match(/^portrait/)) {
           self._globalScreen.mozOrientation = orientation;
-          self._globalScreen.width = 320;
-          self._globalScreen.height = 480;
-          self._globalScreen.mozOrientationLocked = true;
+          self._globalScreen.locked();
 
           if (changed) {
             self._globalScreen.adjustWindowSize();
@@ -105,12 +102,10 @@ SimulatorScreen.prototype = {
           }
 
           return true;
-        } 
+        }
         if (orientation.match(/^landscape/)) {
           self._globalScreen.mozOrientation = orientation;
-          self._globalScreen.width = 480;
-          self._globalScreen.height = 320;
-          self._globalScreen.mozOrientationLocked = true;
+          self._globalScreen.locked();
 
           if (changed) {
             self._globalScreen.adjustWindowSize();
@@ -123,14 +118,14 @@ SimulatorScreen.prototype = {
           }
 
           return true;
-        } 
+        }
         dump("orientation not found: '"+orientation+"'\n");
-        
+
         return true;
       },
       mozUnlockOrientation: function() {
         dump("REQUEST ORIENTATION UNLOCK\n");
-        self._globalScreen.mozOrientationLocked = false;
+        self._globalScreen.unlocked();
         return true;
       },
       __exposedProps__: {
@@ -173,13 +168,9 @@ SimulatorScreen.prototype = {
     };
     Object.defineProperties(contentObj, properties);
     Cu.makeObjectPropsNormal(contentObj);
-    
+
     return contentObj;
   }
 };
 
 this.NSGetFactory = XPCOMUtils.generateNSGetFactory([SimulatorScreen]);
-
-/*
-var catman = Components.classes["@mozilla.org/categorymanager;1"].getService(Ci.nsICategoryManager);
- */
