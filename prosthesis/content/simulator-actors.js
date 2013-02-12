@@ -61,7 +61,7 @@ SimulatorActor.prototype = {
   },
 
   onRunApp: function(aRequest) {
-    log("simulator actor received a 'runApp' command:"+aRequest.origin);
+    log("simulator actor received a 'runApp' command:" + aRequest.origin);
     let window = this.simulatorWindow;
     let appOrigin = aRequest.origin;
 
@@ -70,25 +70,25 @@ SimulatorActor.prototype = {
         try {
           runnable.unlockScreen(function(e) {
             if (e) {
-              log("ERROR: "+e);
+              log("ERROR: " + e);
               return;
             }
             runnable.findAppByOrigin(appOrigin, function (e, app) {
               if (e) {
-                log("ERROR: "+e);
+                log("ERROR: " + e);
                 return;
               }
               try {
-                log("RUNAPP LAUNCHING:"+app.origin);
+                log("RUNAPP LAUNCHING:" + app.origin);
                 app.launch();
-                log("RUNAPP SUCCESS:"+appOrigin);
+                log("RUNAPP SUCCESS:" + appOrigin);
               } catch(e) {
-                log("EXCEPTION: "+e);
+                log("EXCEPTION: " + e);
               }
             });
           });
         } catch(e) {
-          log("EXCEPTION: "+e);
+          log("EXCEPTION: " + e);
         }
       },
       unlockScreen: function(cb) {
@@ -126,12 +126,12 @@ SimulatorActor.prototype = {
     Services.tm.currentThread.dispatch(runnable,
                                        Ci.nsIThread.DISPATCH_NORMAL);
     return {
-      message: "runApp request received: "+appOrigin
+      message: "runApp request received: " + appOrigin
     };
   },
 
   onUninstallApp: function(aRequest) {
-    log("simulator actor received 'uninstallApp' command: "+aRequest.origin);
+    log("simulator actor received 'uninstallApp' command: " + aRequest.origin);
     let window = this.simulatorWindow;
 
     let runnable = {
@@ -140,10 +140,10 @@ SimulatorActor.prototype = {
           let mgmt = window.navigator.mozApps.mgmt;
           let req = mgmt.uninstall({origin: aRequest.origin});
           req.onsuccess = function () {
-            log("uninstallApp success: "+req.result);
+            log("uninstallApp success: " + req.result);
           }
           req.onerror = function () {
-            log("uninstallApp error: "+req.error.name);
+            log("uninstallApp error: " + req.error.name);
           }
         } catch(e) {
           log(e);
