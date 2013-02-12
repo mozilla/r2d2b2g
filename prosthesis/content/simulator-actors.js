@@ -63,6 +63,7 @@ SimulatorActor.prototype = {
   onRunApp: function(aRequest) {
     log("simulator actor received a 'runApp' command:" + aRequest.origin);
     let window = this.simulatorWindow;
+    let WindowManager = XPCNativeWrapper.unwrap(this.homescreenWindow).WindowManager;
     let appOrigin = aRequest.origin;
 
     let runnable = {
@@ -70,25 +71,27 @@ SimulatorActor.prototype = {
         try {
           runnable.unlockScreen(function(e) {
             if (e) {
-              log("ERROR: " + e);
+              log("RUNAPP ERROR: " + e);
               return;
             }
-            runnable.findAppByOrigin(appOrigin, function (e, app) {
-              if (e) {
-                log("ERROR: " + e);
-                return;
-              }
-              try {
-                log("RUNAPP LAUNCHING:" + app.origin);
-                app.launch();
-                log("RUNAPP SUCCESS:" + appOrigin);
-              } catch(e) {
-                log("EXCEPTION: " + e);
-              }
+            runnable.killAppByOrigin(appOrigin, function () {
+              runnable.findAppByOrigin(appOrigin, function (e, app) {
+                if (e) {
+                  log("RUNAPP ERROR: " + e);
+                  return;
+                }
+                try {
+                  log("RUNAPP LAUNCHING:" + app.origin);
+                  app.launch();
+                  log("RUNAPP SUCCESS:" + appOrigin);
+                } catch(e) {
+                  log("RUNAPP EXCEPTION: " + e);
+                }
+              });
             });
           });
         } catch(e) {
-          log("EXCEPTION: " + e);
+          log("RUNAPP EXCEPTION: " + e);
         }
       },
       unlockScreen: function(cb) {
@@ -100,6 +103,17 @@ SimulatorActor.prototype = {
         setReq.onerror = function() {
           cb("unlock error");
         };
+      },
+      killAppByOrigin: function(origin, cb) {
+        try {
+          WindowManager.kill(origin);
+          // WORKAROUND: currently WindowManager.kill doesn't always call 
+          // the optional callback (e.g. the application is not running)
+          window.setTimeout(cb, 500);
+        } catch(e) {
+          log("RUNAPP EXCEPTION: killAppByOrigin - "+e);
+          cb();
+        }
       },
       findAppByOrigin: function(origin, cb) {
         let mgmt = window.navigator.mozApps.mgmt;
