@@ -693,10 +693,9 @@ let simulator = module.exports = {
   },
 
   runApp: function(appOrigin, next) {
-    let cmd = (function () {
-      this.remoteSimulator.runApp(appOrigin, next);
-    }).bind(this);
-    this.run(cmd);
+    this.run(function () {
+      simulator.remoteSimulator.runApp(appOrigin, next);
+    });
   },
 
   get isRunning() {
