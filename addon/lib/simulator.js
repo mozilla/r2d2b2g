@@ -124,7 +124,7 @@ let simulator = module.exports = {
       }
       console.log("Stored " + JSON.stringify(apps[webappFile]));
 
-      this.updateApp(webappFile, function next(error, appId) {
+      this.updateApp(webappFile, function next(error, app) {
         // app reinstall completed
         // success/error detection and report to the user
         if (error) {
@@ -139,7 +139,7 @@ let simulator = module.exports = {
 
   updateAll: function() {
     this.run(function () {
-      function next(error, appId) {
+      function next(error, app) {
         // Call iterator.next() in a timeout to ensure updateApp() has returned;
         // otherwise we might raise "TypeError: already executing generator".
         if (error) {
