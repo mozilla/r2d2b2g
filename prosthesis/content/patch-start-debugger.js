@@ -15,6 +15,7 @@
   RemoteDebugger.start = function simulatorRemoteDebuggerStart() {
     presimulator_RemoteDebugger_start(); // call original RemoteDebugger.start
     DebuggerServer.addActors('chrome://prosthesis/content/simulator-actors.js');
+    DebuggerServer.addActors('chrome://prosthesis/content/dbg-webapps-actors.js');
     pingback();
   }
 
