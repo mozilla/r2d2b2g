@@ -69,17 +69,18 @@ SimulatorActor.prototype = {
     let runnable = {
       run: function() {
         try {
-          runnable.unlockScreen(function(e) {
-            if (e) {
-              log("RUNAPP ERROR: " + e);
-              return;
-            }
-            runnable.killAppByOrigin(appOrigin, function () {
-              runnable.findAppByOrigin(appOrigin, function (e, app) {
+          runnable.killAppByOrigin(appOrigin, function () {
+            runnable.findAppByOrigin(appOrigin, function (e, app) {
+              if (e) {
+                log("RUNAPP ERROR: " + e);
+                return;
+              }
+              runnable.unlockScreen(function(e) {
                 if (e) {
                   log("RUNAPP ERROR: " + e);
                   return;
                 }
+        
                 try {
                   log("RUNAPP LAUNCHING:" + app.origin);
                   app.launch();
@@ -95,23 +96,27 @@ SimulatorActor.prototype = {
         }
       },
       unlockScreen: function(cb) {
-        let setReq = window.navigator.mozSettings
-          .createLock().set({'lockscreen.enabled': false});
-        setReq.onsuccess = function() {
-          cb();
-        };
-        setReq.onerror = function() {
-          cb("unlock error");
-        };
+        // WORKAROUND: currently we're not able to detect when the firefoxos is fully loaded
+        // and ready to handle this unlock screen request.
+        window.setTimeout(function () {
+          let setReq = window.navigator.mozSettings
+            .createLock().set({'lockscreen.enabled': false});
+          setReq.onsuccess = function() {
+            cb();
+          };
+          setReq.onerror = function() {
+            cb("unlock error");
+          };
+        }, 500);
       },
       killAppByOrigin: function(origin, cb) {
         try {
           WindowManager.kill(origin);
-          // WORKAROUND: currently WindowManager.kill doesn't always call 
-          // the optional callback (e.g. the application is not running)
+          // WORKAROUND: currently WindowManager.kill doesn't always call
+          // the optional callback (e.g. the application is not running).
           window.setTimeout(cb, 500);
         } catch(e) {
-          log("RUNAPP EXCEPTION: killAppByOrigin - "+e);
+          log("RUNAPP EXCEPTION: killAppByOrigin - " + e);
           cb();
         }
       },
