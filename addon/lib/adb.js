@@ -1,0 +1,548 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+// Wrapper around the ADB utility.
+
+let components;
+if ("require" in this) {
+  // CommonJS Module
+  components = require("chrome").components;
+} else {
+  // JavaScript Module (JSM)
+  components = Components;
+}
+let Cc = components.classes;
+let Ci = components.interfaces;
+let Cu = components.utils;
+let CC = components.Constructor;
+
+Cu.import("resource://gre/modules/Services.jsm");
+try {
+  Cu.import("resource://gre/modules/commonjs/promise/core.js");
+} catch (e) {
+  Cu.import("resource://gre/modules/commonjs/sdk/core/promise.js");
+}
+Cu.import("resource://gre/modules/osfile.jsm");
+
+// JavaScript Module (JSM)
+this.EXPORTED_SYMBOLS = ["ADB"];
+
+function debug(aStr) {
+  dump("--*-- ADB.jsm: " + aStr + "\n");
+}
+
+this.ADB = {
+  ready: false,
+
+  // We startup by launching adb in server mode, and setting
+  // the tcp socket preference to |true|
+  init: function adb_init() {
+    debug("init");
+    let platform = Services.appinfo.OS;
+    let uri = "chrome://b2g-remote/content/binaries/";
+    let bin;
+
+    switch(platform) {
+      case "Linux":
+        bin = uri + "linux/adb";
+        break;
+      case "Darwin":
+        bin = uri + "darwin/adb";
+        break;
+      default:
+        debug("Unsupported platform : " + platform);
+        return;
+    }
+
+    let chromeReg = Cc["@mozilla.org/chrome/chrome-registry;1"]
+                      .getService(Ci.nsIChromeRegistry);
+    let url = chromeReg.convertChromeURL(Services.io.newURI(bin, null, null))
+                       .QueryInterface(Ci.nsIFileURL);
+    this._adb = url.file;
+
+    let process = Cc["@mozilla.org/process/util;1"]
+                    .createInstance(Ci.nsIProcess);
+    process.init(this._adb);
+    let params = ["start-server"];
+    let self = this;
+    process.runAsync(params, params.length, {
+      observe: function(aSubject, aTopic, aData) {
+        switch(aTopic) {
+          case "process-finished":
+            Services.prefs.setBoolPref("dom.mozTCPSocket.enabled", true);
+            Services.obs.notifyObservers(null, "adb-ready", null);
+            self.ready = true;
+            break;
+          case "process-failed":
+            self.ready = false;
+            break;
+        }
+      }
+    }, false);
+  },
+
+  // Creates a socket connected to the adb instance.
+  // This function is sync, and returns before we know if opening the
+  // connection succeeds. Callers must attach handlers to the socket.
+  _connect: function adb_connect() {
+    let TCPSocket = new (CC("@mozilla.org/tcp-socket;1", "nsIDOMTCPSocket"))();
+    let socket = TCPSocket.open(
+     "127.0.0.1", 5037,
+     { binaryType: "arraybuffer" });
+    return socket;
+  },
+
+  // @param aCommand A protocol-level command as described in
+  //  http://androidxref.com/4.0.4/xref/system/core/adb/OVERVIEW.TXT and
+  //  http://androidxref.com/4.0.4/xref/system/core/adb/SERVICES.TXT
+  // @return A 8 bit typed array.
+  _createRequest: function adb_createRequest(aCommand) {
+    let length = aCommand.length.toString(16).toUpperCase();
+    while(length.length < 4) {
+      length = "0" + length;
+    }
+
+    let encoder = new TextEncoder();
+    return encoder.encode(length + aCommand);
+  },
+
+  // Checks if the response is OKAY or FAIL.
+  // @return true for OKAY, false for FAIL.
+  _checkResponse: function adb_checkResponse(aPacket) {
+    const OKAY = 0x59414b4f; // OKAY
+    const FAIL = 0x4c494146; // FAIL
+    let view = new Uint32Array(aPacket.buffer, 0 , 1);
+    if (view[0] == FAIL) {
+      debug("Response: FAIL");
+    }
+    return view[0] == OKAY;
+  },
+
+  // @param aPacket         The packet to get the length from.
+  // @param aIgnoreResponse True if this packet has no OKAY/FAIL.
+  // @return                A js object { length:...; data:... }
+  _unpackPacket: function adb_unpackPacket(aPacket, aIgnoreResponse) {
+    let lengthView = new Uint8Array(aPacket.buffer, aIgnoreResponse ? 0 : 4, 4);
+    let decoder = new TextDecoder();
+    let length = parseInt(decoder.decode(lengthView), 16);
+    let text = new Uint8Array(aPacket.buffer, aIgnoreResponse ? 4 : 8, length);
+    return { length: length, data: decoder.decode(text) }
+  },
+
+  // Start tracking devices connecting and disconnecting from the host.
+  // We can't reuse runCommand here because we keep the socket alive.
+  // @return The socket used.
+  trackDevices: function adb_trackDevices() {
+    debug("trackDevices");
+    let socket = this._connect();
+    let waitForFirst = true;
+    let devices = {};
+
+    socket.onopen = function() {
+      debug("trackDevices onopen");
+      Services.obs.notifyObservers(null, "adb-track-devices-start", null);
+      let req = this._createRequest("host:track-devices");
+      socket.send(req);
+
+    }.bind(this);
+
+    socket.onerror = function() {
+      debug("trackDevices onerror");
+      Services.obs.notifyObservers(null, "adb-track-devices-stop", null);
+    }
+
+    socket.onclose = function() {
+      debug("trackDevices onclose");
+      Services.obs.notifyObservers(null, "adb-track-devices-stop", null);
+    }
+
+    socket.ondata = function(aEvent) {
+      debug("trackDevices ondata");
+      let data = aEvent.data;
+      debug("length=" + data.length);
+      let dec = new TextDecoder();
+      debug(dec.decode(data));
+
+      // check the OKAY or FAIL on first packet.
+      if (waitForFirst) {
+        if (!this._checkResponse(data)) {
+          socket.close();
+          return;
+        }
+      }
+
+      let packet = this._unpackPacket(data, !waitForFirst);
+      waitForFirst = false;
+
+      if (packet.data == "") {
+        // All devices got disconnected.
+        for (let dev in devices) {
+          devices[dev] = false;
+          Services.obs.notifyObservers(null, "adb-device-disconnected", dev);
+        }
+      } else {
+        // One line per device, each line being $DEVICE\t(offline|device)
+        let lines = packet.data.split("\n");
+        let newDev = {};
+        lines.forEach(function(aLine) {
+          if (aLine.length == 0) {
+            return;
+          }
+
+          let [dev, status] = aLine.split("\t");
+          newDev[dev] = status !== "offline";
+        });
+        // Check which device changed state.
+        for (dev in newDev) {
+          if (devices[dev] != newDev[dev]) {
+            if (dev in devices || newDev[dev]) {
+              let topic = newDev[dev] ? "adb-device-connected"
+                                      : "adb-device-disconnected";
+              Services.obs.notifyObservers(null, topic, dev);
+            }
+            devices[dev] = newDev[dev];
+          }
+        }
+      }
+    }.bind(this);
+
+    return socket;
+  },
+
+  // Sends back an array of device names.
+  listDevices: function adb_listDevices() {
+    debug("listDevices");
+    let deferred = Promise.defer();
+
+    let promise = this.runCommand("host:devices");
+
+    return promise.then(
+      function onSuccess(data) {
+        let lines = data.split("\n");
+        let res = [];
+        lines.forEach(function(aLine) {
+          if (aLine.length == 0) {
+            return;
+          }
+          let [device, status] = aLine.split("\t");
+          res.push(device);
+        });
+        return res;
+      }
+    );
+  },
+
+  // sends adb forward tcp:aPort tcp:6000
+  forwardPort: function adb_forwardPort(aPort) {
+    debug("forwardPort " + aPort);
+    // <host-prefix>:forward:<local>;<remote>
+
+    let promise = this.runCommand("host:forward:tcp:" + aPort + ";tcp:6000");
+
+    return promise.then(
+      function onSuccess(data) {
+        return data;
+      }
+    );
+  },
+
+  // Checks a file mode.
+  // aWhat is one the strings "S_ISDIR" "S_ISCHR" "S_ISBLK"
+  // "S_ISREG" "S_ISFIFO" "S_ISLNK" "S_ISSOCK"
+  checkFileMode: function adb_checkFileMode(aMode, aWhat) {
+    /* Encoding of the file mode.  See bits/stat.h */
+    const S_IFMT = 0170000; /* These bits determine file type.  */
+
+    /* File types.  */
+    const S_IFDIR  = 0040000; /* Directory.  */
+    const S_IFCHR  = 0020000; /* Character device.  */
+    const S_IFBLK  = 0060000; /* Block device.  */
+    const S_IFREG  = 0100000; /* Regular file.  */
+    const S_IFIFO  = 0010000; /* FIFO.  */
+    const S_IFLNK  = 0120000; /* Symbolic link.  */
+    const S_IFSOCK = 0140000; /* Socket.  */
+
+    let masks = {
+      "S_ISDIR": S_IFDIR,
+      "S_ISCHR": S_IFCHR,
+      "S_ISBLK": S_IFBLK,
+      "S_ISREG": S_IFREG,
+      "S_ISFIFO": S_IFIFO,
+      "S_ISLNK": S_ISLNK,
+      "S_ISSOCK": S_IFSOCK
+    }
+
+    if (!(aWhat in masks)) {
+      return false;
+    }
+
+    return ((aMode & S_IFMT) == masks[aWhat]);
+  },
+
+  // pulls a file from the device.
+  // send "host:transport-any" why??
+  // if !OKAY, return
+  // send "sync:"
+  // if !OKAY, return
+  // send STAT + hex4(path.length) + path
+  // recv STAT + 12 bytes (3 x 32 bits: mode, size, time)
+  // send RECV + hex4(path.length) + path
+  // while(needs data):
+  //   recv DATA + hex4 + data
+  // recv DONE + hex4(0)
+  // send QUIT + hex4(0)
+  pull: function adb_pull(aFrom, aDest) {
+    throw "NOT_IMPLEMENTED";
+    let deferred = Promise.defer();
+
+    return deferred.promise;
+  },
+
+  // debugging version of tcpsocket.send()
+  sockSend: function adb_sockSend(aSocket, aArray) {
+    let decoder = new TextDecoder();
+    let s = decoder.decode(aArray);
+    let len = aArray.length;
+    let dbg = "len=" + len + " ";
+    let l = len > 20 ? 20 : len;
+
+    for (let i = 0; i < l; i++) {
+      let c = aArray[i].toString(16);
+      if (c.length == 1)
+        c = "0" + c;
+      dbg += c;
+    }
+    dbg += " ";
+    for (let i = 0; i < l; i++) {
+      let c = aArray[i];
+      if (c < 32 || c > 127) {
+        dbg += ".";
+      } else {
+        dbg += s[i];
+      }
+    }
+    debug(dbg);
+    aSocket.send(aArray);
+  },
+
+  // pushes a file to the device.
+  // aFrom and aDest are full paths.
+  // XXX we should STAT the remote path before sending.
+  push: function adb_pull(aFrom, aDest) {
+    let deferred = Promise.defer();
+    let socket;
+    let state;
+    let fileSize;
+    let fileData;
+    let remaining;
+    let currentPos = 0;
+    let fileTime;
+
+    debug("pushing " + aFrom + " -> " + aDest);
+
+    let shutdown = function() {
+      debug("push shutdown");
+      socket.close();
+      deferred.reject("BAD_RESPONSE");
+    }
+
+    let runFSM = function runFSM(aData) {
+      debug("runFSM " + state);
+      let req;
+      switch(state) {
+        case "start":
+          state = "send-transport";
+          runFSM();
+          break;
+        case "send-transport":
+          req = ADB._createRequest("host:transport-any");
+          socket.send(req);
+          state = "wait-transport";
+          break
+        case "wait-transport":
+          if (!ADB._checkResponse(aData)) {
+            shutdown();
+            return;
+          }
+          debug("transport: OK");
+          state = "send-sync";
+          runFSM();
+          break
+        case "send-sync":
+          req = ADB._createRequest("sync:");
+          socket.send(req);
+          state = "wait-sync";
+          break
+        case "wait-sync":
+          if (!ADB._checkResponse(aData)) {
+            shutdown();
+            return;
+          }
+          debug("sync: OK");
+          state = "send-send";
+          runFSM();
+          break
+        case "send-send":
+          // need to send SEND + length($aDest,$fileMode)
+          // $fileMode is not the octal one there.
+          let encoder = new TextEncoder();
+          let uint32Packet = new Uint32Array(1);
+          let uint8Packet = new Uint8Array(uint32Packet.buffer, 0, 4);
+          ADB.sockSend(socket, encoder.encode("SEND"));
+          let info = aDest + ",33204";
+          uint32Packet[0] = info.length;
+          ADB.sockSend(socket, uint8Packet);
+          ADB.sockSend(socket, encoder.encode(info));
+
+          // now sending file data.
+          while (remaining > 0) {
+            let toSend = remaining > 65536 ? 65536 : remaining;
+            debug("Sending " + toSend + " bytes");
+            ADB.sockSend(socket, encoder.encode("DATA"));
+            uint32Packet[0] = toSend;
+            ADB.sockSend(socket, uint8Packet);
+            ADB.sockSend(socket, new Uint8Array(fileData.buffer, currentPos, toSend));
+            currentPos += toSend;
+            remaining -= toSend;
+          }
+
+          // Ending up with DONE + mtime (wtf???)
+          socket.send(encoder.encode("DONE"));
+          uint32Packet[0] = fileTime;
+          socket.send(uint8Packet);
+          state = "wait-done";
+          break;
+        case "wait-done":
+          if (!ADB._checkResponse(aData)) {
+            shutdown();
+            return;
+          }
+          debug("DONE: OK");
+          state = "end";
+          runFSM();
+          break;
+        case "end":
+          socket.close();
+          deferred.resolve("SUCCESS");
+          break;
+        default:
+          debug("push Unexpected State: " + state);
+          deferred.reject("UNEXPECTED_STATE");
+      }
+    }
+
+    let setupSocket = function() {
+      socket.onerror = function(aEvent) {
+        debug("push onerror");
+        deferred.reject("SOCKET_ERROR");
+      }
+
+      socket.onopen = function(aEvent) {
+        debug("push onopen");
+        state = "start";
+        runFSM();
+      }
+
+      socket.onclose = function(aEvent) {
+        debug("push onclose");
+      }
+
+      socket.ondata = function(aEvent) {
+        debug("push ondata");
+        runFSM(aEvent.data);
+      }
+    }
+    // Stat the file, get its size.
+    let promise = OS.File.stat(aFrom);
+    promise = promise.then(
+      function onSuccess(stat) {
+        if (stat.isDir) {
+          // The path represents a directory
+          deferred.reject("CANT_PUSH_DIR");
+        } else {
+          // The path represents a file, not a directory
+          fileSize = stat.size;
+          // We want seconds since epoch
+          fileTime = stat.lastModificationDate.getTime() / 1000;
+          remaining = fileSize;
+          debug(aFrom + " size is " + fileSize);
+          let readPromise = OS.File.read(aFrom);
+          readPromise.then(
+            function readSuccess(aData) {
+              fileData = aData;
+              socket = ADB._connect();
+              setupSocket();
+            },
+            function readError() {
+              deferred.reject("READ_FAILED");
+            }
+          );
+        }
+      },
+      function onFailure(reason) {
+        debug(reason);
+        deferred.reject("CANT_ACCESS_FILE");
+      }
+    );
+
+    return deferred.promise;
+  },
+
+  // Asynchronously runs an adb command.
+  // @param aCommand The command as documented in
+  // http://androidxref.com/4.0.4/xref/system/core/adb/SERVICES.TXT
+  runCommand: function adb_runCommand(aCommand) {
+    debug("runCommand " + aCommand);
+    let deferred = Promise.defer();
+    if (!this.ready) {
+      let window = Services.wm.getMostRecentWindow("navigator:browser");
+      window.setTimeout(function() { deferred.reject("ADB_NOT_READY"); });
+      return deferred.promise;
+    }
+
+    let socket = this._connect();
+    let waitForFirst = true;
+    let devices = {};
+
+    socket.onopen = function() {
+      debug("runCommand onopen");
+      let req = this._createRequest(aCommand);
+      socket.send(req);
+
+    }.bind(this);
+
+    socket.onerror = function() {
+      debug("runCommand onerror");
+      deferred.reject("NETWORK_ERROR");
+    }
+
+    socket.onclose = function() {
+      debug("runCommand onclose");
+    }
+
+    socket.ondata = function(aEvent) {
+      debug("runCommand ondata");
+      let data = aEvent.data;
+
+      if (!this._checkResponse(data)) {
+        socket.close();
+        let packet = this._unpackPacket(data, false);
+        debug("Error: " + packet.data);
+        deferred.reject("PROTOCOL_ERROR");
+        return;
+      }
+
+      let packet = this._unpackPacket(data, false);
+      deferred.resolve(packet.data);
+    }.bind(this);
+
+
+    return deferred.promise;
+  }
+}
+
+this.ADB.init();
+
+// CommonJS Module
+this.exports = ADB;
