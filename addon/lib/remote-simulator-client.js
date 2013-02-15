@@ -76,7 +76,7 @@ const RemoteSimulatorClient = Class({
           tabs: reply.tabs,
           selected: reply.selected,
           simulator: reply.simulatorActor,
-          webapps: reply.simulatorwebappsActor
+          webapps: reply.simulatorWebappsActor
         });
       }).bind(this));
     });

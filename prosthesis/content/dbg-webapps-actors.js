@@ -27,7 +27,7 @@ function debug(aMsg) {
 function WebappsActor(aConnection) { debug("init"); }
 
 WebappsActor.prototype = {
-  actorPrefix: "simulatorwebapps",
+  actorPrefix: "simulatorWebapps",
 
   _registerApp: function wa_actorRegisterApp(aApp, aId, aDir) {
     let reg = DOMApplicationRegistry;
@@ -278,4 +278,4 @@ WebappsActor.prototype.requestTypes = {
   "install": WebappsActor.prototype.install
 };
 
-DebuggerServer.addGlobalActor(WebappsActor, "simulatorwebappsActor");
+DebuggerServer.addGlobalActor(WebappsActor, "simulatorWebappsActor");
