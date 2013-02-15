@@ -113,7 +113,7 @@ let simulator = module.exports = {
         icon = webapp.icons[size];
       }
 
-      apps = simulator.apps;
+      let apps = simulator.apps;
       apps[webappFile] = {
         type: "local",
         xid: null,
@@ -124,20 +124,22 @@ let simulator = module.exports = {
       }
       console.log("Stored " + JSON.stringify(apps[webappFile]));
 
-      this.updateApp(webappFile, function next(error, appId) {
+      this.updateApp(webappFile, function next(error, app) {
         // app reinstall completed
         // success/error detection and report to the user
         if (error) {
           simulator.error(error);
+        } else {
+          simulator.sendListApps();
+          simulator.runApp(app.origin);
         }
-        simulator.sendListApps();
       });
     }
   },
 
   updateAll: function() {
     this.run(function () {
-      function next(error, appId) {
+      function next(error, app) {
         // Call iterator.next() in a timeout to ensure updateApp() has returned;
         // otherwise we might raise "TypeError: already executing generator".
         if (error) {
@@ -233,28 +235,36 @@ let simulator = module.exports = {
       let archiveFile = File.join(tempWebappDir, "application.zip");
 
       console.log("Zipping " + sourceDir + " to " + archiveFile);
-      archiveDir(archiveFile, sourceDir);
-
-      simulator.info(config.name + " (packaged app) installed in Firefox OS");
-      // Complete install (Packaged)
-
-      // NOTE: remote simulator.defaultApp because on the first run the app
-      //       will be not already installed
-      simulator.defaultApp = null;
-      console.log("Requesting webappsActor to install packaged app: ",config.xkey);
-      simulator.run(function() {
-        simulator.remoteSimulator.install(config.xkey, null, function(res) {
-          console.debug("webappsActor install packaged app reply: ",
-                        JSON.stringify(res));
+      archiveDir(archiveFile, sourceDir, function(error) {
+        if (error) {
           if (next) {
-            // detect success/error and report to the "next" callback
-            if (res.error) {
-              next(res.error + ": "+res.message, res.appId);
-            } else {
-              next(null, res.appId);
-            }
+            next(error);
           }
-        });
+        } else {
+          simulator.info(config.name +
+                         " (packaged app) installed in Firefox OS");
+          // Complete install (Packaged)
+
+          // NOTE: remote simulator.defaultApp because on the first run the app
+          //       will be not already installed
+          simulator.defaultApp = null;
+          console.log("Requesting webappsActor to install packaged app: ",
+                      config.xkey);
+          simulator.run(function() {
+            simulator.remoteSimulator.install(config.xkey, null, function(res) {
+              console.debug("webappsActor install packaged app reply: ",
+                            JSON.stringify(res));
+              if (next) {
+                // detect success/error and report to the "next" callback
+                if (res.error) {
+                  next(res.error + ": " + res.message, config);
+                } else {
+                  next(null, config);
+                }
+              }
+            });
+          });
+        }
       });
     } else {
       // Hosted App
@@ -314,9 +324,9 @@ let simulator = module.exports = {
                   if (next) {
                     // detect success/error and report to the "next" callback
                     if (res.error) {
-                      next(res.error + ": "+res.message, res.appId);
+                      next(res.error + ": "+res.message, config);
                     } else {
-                      next(null, res.appId);
+                      next(null, config);
                     }
                   }
                 });
@@ -362,13 +372,15 @@ let simulator = module.exports = {
     config.removed = false;
     apps[id] = config;
 
-    simulator.updateApp(id, function next(error, appId) {
+    simulator.updateApp(id, function next(error, app) {
       // app reinstall completed
       // success/error detection and report to the user
       if (error) {
         simulator.error(error);
+      } else {
+        simulator.sendListApps();
+        simulator.runApp(app.origin);
       }
-      simulator.sendListApps();
     });
   },
 
@@ -538,7 +550,7 @@ let simulator = module.exports = {
 
     let id = generated ? (origin + webapp.launch_path) : manifestUrl.toString();
 
-    apps = simulator.apps;
+    let apps = simulator.apps;
     apps[id] = {
       type: (generated) ? "generated" : "hosted",
       xid: null,
@@ -552,10 +564,13 @@ let simulator = module.exports = {
     }
     console.log("Stored " + JSON.stringify(apps[id], null, 2));
 
-    this.updateApp(id, function next(error, appId) {
+    this.updateApp(id, function next(error, app) {
       // success/error detection and report to the user
       if (error) {
         simulator.error(error);
+      } else {
+        simulator.sendListApps();
+        simulator.runApp(app.origin);
       }
     });
   },
@@ -677,6 +692,12 @@ let simulator = module.exports = {
     }
   },
 
+  runApp: function(appOrigin, next) {
+    this.run(function () {
+      simulator.remoteSimulator.runApp(appOrigin, next);
+    });
+  },
+
   get isRunning() {
     return this.remoteSimulator.isRunning;
   },
@@ -737,24 +758,19 @@ let simulator = module.exports = {
         this.sendListApps();
         break;
       case "updateApp":
-        simulator.updateApp(message.id, function next(error, appId) {
+        simulator.updateApp(message.id, function next(error, app) {
           // success/error detection and report to the user
           if (error) {
             simulator.error(error);
+          } else {
+            simulator.sendListApps();
+            simulator.runApp(app.origin);
           }
         });
         break;
       case "runApp":
-        let appName = this.apps[message.id].name;
-
-        let cmd = function () {
-          this.remoteSimulator.runApp(appName, function (response) {
-            console.debug("RUNAPP RESPONSE: "+JSON.stringify(response));
-            // TODO: send feedback to manager tab
-          });
-        };
-        cmd = cmd.bind(this);
-        this.run(cmd);
+        let appOrigin = this.apps[message.id].origin;
+        simulator.runApp(appOrigin);
         break;
       case "removeApp":
         this.removeApp(message.id);
@@ -819,6 +835,20 @@ let simulator = module.exports = {
 
 };
 
+/**
+ * Convert an XPConnect result code to its name and message.
+ * We have to extract them from an exception per bug 637307 comment 5.
+ */
+function getResultText(code) {
+  let regexp =
+    /^\[Exception... "(.*)"  nsresult: "0x[0-9a-fA-F]* \((.*)\)"  location: ".*"  data: .*\]$/;
+  let ex = Cc["@mozilla.org/js/xpc/Exception;1"].
+           createInstance(Ci.nsIXPCException);
+  ex.initialize(null, code, null, null, null, null);
+  let [, message, name] = regexp.exec(ex.toString());
+  return { name: name, message: message };
+}
+
 function addDirToArchive(writer, dir, basePath) {
   let files = dir.directoryEntries;
 
@@ -836,18 +866,18 @@ function addDirToArchive(writer, dir, basePath) {
     if (file.isDirectory()) {
       writer.addEntryDirectory(basePath + file.leafName + "/",
                                file.lastModifiedTime * PR_USEC_PER_MSEC,
-                               false);
+                               true);
       addDirToArchive(writer, file, basePath + file.leafName + "/");
     } else {
       writer.addEntryFile(basePath + file.leafName,
                           Ci.nsIZipWriter.COMPRESSION_DEFAULT,
                           file,
-                          false);
+                          true);
     }
   }
 };
 
-function archiveDir(zipFile, dirToArchive) {
+function archiveDir(zipFile, dirToArchive, callback) {
   let writer = Cc["@mozilla.org/zipwriter;1"].createInstance(Ci.nsIZipWriter);
   let file = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsIFile);
   file.initWithPath(zipFile);
@@ -858,7 +888,18 @@ function archiveDir(zipFile, dirToArchive) {
 
   addDirToArchive(writer, dir, "");
 
-  writer.close();
-
-  console.log("archived dir " + dirToArchive);
+  writer.processQueue({
+    onStartRequest: function onStartRequest(request, context) {},
+    onStopRequest: function onStopRequest(request, context, status) {
+      if (status == Cr.NS_OK) {
+        writer.close();
+        console.log("archived dir " + dirToArchive);
+        callback();
+      }
+      else {
+        let { name, message } = getResultText(status);
+        callback(name + ": " + message);
+      }
+    }
+  }, null);
 }
