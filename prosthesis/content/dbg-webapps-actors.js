@@ -165,7 +165,7 @@ WebappsActor.prototype = {
           zipFile = installDir.clone();
           zipFile.append("application.zip");
 
-          // Refresh applicazion.zip content (e.g. reinstall app)
+          // Refresh application.zip content (e.g. reinstall app)
           Services.obs.notifyObservers(zipFile, "flush-cache-entry", null);
 
           let zipReader = Cc["@mozilla.org/libjar/zip-reader;1"]
