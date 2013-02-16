@@ -9,11 +9,11 @@ let Cc = Components.classes;
 let Ci = Components.interfaces;
 
 function debug(aMsg) {
-  
+/*
   Cc["@mozilla.org/consoleservice;1"]
     .getService(Ci.nsIConsoleService)
     .logStringMessage("--*-- WebappsActor : " + aMsg);
-  
+*/
 }
 
 //@line 22 "/home/myk/Mozilla/central/b2g/chrome/content/dbg-webapps-actors.js"

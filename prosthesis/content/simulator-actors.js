@@ -78,7 +78,7 @@ SimulatorActor.prototype = {
                   log("RUNAPP ERROR: " + e);
                   return;
                 }
-        
+
                 try {
                   log("RUNAPP LAUNCHING:" + app.origin);
                   app.launch();
