@@ -91,6 +91,10 @@ ifdef BIN
   BIN_ARG = -b $(BIN)
 endif
 
+ifdef PROFILE
+  PROFILE_ARG = --profiledir $(PROFILE)
+endif
+
 ifdef TEST
   TEST_ARG = -f $(TEST)
 endif
@@ -117,13 +121,13 @@ b2g:
 	python build/make-b2g.py $(B2G_TYPE_ARG) $(B2G_PLATFORM_ARG) $(B2G_ID_ARG) $(B2G_URL_ARG)
 
 run:
-	cd addon-sdk && . bin/activate && cd ../addon && cfx run --templatedir template/ $(BIN_ARG)
+	cd addon-sdk && . bin/activate && cd ../addon && cfx run --templatedir template/ $(BIN_ARG) $(PROFILE_ARG)
 
 package:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx xpi --templatedir template/
 
 test:
-	cd addon-sdk && . bin/activate && cd ../addon && cfx test --verbose --templatedir template/ $(BIN_ARG) $(TEST_ARG)
+	cd addon-sdk && . bin/activate && cd ../addon && cfx test --verbose --templatedir template/ $(BIN_ARG) $(TEST_ARG) $(PROFILE_ARG)
 
 help:
 	@echo 'Targets:'
