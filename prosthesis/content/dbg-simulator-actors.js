@@ -8,7 +8,7 @@ this.EXPORTED_SYMBOLS = ["SimulatorActor"];
 
 function log(msg) {
   var DEBUG_LOG = true;
-  
+
   if (DEBUG_LOG)
     dump("prosthesis:"+msg+"\n");
 }
@@ -21,7 +21,7 @@ log("loading simulator actor definition");
   */
 function SimulatorActor(aConnection)
 {
-  log("simulator actor created for a new connection");  
+  log("simulator actor created for a new connection");
   this._connection = aConnection;
   this._listeners = {};
 }
@@ -38,7 +38,7 @@ SimulatorActor.prototype = {
     log("simulator actor received a 'ping' command");
     return { "msg": "pong" };
   },
-  
+
   onGetBuildID: function(aRequest) {
     log("simulator actor received a 'getBuildID'");
     var buildID = this.simulatorWindow.navigator.buildID;
@@ -217,7 +217,7 @@ SimulatorActor.prototype = {
         success: true,
         message: "WindowManager events subscribed"
       }
-    } 
+    }
 
     return {
       success: false,
@@ -228,7 +228,7 @@ SimulatorActor.prototype = {
   onUnsubscribeWindowManagerEvents: function (aRequest) {
     log("simulator actor received a 'unsubscribeWindowManagerEvents' command");
     this._unsubscribeWindowManagerEvents();
-    
+
     return {
       success: true,
       message: "WindowManager events unsubscribed"
@@ -247,7 +247,7 @@ SimulatorActor.prototype = {
     let WindowManager = homescreenWindow.WindowManager;
     let _notify = this._notify.bind(this);
 
-    if (!!this._listeners["appopen"] || 
+    if (!!this._listeners["appopen"] ||
         !!this._listeners["appterminated"]) {
       // NOTE: already subscribed
       return false;
