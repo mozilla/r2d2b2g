@@ -4,8 +4,24 @@
 
 // NOTE: disalbe the lockscreen by default on FirefoxOS Simulator
 SettingsListener.observe("lockscreen.enabled", true, function(value) {
-  navigator.mozSettings
-    .createLock().set({'lockscreen.enabled': false});
+  if (!value)
+    return;
+
+  try {
+    let homescreen = document.getElementById("homescreen").contentWindow.wrappedJSObject;
+    homescreen.LockScreen.unlock(true);
+    navigator.mozSettings
+      .createLock().set({'homescreen.ready': true});
+    dump("simulator - HOMESCREEN READY\n");
+  } catch(e) {
+    dump("simulator -  EXCEPTION UNLOCKING SCREEN: "+e+"\n");
+    navigator.mozSettings
+      .createLock().set({'homescreen.ready': false});
+    setTimeout(function () {
+      navigator.mozSettings
+        .createLock().set({'lockscreen.enabled': true});
+    }, 200);
+  }
 });
 
 document.getElementById("homeButton").addEventListener("mousedown", function() {
