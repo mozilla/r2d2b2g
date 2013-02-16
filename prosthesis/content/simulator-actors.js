@@ -63,19 +63,17 @@ SimulatorActor.prototype = {
   onRunApp: function(aRequest) {
     log("simulator actor received a 'runApp' command:" + aRequest.origin);
     let window = this.simulatorWindow;
-    let WindowManager = XPCNativeWrapper.unwrap(this.homescreenWindow).WindowManager;
+    let homescreen = XPCNativeWrapper.unwrap(this.homescreenWindow);
+    let WindowManager = homescreen.WindowManager;
+    let Applications = homescreen.Applications;
     let appOrigin = aRequest.origin;
 
     let runnable = {
       run: function() {
         try {
-          runnable.killAppByOrigin(appOrigin, function () {
-            runnable.findAppByOrigin(appOrigin, function (e, app) {
-              if (e) {
-                log("RUNAPP ERROR: " + e);
-                return;
-              }
-              runnable.unlockScreen(function(e) {
+          runnable.waitHomescreenReady(function () {
+            runnable.killAppByOrigin(appOrigin, function () {
+              runnable.findAppByOrigin(appOrigin, function (e, app) {
                 if (e) {
                   log("RUNAPP ERROR: " + e);
                   return;
@@ -95,26 +93,55 @@ SimulatorActor.prototype = {
           log("RUNAPP EXCEPTION: " + e);
         }
       },
-      unlockScreen: function(cb) {
-        // WORKAROUND: currently we're not able to detect when the firefoxos is fully loaded
-        // and ready to handle this unlock screen request.
-        window.setTimeout(function () {
-          let setReq = window.navigator.mozSettings
-            .createLock().set({'lockscreen.enabled': false});
-          setReq.onsuccess = function() {
+      waitHomescreenReady: function(cb) {
+        log("RUNAPP - wait homescreen ready...");
+        let res = homescreen.navigator.mozSettings.createLock().get('homescreen.ready');
+        res.onsuccess = function() {
+          if (res.result["homescreen.ready"]) {
+            log("RUNAPP - homescreen ready");
             cb();
-          };
-          setReq.onerror = function() {
-            cb("unlock error");
-          };
-        }, 500);
+          } else {
+            log("RUNAPP - wait for homescreen ready");
+            let wait = function () {
+                log("RUNAPP - homescreen ready");
+                homescreen.navigator.mozSettings.removeObserver("homescreen.ready", wait);
+                cb();
+            };
+            homescreen.navigator.mozSettings.
+              addObserver("homescreen.ready", wait);
+          }
+        }
+        res.onerror = function() {
+          log("RUNAPP ERROR - waitHomescreenReady: "+res.error.name);
+        }
       },
       killAppByOrigin: function(origin, cb) {
+        log("RUNAPP: killAppByOrigin - " + origin);
         try {
-          WindowManager.kill(origin);
+          if (WindowManager.getRunningApps()[origin] &&
+              !WindowManager.getRunningApps()[origin].killed) {
+            // app running: kill and wait for appterminated
+            let app = WindowManager.getRunningApps()[origin];
+            log("RUNAPP: killAppByOrigin - wait for appterminated");
+            let once = function (evt) {
+              if (evt.detail.origin !== origin)
+                return
+              log("RUNAPP: killAppByOrigin - appterminated received");
+              homescreen.removeEventListener("appterminated", once);
+              // WORKAROUND: bug (probably related to disabled oop) restarted 
+              // app keep to be flagged as killed and never restarted
+              homescreen.setTimeout(cb, 500);
+            }
+            homescreen.addEventListener("appterminated", once, false);
+            WindowManager.kill(origin);
+          } else {
+            // app not running
+            log("RUNAPP: killAppByOrigin - app is not running");
+            cb();
+          }
           // WORKAROUND: currently WindowManager.kill doesn't always call
           // the optional callback (e.g. the application is not running).
-          window.setTimeout(cb, 500);
+          //window.setTimeout(cb, 500);
         } catch(e) {
           log("RUNAPP EXCEPTION: killAppByOrigin - " + e);
           cb();
