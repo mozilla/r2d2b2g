@@ -102,10 +102,12 @@ SimulatorActor.prototype = {
             cb();
           } else {
             log("RUNAPP - wait for homescreen ready");
-            let wait = function () {
-                log("RUNAPP - homescreen ready");
+            let wait = function (notify) {
+              log("RUNAPP - homescreen ready: "+notify.settingValue);
+              if(notify.settingValue) {
                 homescreen.navigator.mozSettings.removeObserver("homescreen.ready", wait);
                 cb();
+              }
             };
             homescreen.navigator.mozSettings.
               addObserver("homescreen.ready", wait);
@@ -128,9 +130,11 @@ SimulatorActor.prototype = {
                 return
               log("RUNAPP: killAppByOrigin - appterminated received");
               homescreen.removeEventListener("appterminated", once);
-              // WORKAROUND: bug (probably related to disabled oop) restarted 
+              // WORKAROUND: bug (probably related to disabled oop) restarted
               // app keep to be flagged as killed and never restarted
-              homescreen.setTimeout(cb, 500);
+              delete WindowManager.getRunningApps()[origin];
+
+              cb();
             }
             homescreen.addEventListener("appterminated", once, false);
             WindowManager.kill(origin);
