@@ -143,9 +143,6 @@ SimulatorActor.prototype = {
             log("RUNAPP: killAppByOrigin - app is not running");
             cb();
           }
-          // WORKAROUND: currently WindowManager.kill doesn't always call
-          // the optional callback (e.g. the application is not running).
-          //window.setTimeout(cb, 500);
         } catch(e) {
           log("RUNAPP EXCEPTION: killAppByOrigin - " + e);
           cb();
