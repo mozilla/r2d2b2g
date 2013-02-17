@@ -599,6 +599,44 @@ let simulator = module.exports = {
     });
   },
 
+  validateApp: function (app, next) {
+    app.validation = {errors: [], warnings: []};
+
+    if (!app.manifest) {
+      app.validation.errors.push("missing manifest");
+      if (typeof next === "function") {
+        next(Error("Invalid App: missing manifest"), app);
+        return;
+      }
+    }
+
+    if (["generated", "hosted"].indexOf(app.type) !== -1 &&
+        ["certified", "privileged"].indexOf(app.manifest.type) !== -1) {
+      app.validation.errors.push("hosted app could be type '"+app.manifest.type+"'");
+      if (typeof next === "function") {
+        next(Error("Invalid App: incorrect manifest.type"), app);
+        return;
+      }
+    } else {
+      this.run(function () {
+        simulator.remoteSimulator.validateManifest(app.manifest, function (reply) {
+          if (reply.success) {
+            if (typeof next === "function") {
+              next(null, app);
+              return;
+            }
+          } else {
+            app.validation.errors.push(reply.message);
+            if (typeof next === "function") {
+              next(new Error(reply.error), app);
+              return;
+            }
+          }
+        });
+      });
+    }
+  },
+
   sendListApps: function() {
     console.log("Simulator.sendListApps");
     this.worker.postMessage({
@@ -790,6 +828,7 @@ let simulator = module.exports = {
 
   onMessage: function onMessage(message) {
     console.log("Simulator.onMessage " + message.name);
+    let app = null;
     switch (message.name) {
       case "openConnectDevtools":
         simulator.openConnectDevtools();
@@ -821,7 +860,7 @@ let simulator = module.exports = {
         });
         break;
       case "runApp":
-        let app = this.apps[message.id];
+        app = this.apps[message.id];
         simulator.runApp(app, function (res) {
           if (res.success === false) {
             if (res.error === 'app-not-installed') {
@@ -834,6 +873,17 @@ let simulator = module.exports = {
               // print error message
               simulator.error("Run app failed: "+res.message);
             }
+          }
+        });
+        break;
+      case "validateApp":
+        app = this.apps[message.id];
+        simulator.validateApp(app, function (error, app) {
+          if (error) {
+            simulator.error(error);
+            console.log("APP VALIDATION ERRORS:", JSON.stringify(app.validation));
+          } else {
+            // TODO: sendListApps
           }
         });
         break;

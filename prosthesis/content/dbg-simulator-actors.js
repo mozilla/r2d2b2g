@@ -199,6 +199,67 @@ SimulatorActor.prototype = {
     };
   },
 
+  onValidateManifest: function(aRequest) {
+    log("simulator actor received 'validateManifest' command: "+JSON.stringify(aRequest));
+    let manifest = aRequest.manifest;
+    let appType = manifest.type || "app";
+    let window = this.simulatorWindow;
+    let AppsUtils = window.AppUtils;
+
+    if (["app", "privileged", "certified"].indexOf(appType) !== -1) {
+      return {
+        success: false,
+        message: "Unkown app type: "+appType,
+        error: "unknown-app-type"
+      }
+    }
+
+    let valid = AppsUtils.checkManifest(manifest);
+    
+    if (!valid) {
+      return {
+        success: false,
+        message: "AppsUtils.checkManifest return false",
+        error: "apputils-checkmanifest-invalid"
+      }
+    }
+
+    let utils = {};
+    Cu.import("resource://gre/modules/PermissionsTable.jsm", utils);
+    let permissions = Object.keys(manifest.permissions);
+    let errors = [];
+    permissions.forEach(function(name) {
+      let permission = utils.PermissionsTable[name];
+
+      if (permission) {
+        let permission_action = permission[appType];
+        if (permission_action === Ci.nsIPermissionManager.DENY_ACTION) {
+          errors.push("denied permission '"+name+"'");
+        } else {
+          let access = manifest.permissions[name].access;
+          if (access && utils.expandPermissions(name, access).length === 0) {
+            errors.push("invalid access '"+access+"' in permission '"+name+"'");
+          }
+        }
+      } else {
+        errors.push("unknown permission '"+name+"'");
+      }
+    });
+
+    if (errors.length > 0) {
+      return {
+        success: false,
+        message: "Permissions Errors: \n"+errors.join('\n'),
+        error: "permission-errors"
+      }
+    }
+
+    return {
+      success: true,
+      message: "No errors detected in your manifest"
+    }
+  },
+
   onUninstallApp: function(aRequest) {
     log("simulator actor received 'uninstallApp' command: " + aRequest.appId);
     let window = this.simulatorWindow;
@@ -361,6 +422,7 @@ SimulatorActor.prototype.requestTypes = {
   "logStdout": SimulatorActor.prototype.onLogStdout,
   "runApp": SimulatorActor.prototype.onRunApp,
   "uninstallApp": SimulatorActor.prototype.onUninstallApp,
+  "validateManifest": SimulatorActor.prototype.onValidateManifest,
   "showNotification": SimulatorActor.prototype.onShowNotification,
   "subscribeWindowManagerEvents": SimulatorActor.prototype.onSubscribeWindowManagerEvents,
   "unsubscribeWindowManagerEvents": SimulatorActor.prototype.onUnsubscribeWindowManagerEvents,

@@ -265,6 +265,14 @@ const RemoteSimulatorClient = Class({
                                 onResponse);
   },
 
+validateManifest: function(manifest, onResponse) {
+    this._remote.client.request({ to: this._remote.simulator,
+                                  type: "validateManifest",
+                                  manifest: manifest,
+                                },
+                                onResponse);
+  },
+
   showNotification: function(userMessage, onResponse) {
     this._remote.client.request({ to: this._remote.simulator,
                                   type: "showNotification",
