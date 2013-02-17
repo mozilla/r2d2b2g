@@ -67,6 +67,8 @@ switch (Self.loadReason) {
     Simulator.openHelperTab();
     break;
   case "downgrade":
+    // NOTE: in next release updateAll can be disabled
+    // (lazy install if not installed on runApp)
     Simulator.updateAll();
     break;
   case "upgrade":
@@ -76,8 +78,8 @@ switch (Self.loadReason) {
     if (Services.vc.compare(lastVersion, "2.0pre5") < 0) {
       ensureXkeysUnique();
     }
-
-    Simulator.updateAll();
+    // NOTE: updateAll disabled (lazy install if not installed on runApp)
+    //Simulator.updateAll();
     break;
 }
 
