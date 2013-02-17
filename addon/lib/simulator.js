@@ -131,7 +131,7 @@ let simulator = module.exports = {
           simulator.error(error);
         } else {
           simulator.sendListApps();
-          simulator.runApp(app.origin);
+          simulator.runApp(app);
         }
       });
     }
@@ -353,7 +353,7 @@ let simulator = module.exports = {
     apps[id] = config;
 
     simulator.run(function() {
-      simulator.remoteSimulator.uninstall(config.origin, function() {
+      simulator.remoteSimulator.uninstall(config.xkey, function() {
         // app uninstall completed
         // TODO: add success/error detection and report to the user
         simulator.sendListApps();
@@ -379,7 +379,7 @@ let simulator = module.exports = {
         simulator.error(error);
       } else {
         simulator.sendListApps();
-        simulator.runApp(app.origin);
+        simulator.runApp(app);
       }
     });
   },
@@ -570,7 +570,7 @@ let simulator = module.exports = {
         simulator.error(error);
       } else {
         simulator.sendListApps();
-        simulator.runApp(app.origin);
+        simulator.runApp(app);
       }
     });
   },
@@ -692,9 +692,9 @@ let simulator = module.exports = {
     }
   },
 
-  runApp: function(appOrigin, next) {
+  runApp: function(app, next) {
     this.run(function () {
-      simulator.remoteSimulator.runApp(appOrigin, next);
+      simulator.remoteSimulator.runApp(app.xkey, next);
     });
   },
 
@@ -764,13 +764,26 @@ let simulator = module.exports = {
             simulator.error(error);
           } else {
             simulator.sendListApps();
-            simulator.runApp(app.origin);
+            simulator.runApp(app);
           }
         });
         break;
       case "runApp":
-        let appOrigin = this.apps[message.id].origin;
-        simulator.runApp(appOrigin);
+        let app = this.apps[message.id];
+        simulator.runApp(app, function (res) {
+          if (res.success === false) {
+            if (res.error === 'app-not-installed') {
+              // install and run if not installed
+              simulator.onMessage({
+                name: "updateApp",
+                id: message.id
+              });
+            } else {
+              // print error message
+              simulator.error("Run app failed: "+res.message);
+            }
+          }
+        });
         break;
       case "removeApp":
         this.removeApp(message.id);

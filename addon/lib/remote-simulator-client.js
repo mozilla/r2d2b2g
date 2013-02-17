@@ -219,10 +219,10 @@ const RemoteSimulatorClient = Class({
   },
 
   // send a runApp request to the remote simulator actor
-  runApp: function(appOrigin, onResponse) {
+  runApp: function(appId, onResponse) {
     let remote = this._remote;
 
-    remote.client.request({to: remote.simulator, type: "runApp", origin: appOrigin},
+    remote.client.request({to: remote.simulator, type: "runApp", appId: appId},
                           onResponse);
   },
 
@@ -235,10 +235,10 @@ const RemoteSimulatorClient = Class({
                                 onResponse);
   },
 
-  uninstall: function(appOrigin, onResponse) {
+  uninstall: function(appId, onResponse) {
     this._remote.client.request({ to: this._remote.simulator,
                                   type: "uninstallApp",
-                                  origin: appOrigin,
+                                  appId: appId,
                                 },
                                 onResponse);
   },

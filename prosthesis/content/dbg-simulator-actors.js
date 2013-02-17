@@ -61,12 +61,18 @@ SimulatorActor.prototype = {
   },
 
   onRunApp: function(aRequest) {
-    log("simulator actor received a 'runApp' command:" + aRequest.origin);
+    log("simulator actor received a 'runApp' command:" + aRequest.appId);
     let window = this.simulatorWindow;
     let homescreen = XPCNativeWrapper.unwrap(this.homescreenWindow);
     let WindowManager = homescreen.WindowManager;
-    let Applications = homescreen.Applications;
-    let appOrigin = aRequest.origin;
+    let DOMApplicationRegistry = window.DOMApplicationRegistry;
+    let appId = aRequest.appId;
+
+    if (!DOMApplicationRegistry.webapps[appId]) {
+      return { success: false, error: 'app-not-installed', message: 'App not installed.'}
+    }
+
+    let appOrigin = DOMApplicationRegistry.webapps[appId].origin;
 
     let runnable = {
       run: function() {
@@ -173,19 +179,30 @@ SimulatorActor.prototype = {
     Services.tm.currentThread.dispatch(runnable,
                                        Ci.nsIThread.DISPATCH_NORMAL);
     return {
-      message: "runApp request received: " + appOrigin
+      message: "runApp request received: " + appOrigin,
+      success: true
     };
   },
 
   onUninstallApp: function(aRequest) {
-    log("simulator actor received 'uninstallApp' command: " + aRequest.origin);
+    log("simulator actor received 'uninstallApp' command: " + aRequest.appId);
     let window = this.simulatorWindow;
+    let DOMApplicationRegistry = window.DOMApplicationRegistry;
+    let appId = aRequest.appId;
+
+    if (!DOMApplicationRegistry.webapps[appId]) {
+      return { success: false, error: 'app-not-installed', message: 'App not installed.'}
+    }
+
+    let appOrigin = DOMApplicationRegistry.webapps[appId].origin;
+
+    log("uninstalling app by origin:"+appOrigin);
 
     let runnable = {
       run: function() {
         try {
           let mgmt = window.navigator.mozApps.mgmt;
-          let req = mgmt.uninstall({origin: aRequest.origin});
+          let req = mgmt.uninstall({origin: appOrigin});
           req.onsuccess = function () {
             log("uninstallApp success: " + req.result);
           }
@@ -201,7 +218,8 @@ SimulatorActor.prototype = {
     Services.tm.currentThread.dispatch(runnable,
                                        Ci.nsIThread.DISPATCH_NORMAL);
     return {
-      message: "uninstallApp request received"
+      message: "uninstallApp request received",
+      success: true
     };
   },
 
