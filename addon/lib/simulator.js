@@ -19,6 +19,7 @@ const WindowUtils = require("window/utils");
 const Timer = require("timer");
 const RemoteSimulatorClient = require("remote-simulator-client");
 const xulapp = require("sdk/system/xul-app");
+const JsonLint = require("jsonlint");
 const ADB = require("adb");
 const Promise = require("sdk/core/promise");
 
@@ -188,11 +189,12 @@ let simulator = module.exports = {
   updateApp: function(id, next) {
     console.log("Simulator.updateApp " + id);
     simulator.validateApp(id, function(error, app) {
-      if (error) {
-        simulator.sendListApps();
+      simulator.sendListApps();
+            
+      if (!error) {
+        // NOTE: try to updateApp on if there's not any blocking error
+        simulator._updateApp(id, next);
       }
-      // TODO: try to updateApp even if there are validation errors?
-      simulator._updateApp(id, next);
     });
   },
 
@@ -607,7 +609,8 @@ let simulator = module.exports = {
     switch (app.type) {
     case "local":
       try {
-        app.manifest = JSON.parse(File.read(id));
+        let manifest = JsonLint.parse(File.read(id));
+        app.manifest = manifest;
         next(null, app.manifest);
       } catch(e) {
         if (typeof next === "function") {
@@ -625,7 +628,7 @@ let simulator = module.exports = {
           } else if (!response.json) {
             error = "Expected JSON response. ";
             try {
-              JSON.parse(response.text);
+              JsonLint.parse(response.text);
             } catch(e) {
               error += e;
             }
@@ -651,7 +654,7 @@ let simulator = module.exports = {
 
   validateApp: function(id, next) {
     let app = simulator.apps[id];
-    app.validation = {errors: [], warnings: []};
+    app.validation = {errors: []};
 
     this._updateCachedManifest(id, function(error, manifest) {
       if (error) {
@@ -699,7 +702,8 @@ let simulator = module.exports = {
                   concat(reply.validation.errors);
               }
               if (typeof next === "function") {
-                next(new Error(reply.message), app);
+                // NOTE: non blocking errors
+                next(null, app);
                 return;
               }
             }
