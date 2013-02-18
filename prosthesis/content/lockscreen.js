@@ -3,6 +3,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 // NOTE: disable lockscreen by default on FirefoxOS Simulator
+// and detect when homescreen app is fully loaded
+
 // disable lockscreen on startup
 SettingsListener.observe("lockscreen.enabled", false, function(value) {
   dump("simulator - LOCKSCREEN ENABLED: "+value+"\n");

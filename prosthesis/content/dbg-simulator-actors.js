@@ -132,8 +132,10 @@ SimulatorActor.prototype = {
             let app = WindowManager.getRunningApps()[origin];
             log("RUNAPP: killAppByOrigin - wait for appterminated");
             let once = function (evt) {
-              if (evt.detail.origin !== origin)
-                return
+              // filtering out other appterminated with different origin
+              if (evt.detail.origin !== origin) {
+                return;
+              }
               log("RUNAPP: killAppByOrigin - appterminated received");
               homescreen.removeEventListener("appterminated", once);
               // WORKAROUND: bug (probably related to disabled oop) restarted
