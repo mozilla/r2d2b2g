@@ -217,9 +217,9 @@ SimulatorActor.prototype = {
         error: "unknown-app-type"
       }
     }
-    
+
     let valid = AppsUtils.checkManifest(manifest,{});
-    
+
     if (!valid) {
       return {
         success: false,
@@ -254,7 +254,7 @@ SimulatorActor.prototype = {
       }
     });
 
-    if (errors.length > 0) {      
+    if (errors.length > 0) {
       return {
         success: false,
         message: "Permission Errors",
