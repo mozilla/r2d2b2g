@@ -226,6 +226,44 @@ var Simulator = {
                 );
               }
 
+              if (app.validation) {
+                var validationEl = $("<div class='app-validation'>");
+
+                var errors = app.validation.errors;
+
+                if (errors.length > 0) {
+                  entry.addClass("invalid-manifest");
+
+                  var errorsEl = $("<ul class='app-validation-errors'>");
+
+                  errors.forEach(function (msg) {
+                    errorsEl.append($("<li>").text(msg));
+                  });
+
+                  errorsEl.hide();
+
+                  validationEl.append(
+                    $("<span>")
+                      .text("Validation Result: INVALID")
+                      .prop("class", "app-validation-result"),
+                    $("<a href='#'>")
+                      .text(" ("+errors.length+" errors)")
+                      .prop("title", "expand validation errors")
+                      .click(function(evt) {
+                        errorsEl.toggle();
+                      }),
+                    errorsEl);
+                } else {
+                  validationEl.append(
+                    $("<span>")
+                      .text("Validation Result: OK")
+                      .prop("class", "app-validation-result"),
+                    $("<span>").text(" (0 errors)"));
+                }
+
+                entry.append(validationEl);
+              }
+
               // FIXME: Make an actual list, add a template engine
               container.append(entry);
             });

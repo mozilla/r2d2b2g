@@ -187,6 +187,17 @@ let simulator = module.exports = {
 
   updateApp: function(id, next) {
     console.log("Simulator.updateApp " + id);
+    simulator.validateApp(id, function(error, app) {
+      if (error) {
+        simulator.sendListApps();
+      }
+      // TODO: try to updateApp even if there are validation errors?
+      simulator._updateApp(id, next);
+    });
+  },
+
+  _updateApp: function(id, next) {
+    console.log("Simulator._updateApp " + id);
 
     let webappsDir = URL.toFilename(PROFILE_URL + "webapps");
     let tempDir = this.tempDir;
@@ -655,7 +666,7 @@ let simulator = module.exports = {
       if (error) {
         app.validation.errors.push("error updating cached manifest: "+error);
         if (typeof next === "function") {
-          next(error, app);          
+          next(error, app);
         }
         return;
       }
@@ -697,7 +708,7 @@ let simulator = module.exports = {
               if (reply.validation && reply.validation.errors.length > 0) {
                 app.validation.errors = app.validation.errors.
                   concat(reply.validation.errors);
-              } 
+              }
               if (typeof next === "function") {
                 next(new Error(reply.message), app);
                 return;
@@ -946,15 +957,6 @@ let simulator = module.exports = {
               simulator.error("Run app failed: "+res.message);
             }
           }
-        });
-        break;
-      case "validateApp":
-        simulator.validateApp(message.id, function (error, app) {
-          if (error) {
-            simulator.error(error);
-            console.log("APP VALIDATION ERRORS:", JSON.stringify(app.validation));
-          }
-          simulator.sendListApps();
         });
         break;
       case "removeApp":
