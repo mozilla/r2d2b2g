@@ -56,6 +56,20 @@ WebappsActor.prototype = {
       reg._registerActivities(manifest, aApp, true);
       reg._saveApps(function() {
         aApp.manifest = manifest;
+
+        // NOTE: needed to evict manifest cache: 
+        // - http://hg.mozilla.org/mozilla-central/annotate/31e89328fe12/dom/apps/src/Webapps.js#l319
+        // - http://hg.mozilla.org/mozilla-central/annotate/31e89328fe12/dom/apps/src/Webapps.js#l598
+        let app = DOMApplicationRegistry.webapps[aId];
+        reg.broadcastMessage("Webapps:PackageEvent",
+                             { app: app,
+                               manifest: manifest,
+                               manifestURL: app.manifestURL,
+                               type: "applied",
+                               oid: "foo",
+                               requestID: "bar"
+                             });
+
         reg.broadcastMessage("Webapps:Install:Return:OK",
                              { app: aApp,
                                oid: "foo",
