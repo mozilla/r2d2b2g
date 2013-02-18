@@ -137,7 +137,7 @@ let simulator = module.exports = {
     }
   },
 
-  updateAll: function() {
+  updateAll: function(oncompleted) {
     this.run(function () {
       function next(error, app) {
         // Call iterator.next() in a timeout to ensure updateApp() has returned;
@@ -148,10 +148,17 @@ let simulator = module.exports = {
         Timer.setTimeout(function() {
           try {
             iterator.next();
-          } catch (err if err instanceof StopIteration) {}
+          } catch (err if err instanceof StopIteration) {
+            if (typeof oncompleted === "function") {
+              oncompleted();
+            }
+          }
         }, 0);
       }
-      let iterator = (simulator.updateApp(id, next) for (id in simulator.apps));
+      // only active apps needs to be reinstalled
+      let activeAppIds = Object.keys(simulator.apps)
+        .filter(function (appId) !simulator.apps[appId].deleted);
+      let iterator = (simulator.updateApp(activeAppIds[i], next) for (i in activeAppIds));
       next();
     });
   },
@@ -677,14 +684,27 @@ let simulator = module.exports = {
       this.defaultApp = null;
     }
 
+    let next = null;
+    // if needsUpdateAll try to reinstall all active registered app
+    if (SStorage.storage.needsUpdateAll) {
+      SStorage.storage.needsUpdateAll = false;
+      next = function() {
+        if (typeof cb === "function") {
+          cb();
+        } else {
+          simulator.updateAll(cb);
+        }        
+      }
+    } else {
+      next = (typeof cb === "function") ? cb : function() {};
+    }
+
     // NOTE: if a b2g instance is already running send request
     //       or start a new instance and send request on ready
     if (this.isRunning) {
-      if (typeof cb === "function")
-        cb();
+      next();
     } else {
-      if (typeof cb === "function")
-        this.remoteSimulator.once("ready", cb);
+      this.remoteSimulator.once("ready", next);
 
       this.remoteSimulator.run({
         defaultApp: appName
