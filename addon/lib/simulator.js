@@ -256,15 +256,6 @@ let simulator = module.exports = {
     console.log("Created " + tempWebappDir);
 
     if (config.type == "local") {
-      // Copy manifest
-      let manifestFile = Cc['@mozilla.org/file/local;1'].
-        createInstance(Ci.nsIFile);
-      manifestFile.initWithPath(id);
-      let tempWebappDir_nsIFile = Cc['@mozilla.org/file/local;1'].
-        createInstance(Ci.nsIFile);
-      tempWebappDir_nsIFile.initWithPath(tempWebappDir);
-      manifestFile.copyTo(tempWebappDir_nsIFile, "manifest.webapp");
-
       // Archive source folder to target folder
       let sourceDir = id.replace(/[\/\\][^\/\\]*$/, "");
       let archiveFile = File.join(tempWebappDir, "application.zip");
@@ -681,11 +672,10 @@ let simulator = module.exports = {
 
       if (!app.manifest.name) {
         app.validation.errors.push("missing mandatory name in manifest");
-        if (typeof next === "function") {
-          next(Error("Invalid Manifest"), app);
-          return;
-        }
       }
+
+      // update name visible in the dashboard
+      app.name = app.manifest.name;
 
       if (["generated", "hosted"].indexOf(app.type) !== -1 &&
           ["certified", "privileged"].indexOf(app.manifest.type) !== -1) {
@@ -703,7 +693,6 @@ let simulator = module.exports = {
                 return;
               }
             } else {
-              console.log("DEBUG", JSON.stringify(reply, null, 2));
               // concatenate validation errors
               if (reply.validation && reply.validation.errors.length > 0) {
                 app.validation.errors = app.validation.errors.

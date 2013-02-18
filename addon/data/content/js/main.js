@@ -226,7 +226,7 @@ var Simulator = {
                 );
               }
 
-              if (app.validation) {
+              if (!app.removed && app.validation) {
                 var validationEl = $("<div class='app-validation'>");
 
                 var errors = app.validation.errors;
