@@ -200,32 +200,35 @@ SimulatorActor.prototype = {
   },
 
   onValidateManifest: function(aRequest) {
-    log("simulator actor received 'validateManifest' command: "+JSON.stringify(aRequest));
+    log("simulator actor received 'validateManifest' command: " + JSON.stringify(aRequest));
     let manifest = aRequest.manifest;
     let appType = manifest.type || "app";
-    let window = this.simulatorWindow;
-    let AppsUtils = window.AppUtils;
+    let utils = {};
+    Cu.import("resource://gre/modules/PermissionsTable.jsm", utils);
+    Cu.import("resource://gre/modules/AppsUtils.jsm", utils);
 
-    if (["app", "privileged", "certified"].indexOf(appType) !== -1) {
+    let AppsUtils = utils.AppsUtils;
+
+    if (["app", "privileged", "certified"].indexOf(appType) === -1) {
       return {
         success: false,
-        message: "Unkown app type: "+appType,
+        message: "Invalid Manifest",
+        validation: { errors: ["Unknown app type: " + appType] },
         error: "unknown-app-type"
       }
     }
-
-    let valid = AppsUtils.checkManifest(manifest);
+    
+    let valid = AppsUtils.checkManifest(manifest,{});
     
     if (!valid) {
       return {
         success: false,
-        message: "AppsUtils.checkManifest return false",
+        message: "Invalid Manifest",
+        validation: { errors: ["AppsUtils.checkManifest return false"] },
         error: "apputils-checkmanifest-invalid"
       }
     }
 
-    let utils = {};
-    Cu.import("resource://gre/modules/PermissionsTable.jsm", utils);
     let permissions = Object.keys(manifest.permissions);
     let errors = [];
     permissions.forEach(function(name) {
@@ -234,11 +237,16 @@ SimulatorActor.prototype = {
       if (permission) {
         let permission_action = permission[appType];
         if (permission_action === Ci.nsIPermissionManager.DENY_ACTION) {
-          errors.push("denied permission '"+name+"'");
+          errors.push("denied permission '" + name + "'");
         } else {
           let access = manifest.permissions[name].access;
-          if (access && utils.expandPermissions(name, access).length === 0) {
-            errors.push("invalid access '"+access+"' in permission '"+name+"'");
+          try {
+            if (access && utils.expandPermissions(name, access).length === 0) {
+              errors.push("invalid access '" + access + "' in permission '" + name + "'");
+            }
+          } catch(e) {
+            log("VALIDATE MANIFEST EXCEPTION: " + e);
+            errors.push("invalid access '" + access + "' in permission '" + name + "'");
           }
         }
       } else {
@@ -246,10 +254,11 @@ SimulatorActor.prototype = {
       }
     });
 
-    if (errors.length > 0) {
+    if (errors.length > 0) {      
       return {
         success: false,
-        message: "Permissions Errors: \n"+errors.join('\n'),
+        message: "Permission Errors",
+        validation: {errors: errors},
         error: "permission-errors"
       }
     }

@@ -599,42 +599,114 @@ let simulator = module.exports = {
     });
   },
 
-  validateApp: function (app, next) {
-    app.validation = {errors: [], warnings: []};
+  _updateCachedManifest: function(id, next) {
+    let app = simulator.apps[id];
 
-    if (!app.manifest) {
-      app.validation.errors.push("missing manifest");
-      if (typeof next === "function") {
-        next(Error("Invalid App: missing manifest"), app);
-        return;
+    switch (app.type) {
+    case "local":
+      try {
+        app.manifest = JSON.parse(File.read(id));
+        next(null, app.manifest);
+      } catch(e) {
+        if (typeof next === "function") {
+          next(e, null);
+        }
       }
-    }
-
-    if (["generated", "hosted"].indexOf(app.type) !== -1 &&
-        ["certified", "privileged"].indexOf(app.manifest.type) !== -1) {
-      app.validation.errors.push("hosted app could be type '"+app.manifest.type+"'");
-      if (typeof next === "function") {
-        next(Error("Invalid App: incorrect manifest.type"), app);
-        return;
-      }
-    } else {
-      this.run(function () {
-        simulator.remoteSimulator.validateManifest(app.manifest, function (reply) {
-          if (reply.success) {
-            if (typeof next === "function") {
-              next(null, app);
-              return;
+      break;
+    case "hosted":
+      Request({
+        url: id,
+        onComplete: function (response) {
+          let error = null
+          if (response.status != 200) {
+            error = "Unexpected status code " + response.status;
+          } else if (!response.json) {
+            error = "Expected JSON response. ";
+            try {
+              JSON.parse(response.text);
+            } catch(e) {
+              error += e;
             }
           } else {
-            app.validation.errors.push(reply.message);
-            if (typeof next === "function") {
-              next(new Error(reply.error), app);
-              return;
+            app.manifest = response.json;
+            let contentType = response.headers["Content-Type"];
+            if (contentType !== "application/x-web-app-manifest+json") {
+              error = "Unexpected Content-Type: " + contentType + ".";
             }
           }
-        });
-      });
+          if (typeof next === "function") {
+            next(error, app.manifest);
+          }
+        }
+      }).get();
+      break;
+    case "generated":
+      // nothing to update
+      next(null, app.manifest);
+      break;
     }
+  },
+
+  validateApp: function(id, next) {
+    let app = simulator.apps[id];
+    app.validation = {errors: [], warnings: []};
+
+    this._updateCachedManifest(id, function(error, manifest) {
+      if (error) {
+        app.validation.errors.push("error updating cached manifest: "+error);
+        if (typeof next === "function") {
+          next(error, app);          
+        }
+        return;
+      }
+
+      if (!app.manifest) {
+        app.validation.errors.push("missing manifest");
+        if (typeof next === "function") {
+          next(Error("Invalid App"), app);
+          return;
+        }
+      }
+
+      if (!app.manifest.name) {
+        app.validation.errors.push("missing mandatory name in manifest");
+        if (typeof next === "function") {
+          next(Error("Invalid Manifest"), app);
+          return;
+        }
+      }
+
+      if (["generated", "hosted"].indexOf(app.type) !== -1 &&
+          ["certified", "privileged"].indexOf(app.manifest.type) !== -1) {
+        app.validation.errors.push("hosted app could be type '"+app.manifest.type+"'");
+        if (typeof next === "function") {
+          next(Error("Invalid Manifest"), app);
+          return;
+        }
+      } else {
+        simulator.run(function () {
+          simulator.remoteSimulator.validateManifest(app.manifest, function (reply) {
+            if (reply.success) {
+              if (typeof next === "function") {
+                next(null, app);
+                return;
+              }
+            } else {
+              console.log("DEBUG", JSON.stringify(reply, null, 2));
+              // concatenate validation errors
+              if (reply.validation && reply.validation.errors.length > 0) {
+                app.validation.errors = app.validation.errors.
+                  concat(reply.validation.errors);
+              } 
+              if (typeof next === "function") {
+                next(new Error(reply.message), app);
+                return;
+              }
+            }
+          });
+        });
+      }
+    });
   },
 
   sendListApps: function() {
@@ -877,14 +949,12 @@ let simulator = module.exports = {
         });
         break;
       case "validateApp":
-        app = this.apps[message.id];
-        simulator.validateApp(app, function (error, app) {
+        simulator.validateApp(message.id, function (error, app) {
           if (error) {
             simulator.error(error);
             console.log("APP VALIDATION ERRORS:", JSON.stringify(app.validation));
-          } else {
-            // TODO: sendListApps
           }
+          simulator.sendListApps();
         });
         break;
       case "removeApp":
