@@ -138,6 +138,7 @@ let simulator = module.exports = {
   },
 
   updateAll: function(oncompleted) {
+    simulator.remoteShowNotification("reinstalling registered apps...");
     this.run(function () {
       function next(error, app) {
         // Call iterator.next() in a timeout to ensure updateApp() has returned;
@@ -149,6 +150,7 @@ let simulator = module.exports = {
           try {
             iterator.next();
           } catch (err if err instanceof StopIteration) {
+            simulator.remoteShowNotification("reinstalling completed.");
             if (typeof oncompleted === "function") {
               oncompleted();
             }
@@ -160,6 +162,13 @@ let simulator = module.exports = {
         .filter(function (appId) !simulator.apps[appId].deleted);
       let iterator = (simulator.updateApp(activeAppIds[i], next) for (i in activeAppIds));
       next();
+    });
+  },
+
+  remoteShowNotification: function(userMessage) {
+    this.run(function () {
+      simulator.remoteSimulator
+        .showNotification(userMessage, function dummy() {});
     });
   },
 
@@ -693,7 +702,7 @@ let simulator = module.exports = {
           cb();
         } else {
           simulator.updateAll(cb);
-        }        
+        }
       }
     } else {
       next = (typeof cb === "function") ? cb : function() {};

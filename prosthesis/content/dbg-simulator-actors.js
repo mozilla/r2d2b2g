@@ -225,6 +225,17 @@ SimulatorActor.prototype = {
     };
   },
 
+  onShowNotification: function (aRequest) {
+    log("simulator actor received a 'showNotification' command");
+    let window = this.simulatorWindow;
+    window.AlertsHelper.showNotification(null, "Simulator", aRequest.userMessage);
+
+    return {
+      message: "showNotification request received",
+      success: true
+    };
+  },
+
   onSubscribeWindowManagerEvents: function (aRequest) {
     log("simulator actor received a 'subscribeWindowManagerEvents' command");
     let ok = this._subscribeWindowManagerEvents();
@@ -328,6 +339,7 @@ SimulatorActor.prototype.requestTypes = {
   "logStdout": SimulatorActor.prototype.onLogStdout,
   "runApp": SimulatorActor.prototype.onRunApp,
   "uninstallApp": SimulatorActor.prototype.onUninstallApp,
+  "showNotification": SimulatorActor.prototype.onShowNotification,
   "subscribeWindowManagerEvents": SimulatorActor.prototype.onSubscribeWindowManagerEvents,
   "unsubscribeWindowManagerEvents": SimulatorActor.prototype.onUnsubscribeWindowManagerEvents,
 };
