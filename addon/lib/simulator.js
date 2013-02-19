@@ -124,20 +124,22 @@ let simulator = module.exports = {
       }
       console.log("Stored " + JSON.stringify(apps[webappFile]));
 
-      this.updateApp(webappFile, function next(error, appId) {
+      this.updateApp(webappFile, function next(error, app) {
         // app reinstall completed
         // success/error detection and report to the user
         if (error) {
           simulator.error(error);
+        } else {
+          simulator.sendListApps();
+          simulator.runApp(app.origin);
         }
-        simulator.sendListApps();
       });
     }
   },
 
   updateAll: function() {
     this.run(function () {
-      function next(error, appId) {
+      function next(error, app) {
         // Call iterator.next() in a timeout to ensure updateApp() has returned;
         // otherwise we might raise "TypeError: already executing generator".
         if (error) {
@@ -255,15 +257,14 @@ let simulator = module.exports = {
               if (next) {
                 // detect success/error and report to the "next" callback
                 if (res.error) {
-                  next(res.error + ": " + res.message, res.appId);
+                  next(res.error + ": " + res.message, config);
                 } else {
-                  next(null, res.appId);
+                  next(null, config);
                 }
               }
             });
           });
         }
-
       });
     } else {
       // Hosted App
@@ -323,9 +324,9 @@ let simulator = module.exports = {
                   if (next) {
                     // detect success/error and report to the "next" callback
                     if (res.error) {
-                      next(res.error + ": "+res.message, res.appId);
+                      next(res.error + ": "+res.message, config);
                     } else {
-                      next(null, res.appId);
+                      next(null, config);
                     }
                   }
                 });
@@ -371,13 +372,15 @@ let simulator = module.exports = {
     config.removed = false;
     apps[id] = config;
 
-    simulator.updateApp(id, function next(error, appId) {
+    simulator.updateApp(id, function next(error, app) {
       // app reinstall completed
       // success/error detection and report to the user
       if (error) {
         simulator.error(error);
+      } else {
+        simulator.sendListApps();
+        simulator.runApp(app.origin);
       }
-      simulator.sendListApps();
     });
   },
 
@@ -561,10 +564,13 @@ let simulator = module.exports = {
     }
     console.log("Stored " + JSON.stringify(apps[id], null, 2));
 
-    this.updateApp(id, function next(error, appId) {
+    this.updateApp(id, function next(error, app) {
       // success/error detection and report to the user
       if (error) {
         simulator.error(error);
+      } else {
+        simulator.sendListApps();
+        simulator.runApp(app.origin);
       }
     });
   },
@@ -686,6 +692,12 @@ let simulator = module.exports = {
     }
   },
 
+  runApp: function(appOrigin, next) {
+    this.run(function () {
+      simulator.remoteSimulator.runApp(appOrigin, next);
+    });
+  },
+
   get isRunning() {
     return this.remoteSimulator.isRunning;
   },
@@ -746,24 +758,19 @@ let simulator = module.exports = {
         this.sendListApps();
         break;
       case "updateApp":
-        simulator.updateApp(message.id, function next(error, appId) {
+        simulator.updateApp(message.id, function next(error, app) {
           // success/error detection and report to the user
           if (error) {
             simulator.error(error);
+          } else {
+            simulator.sendListApps();
+            simulator.runApp(app.origin);
           }
         });
         break;
       case "runApp":
-        let appName = this.apps[message.id].name;
-
-        let cmd = function () {
-          this.remoteSimulator.runApp(appName, function (response) {
-            console.debug("RUNAPP RESPONSE: "+JSON.stringify(response));
-            // TODO: send feedback to manager tab
-          });
-        };
-        cmd = cmd.bind(this);
-        this.run(cmd);
+        let appOrigin = this.apps[message.id].origin;
+        simulator.runApp(appOrigin);
         break;
       case "removeApp":
         this.removeApp(message.id);
