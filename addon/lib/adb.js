@@ -4,8 +4,10 @@
 
 // Wrapper around the ADB utility.
 
+const COMMONJS = ("require" in this);
+
 let components;
-if ("require" in this) {
+if (COMMONJS) {
   // CommonJS Module
   components = require("chrome").components;
 } else {
@@ -40,9 +42,15 @@ this.ADB = {
   init: function adb_init() {
     debug("init");
     let platform = Services.appinfo.OS;
-    let uri = "chrome://b2g-remote/content/binaries/";
-    let bin;
 
+    let uri;
+    if (COMMONJS) {
+      uri = require("self").data.url("");
+    } else {
+      uri = "chrome://b2g-remote/content/binaries/";
+    }
+
+    let bin;
     switch(platform) {
       case "Linux":
         bin = uri + "linux/adb";
@@ -55,11 +63,17 @@ this.ADB = {
         return;
     }
 
-    let chromeReg = Cc["@mozilla.org/chrome/chrome-registry;1"]
-                      .getService(Ci.nsIChromeRegistry);
-    let url = chromeReg.convertChromeURL(Services.io.newURI(bin, null, null))
-                       .QueryInterface(Ci.nsIFileURL);
-    this._adb = url.file;
+    if (COMMONJS) {
+      let url = Services.io.newURI(bin, null, null)
+                        .QueryInterface(Ci.nsIFileURL);
+      this._adb = url.file;
+    } else {
+      let chromeReg = Cc["@mozilla.org/chrome/chrome-registry;1"]
+                        .getService(Ci.nsIChromeRegistry);
+      let url = chromeReg.convertChromeURL(Services.io.newURI(bin, null, null))
+                         .QueryInterface(Ci.nsIFileURL);
+      this._adb = url.file;
+    }
 
     let process = Cc["@mozilla.org/process/util;1"]
                     .createInstance(Ci.nsIProcess);
