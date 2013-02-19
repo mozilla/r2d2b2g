@@ -2,7 +2,7 @@
 addon/template
 
 # platform-specific directories containing B2G Desktop binaries
-addon/data/win32
-addon/data/mac64
-addon/data/linux
-addon/data/linux64
+addon/data/win32/b2g
+addon/data/mac64/B2G.app
+addon/data/linux/b2g
+addon/data/linux64/b2g
