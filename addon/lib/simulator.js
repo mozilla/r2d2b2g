@@ -697,15 +697,11 @@ let simulator = module.exports = {
     // if needsUpdateAll try to reinstall all active registered app
     if (SStorage.storage.needsUpdateAll) {
       SStorage.storage.needsUpdateAll = false;
-      next = function() {
-        if (typeof cb === "function") {
-          cb();
-        } else {
-          simulator.updateAll(cb);
-        }
-      }
+      next = (typeof cb === "function") ? 
+        (function() simulator.updateAll(cb)) : 
+        (function() simulator.updateAll());
     } else {
-      next = (typeof cb === "function") ? cb : function() {};
+      next = (typeof cb === "function") ? cb : (function() {});
     }
 
     // NOTE: if a b2g instance is already running send request
