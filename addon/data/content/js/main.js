@@ -1,4 +1,5 @@
 var Simulator = {
+  isDeviceConnected: null,
 
   APP_TYPES: {
     "local": "Packaged App",
@@ -170,6 +171,13 @@ var Simulator = {
                       window.postMessage({name: "removeApp", id: id}, "*");
                     }),
                   $("<button>")
+                    .addClass("pushButton")
+                    .text("Push")
+                    .click(function(evt) {
+                      window.postMessage({ name: "pushAppToDevice", id: id }, "*");
+                    })
+                    .prop("title", lastUpdate),
+                  $("<button>")
                     .text("Update")
                     .click(function(evt) {
                       window.postMessage({name: "updateApp", id: id}, "*");
@@ -221,6 +229,7 @@ var Simulator = {
               // FIXME: Make an actual list, add a template engine
               container.append(entry);
             });
+            Simulator.updatePushButtons();
             break;
         }
       },
@@ -234,14 +243,26 @@ var Simulator = {
     window.postMessage({ name: "getPreference" }, "*");
   },
 
+  updatePushButtons: function() {
+    if (Simulator.isDeviceConnected) {
+      $('.pushButton').removeAttr('disabled');
+    } else {
+      $('.pushButton').attr('disabled', 'disabled');
+    }
+  },
+
   onADBDeviceConnected: function onADBDeviceConnected() {
     console.log("onADBDeviceConnected");
+    this.isDeviceConnected = true;
     $('#device-status').text("Device Connected");
+    this.updatePushButtons();
   },
 
   onADBDeviceDisconnected: function onADBDeviceDisconnected() {
     console.log("onADBDeviceDisconnected");
+    this.isDeviceConnected = false;
     $('#device-status').text("No Device Connected");
+    this.updatePushButtons();
   },
 
   show: function(target) {
