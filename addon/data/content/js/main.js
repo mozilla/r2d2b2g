@@ -229,7 +229,7 @@ var Simulator = {
               // FIXME: Make an actual list, add a template engine
               container.append(entry);
             });
-            Simulator.updatePushButtons();
+            Simulator.updateDeviceUI();
             break;
         }
       },
@@ -243,10 +243,12 @@ var Simulator = {
     window.postMessage({ name: "getPreference" }, "*");
   },
 
-  updatePushButtons: function() {
+  updateDeviceUI: function() {
     if (Simulator.isDeviceConnected) {
+      $('#device-status').css({ visibility: "visible" });
       $('.pushButton').removeAttr('disabled');
     } else {
+      $('#device-status').css({ visibility: "hidden" });
       $('.pushButton').attr('disabled', 'disabled');
     }
   },
@@ -254,15 +256,13 @@ var Simulator = {
   onADBDeviceConnected: function onADBDeviceConnected() {
     console.log("onADBDeviceConnected");
     this.isDeviceConnected = true;
-    $('#device-status').text("Device Connected");
-    this.updatePushButtons();
+    this.updateDeviceUI();
   },
 
   onADBDeviceDisconnected: function onADBDeviceDisconnected() {
     console.log("onADBDeviceDisconnected");
     this.isDeviceConnected = false;
-    $('#device-status').text("No Device Connected");
-    this.updatePushButtons();
+    this.updateDeviceUI();
   },
 
   show: function(target) {

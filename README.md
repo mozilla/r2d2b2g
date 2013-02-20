@@ -12,3 +12,5 @@ To hack on it, clone this repository, then:
     make run
 
 Caution! You need plentiful disk and patience, as the submodules and build process require copious space and time.
+
+Some icons come from the Silk icon set <http://www.famfamfam.com/lab/icons/silk/>.  Thanks Mark James!
