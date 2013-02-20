@@ -168,7 +168,7 @@ let simulator = module.exports = {
   showRemoteNotification: function(userMessage) {
     this.run(function () {
       simulator.remoteSimulator
-        .showNotification(userMessage, function dummy() {});
+        .showNotification(userMessage, null);
     });
   },
 
