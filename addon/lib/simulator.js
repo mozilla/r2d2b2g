@@ -19,6 +19,7 @@ const WindowUtils = require("window/utils");
 const Timer = require("timer");
 const RemoteSimulatorClient = require("remote-simulator-client");
 const xulapp = require("sdk/system/xul-app");
+const ADB = require("adb");
 
 const { rootURI: ROOT_URI } = require('@loader/options');
 const PROFILE_URL = ROOT_URI + "profile/";
@@ -736,6 +737,21 @@ let simulator = module.exports = {
     return remoteSimulator;
   },
 
+  observe: function(subject, topic, data) {
+    switch (topic) {
+      case "adb-ready":
+        ADB.trackDevices();
+        break;
+      case "adb-device-connected":
+      case "adb-device-disconnected":
+        console.log("Simulator: " + topic);
+        if (this.worker) {
+          this.worker.postMessage({ name: topic });
+        }
+        break;
+    }
+  },
+
   onMessage: function onMessage(message) {
     console.log("Simulator.onMessage " + message.name);
     switch (message.name) {
@@ -834,6 +850,10 @@ let simulator = module.exports = {
   }
 
 };
+
+Services.obs.addObserver(simulator, "adb-device-connected", false);
+Services.obs.addObserver(simulator, "adb-device-disconnected", false);
+Services.obs.addObserver(simulator, "adb-ready", false);
 
 /**
  * Convert an XPConnect result code to its name and message.

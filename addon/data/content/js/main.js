@@ -69,6 +69,12 @@ var Simulator = {
         }
         console.log('Addon-message: ' + message.name);
         switch (message.name) {
+          case "adb-device-connected":
+            Simulator.onADBDeviceConnected();
+            break;
+          case "adb-device-disconnected":
+            Simulator.onADBDeviceDisconnected();
+            break;
           case "isRunning":
             $(Simulator.toggler).prop('indeterminate', false);
             var remoteDebuggerPortEl = $('#commands-preference-remote-debugger-port');
@@ -226,6 +232,16 @@ var Simulator = {
     window.postMessage({ name: "listApps", flush: true }, "*");
     window.postMessage({ name: "listTabs" }, "*");
     window.postMessage({ name: "getPreference" }, "*");
+  },
+
+  onADBDeviceConnected: function onADBDeviceConnected() {
+    console.log("onADBDeviceConnected");
+    $('#device-status').text("Device Connected");
+  },
+
+  onADBDeviceDisconnected: function onADBDeviceDisconnected() {
+    console.log("onADBDeviceDisconnected");
+    $('#device-status').text("No Device Connected");
   },
 
   show: function(target) {
