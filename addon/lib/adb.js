@@ -4,22 +4,30 @@
 
 // Wrapper around the ADB utility.
 
-const COMMONJS = ("require" in this);
+// Whether or not this script is being loaded as a CommonJS module
+// (from an addon built using the Add-on SDK).  If it isn't a CommonJS Module,
+// then it's a JavaScript Module.
+const COMMONJS_MODULE = ("require" in this);
 
 let components;
-if (COMMONJS) {
-  // CommonJS Module
+if (COMMONJS_MODULE) {
   components = require("chrome").components;
 } else {
-  // JavaScript Module (JSM)
   components = Components;
 }
 let Cc = components.classes;
 let Ci = components.interfaces;
 let Cu = components.utils;
-let CC = components.Constructor;
 
 Cu.import("resource://gre/modules/Services.jsm");
+
+// Get the TextEncoder and TextDecoder interfaces from the hidden window,
+// since they aren't defined in a CommonJS module by default.
+let hiddenWindow = Cc['@mozilla.org/appshell/appShellService;1']
+                     .getService(Ci.nsIAppShellService).hiddenDOMWindow;
+let TextEncoder = COMMONJS_MODULE ? hiddenWindow.TextEncoder : TextEncoder;
+let TextDecoder = COMMONJS_MODULE ? hiddenWindow.TextDecoder : TextDecoder;
+
 try {
   Cu.import("resource://gre/modules/commonjs/promise/core.js");
 } catch (e) {
@@ -27,15 +35,19 @@ try {
 }
 Cu.import("resource://gre/modules/osfile.jsm");
 
-// JavaScript Module (JSM)
-this.EXPORTED_SYMBOLS = ["ADB"];
+if (!COMMONJS_MODULE) {
+  this.EXPORTED_SYMBOLS = ["ADB"];
+}
 
 function debug(aStr) {
   dump("--*-- ADB.jsm: " + aStr + "\n");
 }
 
+let ready = false;
+
 this.ADB = {
-  ready: false,
+  get ready() ready,
+  set ready(newVal) { ready = newVal },
 
   // We startup by launching adb in server mode, and setting
   // the tcp socket preference to |true|
@@ -44,7 +56,7 @@ this.ADB = {
     let platform = Services.appinfo.OS;
 
     let uri;
-    if (COMMONJS) {
+    if (COMMONJS_MODULE) {
       uri = require("self").data.url("");
     } else {
       uri = "chrome://b2g-remote/content/binaries/";
@@ -63,7 +75,7 @@ this.ADB = {
         return;
     }
 
-    if (COMMONJS) {
+    if (COMMONJS_MODULE) {
       let url = Services.io.newURI(bin, null, null)
                         .QueryInterface(Ci.nsIFileURL);
       this._adb = url.file;
@@ -100,7 +112,8 @@ this.ADB = {
   // This function is sync, and returns before we know if opening the
   // connection succeeds. Callers must attach handlers to the socket.
   _connect: function adb_connect() {
-    let TCPSocket = new (CC("@mozilla.org/tcp-socket;1", "nsIDOMTCPSocket"))();
+    let TCPSocket = Cc["@mozilla.org/tcp-socket;1"]
+                      .createInstance(Ci.nsIDOMTCPSocket);
     let socket = TCPSocket.open(
      "127.0.0.1", 5037,
      { binaryType: "arraybuffer" });
@@ -558,5 +571,6 @@ this.ADB = {
 
 this.ADB.init();
 
-// CommonJS Module
-this.exports = ADB;
+if (COMMONJS_MODULE) {
+  module.exports = this.ADB;
+}
