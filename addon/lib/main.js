@@ -67,8 +67,9 @@ if (SStorage.storage.lastVersion != Self.version) {
 // - flag needsUpdateAll if there are active apps registered
 if (["install", "downgrade", "upgrade"].indexOf(Self.loadReason) >= 0) {
   if (Simulator.apps) {
-    let activeAppIds = Object.keys(Simulator.apps)
-      .filter(function (appId) !Simulator.apps[appId].deleted);
+    let activeAppIds = Object.keys(Simulator.apps).
+      filter(function (appId) !Simulator.apps[appId].deleted);
+
     if (activeAppIds.length > 0) {
       if (Services.vc.compare(lastVersion, "2.0pre5") < 0) {
         ensureXkeysUnique();
