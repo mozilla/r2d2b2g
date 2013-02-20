@@ -176,8 +176,8 @@ this.ADB = {
 
     }.bind(this);
 
-    socket.onerror = function() {
-      debug("trackDevices onerror");
+    socket.onerror = function(event) {
+      debug("trackDevices onerror: " + event.data);
       Services.obs.notifyObservers(null, "adb-track-devices-stop", null);
     }
 
@@ -223,7 +223,7 @@ this.ADB = {
           newDev[dev] = status !== "offline";
         });
         // Check which device changed state.
-        for (dev in newDev) {
+        for (let dev in newDev) {
           if (devices[dev] != newDev[dev]) {
             if (dev in devices || newDev[dev]) {
               let topic = newDev[dev] ? "adb-device-connected"
