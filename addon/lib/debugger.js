@@ -2,6 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+'use strict';
+
 // Whether or not this script is being loaded as a CommonJS module
 // (from an addon built using the Add-on SDK).  If it isn't a CommonJS Module,
 // then it's a JavaScript Module.

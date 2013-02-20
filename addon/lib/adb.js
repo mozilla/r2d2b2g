@@ -4,6 +4,8 @@
 
 // Wrapper around the ADB utility.
 
+'use strict';
+
 // Whether or not this script is being loaded as a CommonJS module
 // (from an addon built using the Add-on SDK).  If it isn't a CommonJS Module,
 // then it's a JavaScript Module.
@@ -279,16 +281,16 @@ this.ADB = {
   // "S_ISREG" "S_ISFIFO" "S_ISLNK" "S_ISSOCK"
   checkFileMode: function adb_checkFileMode(aMode, aWhat) {
     /* Encoding of the file mode.  See bits/stat.h */
-    const S_IFMT = 0170000; /* These bits determine file type.  */
+    const S_IFMT = parseInt("170000", 8); /* These bits determine file type.  */
 
     /* File types.  */
-    const S_IFDIR  = 0040000; /* Directory.  */
-    const S_IFCHR  = 0020000; /* Character device.  */
-    const S_IFBLK  = 0060000; /* Block device.  */
-    const S_IFREG  = 0100000; /* Regular file.  */
-    const S_IFIFO  = 0010000; /* FIFO.  */
-    const S_IFLNK  = 0120000; /* Symbolic link.  */
-    const S_IFSOCK = 0140000; /* Socket.  */
+    const S_IFDIR  = parseInt("040000", 8); /* Directory.  */
+    const S_IFCHR  = parseInt("020000", 8); /* Character device.  */
+    const S_IFBLK  = parseInt("060000", 8); /* Block device.  */
+    const S_IFREG  = parseInt("100000", 8); /* Regular file.  */
+    const S_IFIFO  = parseInt("010000", 8); /* FIFO.  */
+    const S_IFLNK  = parseInt("120000", 8); /* Symbolic link.  */
+    const S_IFSOCK = parseInt("140000", 8); /* Socket.  */
 
     let masks = {
       "S_ISDIR": S_IFDIR,
