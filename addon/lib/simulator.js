@@ -138,7 +138,7 @@ let simulator = module.exports = {
   },
 
   updateAll: function(oncompleted) {
-    simulator.showRemoteNotification("reinstalling registered apps...");
+    simulator.showRemoteNotification("Reinstalling registered apps...");
     this.run(function () {
       function next(error, app) {
         // Call iterator.next() in a timeout to ensure updateApp() has returned;
@@ -150,7 +150,7 @@ let simulator = module.exports = {
           try {
             iterator.next();
           } catch (err if err instanceof StopIteration) {
-            simulator.showRemoteNotification("reinstalling completed.");
+            simulator.showRemoteNotification("Reinstalling completed.");
             if (typeof oncompleted === "function") {
               oncompleted();
             }
