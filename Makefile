@@ -50,22 +50,23 @@ endif
 ifeq (win32, $(B2G_PLATFORM))
   B2G_TYPE ?= specific
   B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-02-06.en-US.win32.zip
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-02-20.en-US.win32.zip
 else
 ifeq (mac64, $(B2G_PLATFORM))
-  B2G_TYPE ?= nightly
-  B2G_ID ?= 20130206070203
+  B2G_TYPE ?= specific
+  B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-02-20.en-US.mac64.dmg
 else
 # Currently we use custom Linux builds because nightlies have bug 815805.
 ifeq (linux64, $(B2G_PLATFORM))
   B2G_TYPE ?= specific
   B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-02-06.en-US.linux-x86_64.tar.bz2
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-02-20.en-US.linux-x86_64.tar.bz2
 else
 ifeq (linux, $(B2G_PLATFORM))
   B2G_TYPE ?= specific
   B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-02-06.en-US.linux-i686.tar.bz2
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-02-20.en-US.linux-i686.tar.bz2
 endif
 endif
 endif
