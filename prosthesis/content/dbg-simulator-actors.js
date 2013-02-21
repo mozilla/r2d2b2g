@@ -8,7 +8,7 @@ this.EXPORTED_SYMBOLS = ["SimulatorActor"];
 
 function log(msg) {
   var DEBUG_LOG = true;
-  
+
   if (DEBUG_LOG)
     dump("prosthesis:"+msg+"\n");
 }
@@ -21,7 +21,7 @@ log("loading simulator actor definition");
   */
 function SimulatorActor(aConnection)
 {
-  log("simulator actor created for a new connection");  
+  log("simulator actor created for a new connection");
   this._connection = aConnection;
   this._listeners = {};
 }
@@ -38,7 +38,7 @@ SimulatorActor.prototype = {
     log("simulator actor received a 'ping' command");
     return { "msg": "pong" };
   },
-  
+
   onGetBuildID: function(aRequest) {
     log("simulator actor received a 'getBuildID'");
     var buildID = this.simulatorWindow.navigator.buildID;
@@ -61,45 +61,100 @@ SimulatorActor.prototype = {
   },
 
   onRunApp: function(aRequest) {
-    log("simulator actor received a 'runApp' command:" + aRequest.origin);
+    log("simulator actor received a 'runApp' command:" + aRequest.appId);
     let window = this.simulatorWindow;
-    let appOrigin = aRequest.origin;
+    let homescreen = XPCNativeWrapper.unwrap(this.homescreenWindow);
+    let WindowManager = homescreen.WindowManager;
+    let DOMApplicationRegistry = window.DOMApplicationRegistry;
+    let appId = aRequest.appId;
+
+    if (!DOMApplicationRegistry.webapps[appId]) {
+      return { success: false, error: 'app-not-installed', message: 'App not installed.'}
+    }
+
+    let appOrigin = DOMApplicationRegistry.webapps[appId].origin;
 
     let runnable = {
       run: function() {
         try {
-          runnable.unlockScreen(function(e) {
-            if (e) {
-              log("ERROR: " + e);
-              return;
-            }
-            runnable.findAppByOrigin(appOrigin, function (e, app) {
-              if (e) {
-                log("ERROR: " + e);
-                return;
-              }
-              try {
-                log("RUNAPP LAUNCHING:" + app.origin);
-                app.launch();
-                log("RUNAPP SUCCESS:" + appOrigin);
-              } catch(e) {
-                log("EXCEPTION: " + e);
-              }
+          runnable.waitHomescreenReady(function () {
+            runnable.killAppByOrigin(appOrigin, function () {
+              runnable.findAppByOrigin(appOrigin, function (e, app) {
+                if (e) {
+                  log("RUNAPP ERROR: " + e);
+                  return;
+                }
+
+                try {
+                  log("RUNAPP LAUNCHING:" + app.origin);
+                  app.launch();
+                  log("RUNAPP SUCCESS:" + appOrigin);
+                } catch(e) {
+                  log("RUNAPP EXCEPTION: " + e);
+                }
+              });
             });
           });
         } catch(e) {
-          log("EXCEPTION: " + e);
+          log("RUNAPP EXCEPTION: " + e);
         }
       },
-      unlockScreen: function(cb) {
-        let setReq = window.navigator.mozSettings
-          .createLock().set({'lockscreen.enabled': false});
-        setReq.onsuccess = function() {
+      waitHomescreenReady: function(cb) {
+        log("RUNAPP - wait homescreen ready...");
+        let res = homescreen.navigator.mozSettings.createLock().get('homescreen.ready');
+        res.onsuccess = function() {
+          if (res.result["homescreen.ready"]) {
+            log("RUNAPP - homescreen ready");
+            cb();
+          } else {
+            log("RUNAPP - wait for homescreen ready");
+            let wait = function (notify) {
+              log("RUNAPP - homescreen ready: "+notify.settingValue);
+              if(notify.settingValue) {
+                homescreen.navigator.mozSettings.removeObserver("homescreen.ready", wait);
+                cb();
+              }
+            };
+            homescreen.navigator.mozSettings.
+              addObserver("homescreen.ready", wait);
+          }
+        }
+        res.onerror = function() {
+          log("RUNAPP ERROR - waitHomescreenReady: "+res.error.name);
+        }
+      },
+      killAppByOrigin: function(origin, cb) {
+        log("RUNAPP: killAppByOrigin - " + origin);
+        try {
+          if (WindowManager.getRunningApps()[origin] &&
+              !WindowManager.getRunningApps()[origin].killed) {
+            // app running: kill and wait for appterminated
+            let app = WindowManager.getRunningApps()[origin];
+            log("RUNAPP: killAppByOrigin - wait for appterminated");
+            let once = function (evt) {
+              // filtering out other appterminated with different origin
+              if (evt.detail.origin !== origin) {
+                return;
+              }
+              log("RUNAPP: killAppByOrigin - appterminated received");
+              homescreen.removeEventListener("appterminated", once);
+              // WORKAROUND: bug (probably related to disabled oop) restarted
+              // app keep to be flagged as killed and never restarted
+              delete WindowManager.getRunningApps()[origin];
+
+              cb();
+            }
+            homescreen.addEventListener("appterminated", once, false);
+            WindowManager.kill(origin);
+          } else {
+            // app not running
+            log("RUNAPP: killAppByOrigin - app is not running");
+            cb();
+          }
+        } catch(e) {
+          log("RUNAPP EXCEPTION: killAppByOrigin - " + e);
           cb();
-        };
-        setReq.onerror = function() {
-          cb("unlock error");
-        };
+        }
       },
       findAppByOrigin: function(origin, cb) {
         let mgmt = window.navigator.mozApps.mgmt;
@@ -126,19 +181,30 @@ SimulatorActor.prototype = {
     Services.tm.currentThread.dispatch(runnable,
                                        Ci.nsIThread.DISPATCH_NORMAL);
     return {
-      message: "runApp request received: " + appOrigin
+      message: "runApp request received: " + appOrigin,
+      success: true
     };
   },
 
   onUninstallApp: function(aRequest) {
-    log("simulator actor received 'uninstallApp' command: " + aRequest.origin);
+    log("simulator actor received 'uninstallApp' command: " + aRequest.appId);
     let window = this.simulatorWindow;
+    let DOMApplicationRegistry = window.DOMApplicationRegistry;
+    let appId = aRequest.appId;
+
+    if (!DOMApplicationRegistry.webapps[appId]) {
+      return { success: false, error: 'app-not-installed', message: 'App not installed.'}
+    }
+
+    let appOrigin = DOMApplicationRegistry.webapps[appId].origin;
+
+    log("uninstalling app by origin:"+appOrigin);
 
     let runnable = {
       run: function() {
         try {
           let mgmt = window.navigator.mozApps.mgmt;
-          let req = mgmt.uninstall({origin: aRequest.origin});
+          let req = mgmt.uninstall({origin: appOrigin});
           req.onsuccess = function () {
             log("uninstallApp success: " + req.result);
           }
@@ -154,7 +220,19 @@ SimulatorActor.prototype = {
     Services.tm.currentThread.dispatch(runnable,
                                        Ci.nsIThread.DISPATCH_NORMAL);
     return {
-      message: "uninstallApp request received"
+      message: "uninstallApp request received",
+      success: true
+    };
+  },
+
+  onShowNotification: function (aRequest) {
+    log("simulator actor received a 'showNotification' command");
+    let window = this.simulatorWindow;
+    window.AlertsHelper.showNotification(null, "Simulator", aRequest.userMessage);
+
+    return {
+      message: "showNotification request received",
+      success: true
     };
   },
 
@@ -167,7 +245,7 @@ SimulatorActor.prototype = {
         success: true,
         message: "WindowManager events subscribed"
       }
-    } 
+    }
 
     return {
       success: false,
@@ -178,7 +256,7 @@ SimulatorActor.prototype = {
   onUnsubscribeWindowManagerEvents: function (aRequest) {
     log("simulator actor received a 'unsubscribeWindowManagerEvents' command");
     this._unsubscribeWindowManagerEvents();
-    
+
     return {
       success: true,
       message: "WindowManager events unsubscribed"
@@ -197,7 +275,7 @@ SimulatorActor.prototype = {
     let WindowManager = homescreenWindow.WindowManager;
     let _notify = this._notify.bind(this);
 
-    if (!!this._listeners["appopen"] || 
+    if (!!this._listeners["appopen"] ||
         !!this._listeners["appterminated"]) {
       // NOTE: already subscribed
       return false;
@@ -261,6 +339,7 @@ SimulatorActor.prototype.requestTypes = {
   "logStdout": SimulatorActor.prototype.onLogStdout,
   "runApp": SimulatorActor.prototype.onRunApp,
   "uninstallApp": SimulatorActor.prototype.onUninstallApp,
+  "showNotification": SimulatorActor.prototype.onShowNotification,
   "subscribeWindowManagerEvents": SimulatorActor.prototype.onSubscribeWindowManagerEvents,
   "unsubscribeWindowManagerEvents": SimulatorActor.prototype.onUnsubscribeWindowManagerEvents,
 };
