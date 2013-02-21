@@ -23,7 +23,10 @@ const PROFILE_URL = ROOT_URI + "profile/";
 const PingbackServer = require("pingback-server");
 
 // import debuggerSocketConnect and DebuggerClient
-Cu.import("resource://gre/modules/devtools/dbg-client.jsm");
+const dbgClient = Cu.import("resource://gre/modules/devtools/dbg-client.jsm");
+
+// add an unsolicited notification for geolocation
+dbgClient.UnsolicitedNotifications.geolocationRequest = "geolocationRequest";
 
 const RemoteSimulatorClient = Class({
   extends: EventTarget,
@@ -91,6 +94,7 @@ const RemoteSimulatorClient = Class({
         console.debug("received a gaia WindowManager event: "+JSON.stringify(packet));
       });
       emit(this, "ready", null);
+      this.ping();
     });
 
     // on clientClosed, untrack old remote target and emit 
@@ -184,6 +188,7 @@ const RemoteSimulatorClient = Class({
   // connect simulator using debugging protocol
   // NOTE: this control channel will be auto-created on every b2g instance run
   connectDebuggerClient: function() {
+    let self = this;
     if (this._clientConnected || this._clientConnecting) {
       console.warn("remote-simulator-client: already connected.");
       return;
@@ -198,6 +203,25 @@ const RemoteSimulatorClient = Class({
     client.addListener("closed", (function () {
       emit(this, "clientClosed", {client: client});
     }).bind(this));
+
+    client.addListener("geolocationRequest", function () {
+      let geolocation = Cc["@mozilla.org/geolocation;1"].getService(
+        Ci.nsIDOMGeoGeolocation);
+      geolocation.getCurrentPosition(function success (position) {
+        let [lat, lon] = [position.coords.latitude, position.coords.longitude];
+        let remote = self._remote;
+        remote.client.request({
+          to: remote.simulator,
+          message: {
+            lat: lat,
+            lon: lon,
+          },
+          type: "geolocationResponse"
+        });
+      }, function error () {
+        console.error("error getting current position");
+      });
+    });
 
     client.connect((function () {
       emit(this, "clientConnected", {client: client});
