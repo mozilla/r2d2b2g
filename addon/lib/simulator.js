@@ -118,9 +118,11 @@ let simulator = module.exports = {
       console.log("Loaded " + webapp.name);
 
       let icon = null;
-      let size = Object.keys(webapp.icons).sort(function(a, b) b - a)[0] || null;
-      if (size) {
-        icon = webapp.icons[size];
+      if (webapp.icons) {
+        let size = Object.keys(webapp.icons).sort(function(a, b) b - a)[0] || null;
+        if (size) {
+          icon = webapp.icons[size];
+        }
       }
 
       let apps = simulator.apps;
@@ -490,6 +492,9 @@ let simulator = module.exports = {
       description: title,
       default_locale: "en",
       launch_path: url.path || '/',
+      icons: {
+        "16": "/favicon.ico"
+      }
     };
     console.log("Generated manifest " + JSON.stringify(webapp, null, 2));
     // Possible icon? 'http://www.google.com/s2/favicons?domain=' + url.host
@@ -569,12 +574,12 @@ let simulator = module.exports = {
     }
 
     let icon = null;
-    // if (webapp.icons)
-    //   let size = Object.keys(webapp.icons).sort(function(a, b) b - a)[0] || null;
-    //   if (size) {
-    //     icon = webapp.icons[size];
-    //   }
-    // }
+    if (webapp.icons) {
+      let size = Object.keys(webapp.icons).sort(function(a, b) b - a)[0] || null;
+      if (size) {
+        icon = webapp.icons[size];
+      }
+    }
 
     let id = generated ? (origin + webapp.launch_path) : manifestUrl.toString();
 
@@ -677,6 +682,10 @@ let simulator = module.exports = {
 
       if (!app.manifest.name) {
         app.validation.errors.push("missing mandatory name in manifest");
+      }
+
+      if (!app.manifest.icons || Object.keys(app.manifest.icons).length == 0) {
+        app.validation.errors.push("missing icons in manifest");
       }
 
       // update name visible in the dashboard
