@@ -28,15 +28,14 @@ function SimulatorActor(aConnection)
   this._listeners = {};
   this.clientReady = false;
 
-  let self = this;
-  Services.obs.addObserver(function () {
-    if (self.clientReady) {
-      self._connection.send({
-        from: self.actorID,
+  Services.obs.addObserver((function() {
+    if (this.clientReady) {
+      this._connection.send({
+        from: this.actorID,
         type: "geolocationRequest"
       });
     }
-  }, "r2d2b2g-geolocation-request", false);
+  }).bind(this), "r2d2b2g-geolocation-request", false);
 }
 
 SimulatorActor.prototype = {
