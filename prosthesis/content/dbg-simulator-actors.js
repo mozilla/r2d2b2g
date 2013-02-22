@@ -4,6 +4,8 @@
 
 "use strict";
 
+Components.utils.import("resource://gre/modules/Services.jsm");
+
 this.EXPORTED_SYMBOLS = ["SimulatorActor"];
 
 function log(msg) {
@@ -24,6 +26,16 @@ function SimulatorActor(aConnection)
   log("simulator actor created for a new connection");
   this._connection = aConnection;
   this._listeners = {};
+  this.clientReady = false;
+
+  Services.obs.addObserver((function() {
+    if (this.clientReady) {
+      this._connection.send({
+        from: this.actorID,
+        type: "geolocationRequest"
+      });
+    }
+  }).bind(this), "r2d2b2g-geolocation-request", false);
 }
 
 SimulatorActor.prototype = {
@@ -36,6 +48,7 @@ SimulatorActor.prototype = {
 
   onPing: function(aRequest) {
     log("simulator actor received a 'ping' command");
+    this.clientReady = true;
     return { "msg": "pong" };
   },
 
@@ -263,6 +276,15 @@ SimulatorActor.prototype = {
     }
   },
 
+  onGeolocationResponse: function (aRequest) {
+    Services.obs.notifyObservers({
+      wrappedJSObject: {
+        lat: aRequest.message.lat,
+        lon: aRequest.message.lon,
+      }
+    }, "r2d2b2g-geolocation-response", null);
+  },
+
   _unsubscribeWindowManagerEvents: function() {
     let homescreenWindow = this.homescreenWindow.wrappedJSObject;
 
@@ -342,6 +364,7 @@ SimulatorActor.prototype.requestTypes = {
   "showNotification": SimulatorActor.prototype.onShowNotification,
   "subscribeWindowManagerEvents": SimulatorActor.prototype.onSubscribeWindowManagerEvents,
   "unsubscribeWindowManagerEvents": SimulatorActor.prototype.onUnsubscribeWindowManagerEvents,
+  "geolocationResponse": SimulatorActor.prototype.onGeolocationResponse,
 };
 
 DebuggerServer.removeGlobalActor(SimulatorActor);

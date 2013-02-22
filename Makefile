@@ -115,7 +115,7 @@ profile:
 
 prosthesis: profile
 	mkdir -p addon/template/profile/extensions
-	cd prosthesis && zip -r b2g-prosthesis\@mozilla.org.xpi content defaults locale skin chrome.manifest install.rdf
+	cd prosthesis && zip -r b2g-prosthesis\@mozilla.org.xpi content components defaults locale skin chrome.manifest install.rdf
 	mv prosthesis/b2g-prosthesis@mozilla.org.xpi addon/template/profile/extensions
 
 b2g:
