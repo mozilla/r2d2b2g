@@ -48,9 +48,7 @@ SimulatorActor.prototype = {
 
   onPing: function(aRequest) {
     log("simulator actor received a 'ping' command");
-    if (!this.clientReady) {
-      this.clientReady = true;
-    }
+    this.clientReady = true;
     return { "msg": "pong" };
   },
 
