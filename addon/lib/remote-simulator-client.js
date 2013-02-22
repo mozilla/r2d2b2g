@@ -207,13 +207,12 @@ const RemoteSimulatorClient = Class({
       let geolocation = Cc["@mozilla.org/geolocation;1"].
                         getService(Ci.nsIDOMGeoGeolocation);
       geolocation.getCurrentPosition((function success(position) {
-        let [lat, lon] = [position.coords.latitude, position.coords.longitude];
         let remote = this._remote;
         remote.client.request({
           to: remote.simulator,
           message: {
-            lat: lat,
-            lon: lon,
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
           },
           type: "geolocationResponse"
         });
