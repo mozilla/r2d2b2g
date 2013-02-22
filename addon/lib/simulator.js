@@ -190,7 +190,7 @@ let simulator = module.exports = {
     console.log("Simulator.updateApp " + id);
     simulator.validateApp(id, function(error, app) {
       simulator.sendListApps();
-            
+
       if (!error) {
         // NOTE: try to updateApp if there isn't any blocking error
         simulator._updateApp(id, next);
