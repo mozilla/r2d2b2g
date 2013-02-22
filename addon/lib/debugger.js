@@ -44,7 +44,7 @@ this.Debugger = {
     }
 
     let transport = debuggerSocketConnect("localhost", aPort);
-    let client = new DebuggerClient(transport);
+    client = new DebuggerClient(transport);
 
     let deferred = Promise.defer();
     let self = this;
