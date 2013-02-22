@@ -192,7 +192,7 @@ let simulator = module.exports = {
       simulator.sendListApps();
             
       if (!error) {
-        // NOTE: try to updateApp on if there's not any blocking error
+        // NOTE: try to updateApp if there isn't any blocking error
         simulator._updateApp(id, next);
       }
     });
@@ -660,6 +660,7 @@ let simulator = module.exports = {
       if (error) {
         app.validation.errors.push("error updating cached manifest: "+error);
         if (typeof next === "function") {
+          // NOTE: blocking error
           next(error, app);
         }
         return;
@@ -668,6 +669,7 @@ let simulator = module.exports = {
       if (!app.manifest) {
         app.validation.errors.push("missing manifest");
         if (typeof next === "function") {
+          // NOTE: blocking error
           next(Error("Invalid App"), app);
           return;
         }
@@ -682,8 +684,9 @@ let simulator = module.exports = {
 
       if (["generated", "hosted"].indexOf(app.type) !== -1 &&
           ["certified", "privileged"].indexOf(app.manifest.type) !== -1) {
-        app.validation.errors.push("hosted app could be type '"+app.manifest.type+"'");
+        app.validation.errors.push("hosted app could not be type '"+app.manifest.type+"'");
         if (typeof next === "function") {
+          // NOTE: blocking error
           next(Error("Invalid Manifest"), app);
           return;
         }
