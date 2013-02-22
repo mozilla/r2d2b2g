@@ -62,22 +62,26 @@ if (SStorage.storage.lastVersion != Self.version) {
   SStorage.storage.lastVersion = Self.version;
 }
 
+// on remove+install, downgrade and upgrade:
+// - ensure apps xkeys are unique
+// - flag needsUpdateAll if there are active apps registered
+if (["install", "downgrade", "upgrade"].indexOf(Self.loadReason) >= 0) {
+  if (Simulator.apps) {
+    let activeAppIds = Object.keys(Simulator.apps).
+      filter(function (appId) !Simulator.apps[appId].deleted);
+
+    if (activeAppIds.length > 0) {
+      if (Services.vc.compare(lastVersion, "2.0pre5") < 0) {
+        ensureXkeysUnique();
+      }
+      SStorage.storage.needsUpdateAll = true;
+    }
+  }
+}
+
 switch (Self.loadReason) {
   case "install":
     Simulator.openHelperTab();
-    break;
-  case "downgrade":
-    Simulator.updateAll();
-    break;
-  case "upgrade":
-    // If the last version the user used was older than 2.0pre5, then ensure
-    // app xkeys are unique, since older versions sometimes reused them, causing
-    // B2G to conflate apps.
-    if (Services.vc.compare(lastVersion, "2.0pre5") < 0) {
-      ensureXkeysUnique();
-    }
-
-    Simulator.updateAll();
     break;
 }
 

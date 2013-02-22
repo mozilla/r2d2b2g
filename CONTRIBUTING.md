@@ -1,21 +1,34 @@
 # Running a Fork #
 
-1. Fork on github: https://github.com/mozilla/r2d2b2g
-2. clone your fork: `git clone git@github.com:your_github_username_here/r2d2b2g.git`
-3. set r2d2b2g/master as upstream: `git remote add --track master upstream https://github.com/mozilla/r2d2b2g.git`
-4. Make a new directory for your firefox profile outside of the cloned fork. ex. `mkdir arbitraryProfileName`
-5. cd into your cloned fork
-6. initialize submodules `git submodule init && git submodule update`
-7. make `make`
-8. initialize addon sdk `cd addon-sdk && . bin/activate`
-9. change into addon dir `cd ../addon`
-10. Run it! `cfx run --templatedir template/ --profiledir ../../arbitraryProfileName/`
+1. Fork on github https://github.com/mozilla/r2d2b2g
+2. clone your fork
+`git clone git@github.com:your_github_username_here/r2d2b2g.git`
+3. cd into your cloned fork `cd r2d2b2g`
+4. set r2d2b2g/master as upstream `git remote add --track master upstream
+https://github.com/mozilla/r2d2b2g.git`
+5. initialize submodules `git submodule init && git submodule update`
+6. make `make`
+7. initialize Add-on SDK `cd addon-sdk && . bin/activate`
+8. change into addon dir `cd ../addon`
+9. Run it! `make run`
 
-Note: to close it use commmand quit in osx, control-c from the command line will not save any newly installed apps.
+Note: to quit the instance of Firefox started by `make run`, use Firefox's
+Quit/Exit menu item, as aborting the task on the command line with Control-C
+will crash Firefox, and you'll lose changes to the apps on the Dashboard.
 
-# Contributing #
+## Using Custom Profiles ##
 
-Pick up an issue from the [issue tracker](https://github.com/mozilla/r2d2b2g/issues?state=open) and checkout a new branch that describes the issue.
+If you need to use a custom Firefox profile, you can skip step 9 and run via
+the following command
+
+`PROFILE=/path/to/arbitrary/profile make run`
+
+# Fixing Issues #
+
+Pick up an issue from the
+[issue tracker](https://github.com/mozilla/r2d2b2g/issues?state=open) and
+check out a new branch that describes the issue.
 ex. `git checkout -b fixThatBrokenThingYouKnow`
 
 squashed commits preferred, then issue a pull request.
+

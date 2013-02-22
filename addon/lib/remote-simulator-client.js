@@ -79,7 +79,7 @@ const RemoteSimulatorClient = Class({
           tabs: reply.tabs,
           selected: reply.selected,
           simulator: reply.simulatorActor,
-          webapps: reply.webappsActor
+          webapps: reply.simulatorWebappsActor
         });
       }).bind(this));
     });
@@ -242,10 +242,10 @@ const RemoteSimulatorClient = Class({
   },
 
   // send a runApp request to the remote simulator actor
-  runApp: function(appOrigin, onResponse) {
+  runApp: function(appId, onResponse) {
     let remote = this._remote;
 
-    remote.client.request({to: remote.simulator, type: "runApp", origin: appOrigin},
+    remote.client.request({to: remote.simulator, type: "runApp", appId: appId},
                           onResponse);
   },
 
@@ -258,10 +258,18 @@ const RemoteSimulatorClient = Class({
                                 onResponse);
   },
 
-  uninstall: function(appOrigin, onResponse) {
+  uninstall: function(appId, onResponse) {
     this._remote.client.request({ to: this._remote.simulator,
                                   type: "uninstallApp",
-                                  origin: appOrigin,
+                                  appId: appId,
+                                },
+                                onResponse);
+  },
+
+  showNotification: function(userMessage, onResponse) {
+    this._remote.client.request({ to: this._remote.simulator,
+                                  type: "showNotification",
+                                  userMessage: userMessage,
                                 },
                                 onResponse);
   },

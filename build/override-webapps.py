@@ -43,13 +43,15 @@ archive = zipfile.ZipFile('application.zip', mode='r')
 archive.extract(grid_file)
 archive.close()
 with open(grid_file, 'r') as f:
-  old_grid = json.load(f)
+  grid_json = json.load(f)
+old_grid = grid_json["grid"]
 new_grid = []
 def f(x): return not (x['manifestURL'] in manifestURLs)
 for page in old_grid:
   new_grid.append(filter(f, page))
+grid_json["grid"] = new_grid
 with open(grid_file, 'wb') as f:
-  json.dump(new_grid, f, indent=2)
+  json.dump(grid_json, f, indent=2)
 subprocess.call(['zip', '-f', 'application.zip', grid_file])
 os.remove(grid_file)
 try:
