@@ -21,6 +21,12 @@ const RemoteSimulatorClient = require("remote-simulator-client");
 const xulapp = require("sdk/system/xul-app");
 const ADB = require("adb");
 
+// The b2gremote debugger module that installs apps to devices.
+const Debugger = require("debugger");
+
+// The b2gremote debugger port.
+const DEBUGGER_PORT = 6000;
+
 const { rootURI: ROOT_URI } = require('@loader/options');
 const PROFILE_URL = ROOT_URI + "profile/";
 
@@ -859,6 +865,9 @@ let simulator = module.exports = {
       case "validateUrl":
         simulator.validateUrl(message.url);
         break;
+      case "pushAppToDevice":
+        simulator.pushAppToDevice(message.id);
+        break;
     }
   },
 
@@ -884,7 +893,168 @@ let simulator = module.exports = {
       nb.PRIORITY_WARNING_MEDIUM,
       null
     );
-  }
+  },
+
+  pushAppToDevice: function pushAppToDevice(id) {
+    console.log("Simulator.pushAppToDevice: " + id);
+    ADB.forwardPort(DEBUGGER_PORT).then(
+      function onSuccess(data) {
+        console.log("ADB.forwardPort success: " + data);
+        Debugger.init(DEBUGGER_PORT).then(
+          function onSuccess(data) {
+            console.log("Debugger.init success: " + data);
+
+            Debugger.setWebappsListener(function listener(state, type, packet) {
+              if (type.error) {
+                console.error("Debugger install error: " + type.message);
+              } else {
+                console.log("Debugger install success");
+              }
+            });
+
+            let app = simulator.apps[id];
+
+            if (app.type == "local") {
+              simulator.pushPackagedAppToDevice(id, app);
+            } else {
+              simulator.pushHostedAppToDevice(id, app);
+            }
+
+          },
+          function onError(error) console.error("Debugger.init error: " + error)
+        );
+      },
+      function onError(error) console.error("ADB.forwardPort error: " + error)
+    );
+  },
+
+  pushHostedAppToDevice: function pushHostedAppToDevice(id, app) {
+    this.buildHostedAppFiles(id, function(error, manifestFile, metadataFile) {
+      if (error) {
+        console.error("buildHostedAppFiles error: " + error);
+        return;
+      }
+
+      let destDir = "/data/local/tmp/b2g/" + app.xkey + "/";
+
+      ADB.push(manifestFile, destDir + "manifest.webapp").then(
+        function onSuccess(data) {
+          console.log("ADB.push manifest file success: " + data);
+
+          ADB.push(metadataFile, destDir + "metadata.json").then(
+            function onSuccess(data) {
+              console.log("ADB.push metadata file success: " + data);
+
+              Debugger.webappsRequest({
+                type: "install",
+                appId: app.xkey,
+                appType: Ci.nsIPrincipal.APP_STATUS_INSTALLED,
+              }).then(
+                function onSuccess(data) {
+                  console.log("Debugger.webappsRequest success: " + data);
+                },
+                function onError(error) console.error("Debugger.webappsRequest error: " + error)
+              );
+
+            },
+            function onError(error) console.error("ADB.push metadata file error: " + error)
+          );
+
+        },
+        function onError(error) console.error("ADB.push manifest file error: " + error)
+      );
+    });
+  },
+
+  buildHostedAppFiles: function buildHostedAppFiles(id, next) {
+    let app = this.apps[id];
+    let tempDir = File.join(this.tempDir, app.xkey);
+    File.mkpath(tempDir);
+
+    let manifest = JSON.stringify(app.manifest, null, 2);
+    let manifestFile = File.join(tempDir, "manifest.webapp");
+
+    console.log("manifest: " + manifest);
+
+    File.open(manifestFile, "w").writeAsync(manifest, function(error) {
+      if (error) {
+        console.error("erroring writing manifest.webapp: " + error);
+        next(error);
+        return;
+      }
+
+      console.log("wrote " + manifestFile);
+
+      let metadata = JSON.stringify({
+        origin: app.origin,
+        manifestURL: id,
+      }, null, 2);
+      let metadataFile = File.join(tempDir, "metadata.json");
+
+      console.log("metadata: " + metadata);
+
+      File.open(metadataFile, "w").writeAsync(metadata, function(error) {
+        if (error) {
+          console.error("erroring writing metadata.json: " + error);
+          next(error);
+          return;
+        }
+
+        console.log("wrote " + metadataFile);
+        next(null, manifestFile, metadataFile);
+
+      }); // END writeAsync metadataFile
+    }); // END writeAsync manifest.webapp
+  },
+
+  pushPackagedAppToDevice: function pushPackagedAppToDevice(id, app) {
+    this.buildPackage(id, function(error, pkg) {
+      if (error) {
+        console.error("buildPackage error: " + error);
+        return;
+      }
+
+      let destDir = "/data/local/tmp/b2g/" + app.xkey + "/";
+      ADB.push(pkg, destDir + "application.zip").then(
+        function onSuccess(data) {
+          console.log("ADB.push success: " + data);
+          Debugger.webappsRequest({
+            type: "install",
+            appId: app.xkey,
+            appType: Ci.nsIPrincipal.APP_STATUS_INSTALLED,
+          }).then(
+            function onSuccess(data) {
+              console.log("Debugger.webappsRequest success: " + data);
+            },
+            function onError(error) console.error("Debugger.webappsRequest error: " + error)
+          );
+        },
+        function onError(error) console.error("ADB.push error: " + error)
+      );
+    });
+  },
+
+  buildPackage: function(id, next) {
+    console.log("buildPackage");
+
+    let app = this.apps[id];
+    let tempDir = File.join(this.tempDir, app.xkey);
+    File.mkpath(tempDir);
+
+    let sourceDir = id.replace(/[\/\\][^\/\\]*$/, "");
+    let archiveFile = File.join(tempDir, "application.zip");
+
+    console.log("archiving " + sourceDir + " to " + archiveFile);
+    archiveDir(archiveFile, sourceDir, function onArchiveDir(error) {
+        if (error) {
+          if (next) {
+            next(error);
+          }
+        } else {
+          next(null, archiveFile);
+        }
+    });
+  },
 
 };
 
