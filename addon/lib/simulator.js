@@ -946,7 +946,7 @@ let simulator = module.exports = {
     let deferred = Promise.defer();
 
     if (adbReady) {
-      Timer.setTimeout(function() deferred.resolve(), 0);
+      deferred.resolve();
     } else {
       ADB.forwardPort(DEBUGGER_PORT).then(
         function success(data) {
@@ -964,7 +964,7 @@ let simulator = module.exports = {
     let deferred = Promise.defer();
 
     if (debuggerReady) {
-      Timer.setTimeout(function() deferred.resolve(), 0);
+      deferred.resolve();
     } else {
       Debugger.init(DEBUGGER_PORT).then(
         function success(data) {
