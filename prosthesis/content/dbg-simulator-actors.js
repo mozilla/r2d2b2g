@@ -207,66 +207,55 @@ SimulatorActor.prototype = {
     Cu.import("resource://gre/modules/PermissionsTable.jsm", utils);
     Cu.import("resource://gre/modules/AppsUtils.jsm", utils);
 
-    let AppsUtils = utils.AppsUtils;
+    let errors = [];
 
     if (["app", "privileged", "certified"].indexOf(appType) === -1) {
-      return {
-        success: false,
-        message: "Invalid Manifest",
-        validation: { errors: ["Unknown app type: " + appType] },
-        error: "unknown-app-type"
-      }
+      errors.push("Unknown app type: '" + appType + "'.");
     }
 
-    let valid = AppsUtils.checkManifest(manifest,{});
+    let valid = utils.AppsUtils.checkManifest(manifest, {});
 
     if (!valid) {
-      return {
-        success: false,
-        message: "Invalid Manifest",
-        validation: { errors: ["AppsUtils.checkManifest return false"] },
-        error: "apputils-checkmanifest-invalid"
-      }
+      errors.push("AppsUtils.checkManifest return false.");
     }
 
     let permissions = Object.keys(manifest.permissions);
-    let errors = [];
-    permissions.forEach(function(name) {
-      let permission = utils.PermissionsTable[name];
+
+    permissions.forEach(function(pname) {
+      let permission = utils.PermissionsTable[pname];
 
       if (permission) {
-        let permission_action = permission[appType];
-        if (permission_action === Ci.nsIPermissionManager.DENY_ACTION) {
-          errors.push("denied permission '" + name + "'");
+        let permissionAction = permission[appType];
+        if (!permissionAction) {
+          errors.push("Ignored permission '" + pname + "' (invalid type).");
+        } else if (permissionAction === Ci.nsIPermissionManager.DENY_ACTION) {
+          errors.push("Denied permission '" + pname + "'.");
         } else {
           let access = manifest.permissions[name].access;
           try {
             if (access && utils.expandPermissions(name, access).length === 0) {
-              errors.push("invalid access '" + access + "' in permission '" + name + "'");
+              errors.push("Invalid access '" + access + "' in permission '" + pname + "'.");
             }
           } catch(e) {
             log("VALIDATE MANIFEST EXCEPTION: " + e);
-            errors.push("invalid access '" + access + "' in permission '" + name + "'");
+            errors.push("Invalid access '" + paccess + "' in permission '" + pname + "'.");
           }
         }
       } else {
-        errors.push("unknown permission '"+name+"'");
+        errors.push("Unknown permission '" + pname + "'.");
       }
     });
 
     if (errors.length > 0) {
       return {
         success: false,
-        message: "Permission Errors",
-        validation: {errors: errors},
-        error: "permission-errors"
-      }
+        errors: errors
+      };
     }
 
     return {
-      success: true,
-      message: "No errors detected in your manifest"
-    }
+      success: true
+    };
   },
 
   onUninstallApp: function(aRequest) {

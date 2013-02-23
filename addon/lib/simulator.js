@@ -627,21 +627,21 @@ let simulator = module.exports = {
       Request({
         url: id,
         onComplete: function (response) {
-          let error = null
+          let error;
           if (response.status != 200) {
-            error = "Unexpected status code " + response.status;
+            error = "Unexpected status code: '" + response.status + "'.";
           } else if (!response.json) {
-            error = "Expected JSON response. ";
+            error = "Expected JSON response: ";
             try {
               JsonLint.parse(response.text);
             } catch(e) {
-              error += e;
+              error += "<pre>"+e+"</pre>";
             }
           } else {
             app.manifest = response.json;
             let contentType = response.headers["Content-Type"];
             if (contentType !== "application/x-web-app-manifest+json") {
-              error = "Unexpected Content-Type: " + contentType + ".";
+              error = "Unexpected Content-Type: '" + contentType + "'.";
             }
           }
           if (typeof next === "function") {
@@ -663,7 +663,7 @@ let simulator = module.exports = {
 
     this._updateCachedManifest(id, function(error, manifest) {
       if (error) {
-        app.validation.errors.push("error updating cached manifest: "+error);
+        app.validation.errors.push("Error updating cached Manifest: " + error);
         if (typeof next === "function") {
           // NOTE: blocking error
           next(error, app);
@@ -672,7 +672,7 @@ let simulator = module.exports = {
       }
 
       if (!app.manifest) {
-        app.validation.errors.push("missing manifest");
+        app.validation.errors.push("Missing Manifest.");
         if (typeof next === "function") {
           // NOTE: blocking error
           next(Error("Invalid App"), app);
@@ -681,11 +681,11 @@ let simulator = module.exports = {
       }
 
       if (!app.manifest.name) {
-        app.validation.errors.push("missing mandatory name in manifest");
+        app.validation.errors.push("Missing mandatory 'name' in Manifest.");
       }
 
       if (!app.manifest.icons || Object.keys(app.manifest.icons).length == 0) {
-        app.validation.errors.push("missing icons in manifest");
+        app.validation.errors.push("Missing 'icons' in Manifest.");
       }
 
       // update name visible in the dashboard
@@ -693,7 +693,7 @@ let simulator = module.exports = {
 
       if (["generated", "hosted"].indexOf(app.type) !== -1 &&
           ["certified", "privileged"].indexOf(app.manifest.type) !== -1) {
-        app.validation.errors.push("hosted app could not be type '"+app.manifest.type+"'");
+        app.validation.errors.push("Hosted App can't be type '" + app.manifest.type + "'.");
         if (typeof next === "function") {
           // NOTE: blocking error
           next(Error("Invalid Manifest"), app);
@@ -714,7 +714,7 @@ let simulator = module.exports = {
                   concat(reply.validation.errors);
               }
               if (typeof next === "function") {
-                // NOTE: non blocking errors
+                // NOTE: non blocking errors (does not corrupt the b2g profile)
                 next(null, app);
                 return;
               }
