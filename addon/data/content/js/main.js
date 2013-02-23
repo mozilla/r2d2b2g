@@ -1,5 +1,5 @@
 var Simulator = {
-  isDeviceConnected: null,
+  deviceConnected: null,
 
   APP_TYPES: {
     "local": "Packaged App",
@@ -70,11 +70,10 @@ var Simulator = {
         }
         console.log('Addon-message: ' + message.name);
         switch (message.name) {
-          case "adb-device-connected":
-            Simulator.onADBDeviceConnected();
-            break;
-          case "adb-device-disconnected":
-            Simulator.onADBDeviceDisconnected();
+          case "deviceConnected":
+            Simulator.deviceConnected = message.value;
+            console.log("device " + (message.value ? "" : "dis") + "connected");
+            Simulator.updateDeviceView();
             break;
           case "isRunning":
             $(Simulator.toggler).prop('indeterminate', false);
@@ -229,7 +228,12 @@ var Simulator = {
               // FIXME: Make an actual list, add a template engine
               container.append(entry);
             });
-            Simulator.updateDeviceUI();
+
+            // Now that we have the list of apps, we check if a device
+            // is connected so we know whether or not to enable the Push buttons
+            // for each app (and the overall "device connected" indicator).
+            window.postMessage({ name: "getDeviceConnected" }, "*");
+
             break;
         }
       },
@@ -243,26 +247,14 @@ var Simulator = {
     window.postMessage({ name: "getPreference" }, "*");
   },
 
-  updateDeviceUI: function() {
-    if (Simulator.isDeviceConnected) {
+  updateDeviceView: function() {
+    if (Simulator.deviceConnected) {
       $('#device-status').css({ visibility: "visible" });
       $('.pushButton').removeAttr('disabled');
     } else {
       $('#device-status').css({ visibility: "hidden" });
       $('.pushButton').attr('disabled', 'disabled');
     }
-  },
-
-  onADBDeviceConnected: function onADBDeviceConnected() {
-    console.log("onADBDeviceConnected");
-    this.isDeviceConnected = true;
-    this.updateDeviceUI();
-  },
-
-  onADBDeviceDisconnected: function onADBDeviceDisconnected() {
-    console.log("onADBDeviceDisconnected");
-    this.isDeviceConnected = false;
-    this.updateDeviceUI();
   },
 
   show: function(target) {

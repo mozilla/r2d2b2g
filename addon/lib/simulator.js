@@ -52,7 +52,7 @@ const PR_TRUNCATE = 0x20;
 const PR_USEC_PER_MSEC = 1000;
 
 let worker, remoteSimulator;
-let adbReady, debuggerReady;
+let deviceConnected, adbReady, debuggerReady;
 
 let simulator = module.exports = {
   get apps() {
@@ -776,16 +776,14 @@ let simulator = module.exports = {
         ADB.trackDevices();
         break;
       case "adb-device-connected":
-        if (this.worker) {
-          this.worker.postMessage({ name: topic });
-        }
+        deviceConnected = true;
+        this.postDeviceConnected();
         break;
       case "adb-device-disconnected":
+        deviceConnected = false;
         adbReady = false;
         debuggerReady = false;
-        if (this.worker) {
-          this.worker.postMessage({ name: topic });
-        }
+        this.postDeviceConnected();
         break;
     }
   },
@@ -873,9 +871,21 @@ let simulator = module.exports = {
       case "validateUrl":
         simulator.validateUrl(message.url);
         break;
+      case "getDeviceConnected":
+        simulator.postDeviceConnected();
+        break;
       case "pushAppToDevice":
         simulator.pushAppToDevice(message.id);
         break;
+    }
+  },
+
+  postDeviceConnected: function postDeviceConnected() {
+    if (this.worker) {
+      this.worker.postMessage({
+        name: "deviceConnected",
+        value: deviceConnected
+      });
     }
   },
 
