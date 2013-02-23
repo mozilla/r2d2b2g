@@ -1,4 +1,5 @@
 var Simulator = {
+  deviceConnected: null,
 
   APP_TYPES: {
     "local": "Packaged App",
@@ -69,6 +70,11 @@ var Simulator = {
         }
         console.log('Addon-message: ' + message.name);
         switch (message.name) {
+          case "deviceConnected":
+            Simulator.deviceConnected = message.value;
+            console.log("device " + (message.value ? "" : "dis") + "connected");
+            Simulator.updateDeviceView();
+            break;
           case "isRunning":
             $(Simulator.toggler).prop('indeterminate', false);
             var remoteDebuggerPortEl = $('#commands-preference-remote-debugger-port');
@@ -156,6 +162,13 @@ var Simulator = {
                 note = "has been removed.";
               } else {
                 options.push(
+                  $("<button>")
+                    .addClass("pushButton")
+                    .append("<img src='device.png' height='14'> Push")
+                    .click(function(evt) {
+                      window.postMessage({ name: "pushAppToDevice", id: id }, "*");
+                    })
+                    .prop("title", lastUpdate),
                   $("<a href='#'>")
                     .addClass("button")
                     .text("Remove")
@@ -215,6 +228,12 @@ var Simulator = {
               // FIXME: Make an actual list, add a template engine
               container.append(entry);
             });
+
+            // Now that we have the list of apps, we check if a device
+            // is connected so we know whether or not to enable the Push buttons
+            // for each app (and the overall "device connected" indicator).
+            window.postMessage({ name: "getDeviceConnected" }, "*");
+
             break;
         }
       },
@@ -226,6 +245,18 @@ var Simulator = {
     window.postMessage({ name: "listApps", flush: true }, "*");
     window.postMessage({ name: "listTabs" }, "*");
     window.postMessage({ name: "getPreference" }, "*");
+  },
+
+  updateDeviceView: function() {
+    if (Simulator.deviceConnected) {
+      $('#device-status').fadeTo('slow', 1);
+      $('.pushButton').removeAttr('disabled');
+      $('.pushButton').fadeTo('slow', 1);
+    } else {
+      $('#device-status').fadeTo('slow', 0);
+      $('.pushButton').attr('disabled', 'disabled');
+      $('.pushButton').fadeTo('slow', 0);
+    }
   },
 
   show: function(target) {
