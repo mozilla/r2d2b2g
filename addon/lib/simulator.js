@@ -20,6 +20,7 @@ const Timer = require("timer");
 const RemoteSimulatorClient = require("remote-simulator-client");
 const xulapp = require("sdk/system/xul-app");
 const ADB = require("adb");
+const Promise = require("sdk/core/promise");
 
 // The b2gremote debugger module that installs apps to devices.
 const Debugger = require("debugger");
@@ -897,6 +898,27 @@ let simulator = module.exports = {
 
   pushAppToDevice: function pushAppToDevice(id) {
     console.log("Simulator.pushAppToDevice: " + id);
+
+    this.connectToDevice().then(
+      function success() {
+        let app = simulator.apps[id];
+
+        if (app.type == "local") {
+          simulator.pushPackagedAppToDevice(id, app);
+        } else {
+          simulator.pushHostedAppToDevice(id, app);
+        }
+      },
+      function failure(error) {
+        console.error("pushAppToDevice error: " + error);
+      }
+    );
+
+  },
+
+  connectToDevice: function() {
+    let deferred = Promise.defer();
+
     ADB.forwardPort(DEBUGGER_PORT).then(
       function success(data) {
         console.log("ADB.forwardPort success: " + data);
@@ -912,20 +934,17 @@ let simulator = module.exports = {
               }
             });
 
-            let app = simulator.apps[id];
-
-            if (app.type == "local") {
-              simulator.pushPackagedAppToDevice(id, app);
-            } else {
-              simulator.pushHostedAppToDevice(id, app);
-            }
-
-          },
-          function failure(error) console.error("Debugger.init error: " + error)
+            deferred.resolve();
+          }
         );
       },
-      function failure(error) console.error("ADB.forwardPort error: " + error)
+      function failure(error) {
+        console.error("connectToDevice error: " + error);
+        deferred.reject();
+      }
     );
+
+    return deferred.promise;
   },
 
   pushHostedAppToDevice: function pushHostedAppToDevice(id, app) {
