@@ -1022,15 +1022,21 @@ let simulator = module.exports = {
                 function success(data) {
                   console.log("Debugger.webappsRequest success: " + data);
                 },
-                function failure(error) console.error("Debugger.webappsRequest error: " + error)
+                function failure(error) {
+                  console.error("Debugger.webappsRequest error: " + error);
+                }
               );
 
             },
-            function failure(error) console.error("ADB.push metadata file error: " + error)
+            function failure(error) {
+              console.error("ADB.push metadata file error: " + error);
+            }
           );
 
         },
-        function failure(error) console.error("ADB.push manifest file error: " + error)
+        function failure(error) {
+          console.error("ADB.push manifest file error: " + error);
+        }
       );
     });
   },
@@ -1094,11 +1100,12 @@ let simulator = module.exports = {
           }).then(
             function success(data) {
               console.log("Debugger.webappsRequest success: " + data);
-            },
-            function failure(error) console.error("Debugger.webappsRequest error: " + error)
+            }
           );
         },
-        function failure(error) console.error("ADB.push error: " + error)
+        function failure(error) {
+          console.error("Debugger.webappsRequest error: " + error);
+        }
       );
     });
   },
