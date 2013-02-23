@@ -898,10 +898,10 @@ let simulator = module.exports = {
   pushAppToDevice: function pushAppToDevice(id) {
     console.log("Simulator.pushAppToDevice: " + id);
     ADB.forwardPort(DEBUGGER_PORT).then(
-      function onSuccess(data) {
+      function success(data) {
         console.log("ADB.forwardPort success: " + data);
         Debugger.init(DEBUGGER_PORT).then(
-          function onSuccess(data) {
+          function success(data) {
             console.log("Debugger.init success: " + data);
 
             Debugger.setWebappsListener(function listener(state, type, packet) {
@@ -921,10 +921,10 @@ let simulator = module.exports = {
             }
 
           },
-          function onError(error) console.error("Debugger.init error: " + error)
+          function failure(error) console.error("Debugger.init error: " + error)
         );
       },
-      function onError(error) console.error("ADB.forwardPort error: " + error)
+      function failure(error) console.error("ADB.forwardPort error: " + error)
     );
   },
 
@@ -938,11 +938,11 @@ let simulator = module.exports = {
       let destDir = "/data/local/tmp/b2g/" + app.xkey + "/";
 
       ADB.push(manifestFile, destDir + "manifest.webapp").then(
-        function onSuccess(data) {
+        function success(data) {
           console.log("ADB.push manifest file success: " + data);
 
           ADB.push(metadataFile, destDir + "metadata.json").then(
-            function onSuccess(data) {
+            function success(data) {
               console.log("ADB.push metadata file success: " + data);
 
               Debugger.webappsRequest({
@@ -950,18 +950,18 @@ let simulator = module.exports = {
                 appId: app.xkey,
                 appType: Ci.nsIPrincipal.APP_STATUS_INSTALLED,
               }).then(
-                function onSuccess(data) {
+                function success(data) {
                   console.log("Debugger.webappsRequest success: " + data);
                 },
-                function onError(error) console.error("Debugger.webappsRequest error: " + error)
+                function failure(error) console.error("Debugger.webappsRequest error: " + error)
               );
 
             },
-            function onError(error) console.error("ADB.push metadata file error: " + error)
+            function failure(error) console.error("ADB.push metadata file error: " + error)
           );
 
         },
-        function onError(error) console.error("ADB.push manifest file error: " + error)
+        function failure(error) console.error("ADB.push manifest file error: " + error)
       );
     });
   },
@@ -1016,20 +1016,20 @@ let simulator = module.exports = {
 
       let destDir = "/data/local/tmp/b2g/" + app.xkey + "/";
       ADB.push(pkg, destDir + "application.zip").then(
-        function onSuccess(data) {
+        function success(data) {
           console.log("ADB.push success: " + data);
           Debugger.webappsRequest({
             type: "install",
             appId: app.xkey,
             appType: Ci.nsIPrincipal.APP_STATUS_INSTALLED,
           }).then(
-            function onSuccess(data) {
+            function success(data) {
               console.log("Debugger.webappsRequest success: " + data);
             },
-            function onError(error) console.error("Debugger.webappsRequest error: " + error)
+            function failure(error) console.error("Debugger.webappsRequest error: " + error)
           );
         },
-        function onError(error) console.error("ADB.push error: " + error)
+        function failure(error) console.error("ADB.push error: " + error)
       );
     });
   },
