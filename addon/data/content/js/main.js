@@ -162,6 +162,13 @@ var Simulator = {
                 note = "has been removed.";
               } else {
                 options.push(
+                  $("<button>")
+                    .addClass("pushButton")
+                    .append("<img src='device.png' height='14'> Push")
+                    .click(function(evt) {
+                      window.postMessage({ name: "pushAppToDevice", id: id }, "*");
+                    })
+                    .prop("title", lastUpdate),
                   $("<a href='#'>")
                     .addClass("button")
                     .text("Remove")
@@ -169,13 +176,6 @@ var Simulator = {
                       evt.preventDefault();
                       window.postMessage({name: "removeApp", id: id}, "*");
                     }),
-                  $("<button>")
-                    .addClass("pushButton")
-                    .text("Push")
-                    .click(function(evt) {
-                      window.postMessage({ name: "pushAppToDevice", id: id }, "*");
-                    })
-                    .prop("title", lastUpdate),
                   $("<button>")
                     .text("Update")
                     .click(function(evt) {
@@ -249,11 +249,13 @@ var Simulator = {
 
   updateDeviceView: function() {
     if (Simulator.deviceConnected) {
-      $('#device-status').css({ visibility: "visible" });
+      $('#device-status').fadeTo('slow', 1);
       $('.pushButton').removeAttr('disabled');
+      $('.pushButton').fadeTo('slow', 1);
     } else {
-      $('#device-status').css({ visibility: "hidden" });
+      $('#device-status').fadeTo('slow', 0);
       $('.pushButton').attr('disabled', 'disabled');
+      $('.pushButton').fadeTo('slow', 0);
     }
   },
 
