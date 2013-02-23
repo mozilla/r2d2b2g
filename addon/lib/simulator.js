@@ -19,7 +19,7 @@ const WindowUtils = require("window/utils");
 const Timer = require("timer");
 const RemoteSimulatorClient = require("remote-simulator-client");
 const xulapp = require("sdk/system/xul-app");
-const JsonLint = require("jsonlint");
+const JsonLint = require("jsonlint/jsonlint");
 const ADB = require("adb");
 const Promise = require("sdk/core/promise");
 

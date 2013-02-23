@@ -1,4 +1,3 @@
-/* jsonlint.js from https://github.com/zaach/jsonlint */
 /* Jison generated parser */
 var jsonlint = (function(){
 var parser = {trace: function trace() { },
@@ -18,7 +17,7 @@ case 1: // replace escaped characters with actual character
                      .replace(/\\v/g,'\v')
                      .replace(/\\f/g,'\f')
                      .replace(/\\b/g,'\b');
-
+        
 break;
 case 2:this.$ = Number(yytext);
 break;
@@ -342,7 +341,7 @@ next:function () {
         if (this._input === "") {
             return this.EOF;
         } else {
-            this.parseError('Lexical error on line '+(this.yylineno+1)+'. Unrecognized text.\n'+this.showPosition(),
+            this.parseError('Lexical error on line '+(this.yylineno+1)+'. Unrecognized text.\n'+this.showPosition(), 
                     {text: "", token: null, line: this.yylineno});
         }
     },
@@ -416,4 +415,20 @@ return parser;
 if (typeof require !== 'undefined' && typeof exports !== 'undefined') {
 exports.parser = jsonlint;
 exports.parse = function () { return jsonlint.parse.apply(jsonlint, arguments); }
+// NOTE: disabled because cfx fails resolving require('fs') 
+/*exports.main = function commonjsMain(args) {
+    var r = require;
+    if (!args[1])
+        throw new Error('Usage: '+args[0]+' FILE');
+    if (typeof process !== 'undefined') {
+        var source = r('fs').readFileSync(r('path').join(process.cwd(), args[1]), "utf8");
+    } else {
+        var cwd = r("file").path(r("file").cwd());
+        var source = cwd.join(args[1]).read({charset: "utf-8"});
+    }
+    return exports.parser.parse(source);
+}
+if (typeof module !== 'undefined' && require.main === module) {
+  exports.main(typeof process !== 'undefined' ? process.argv.slice(1) : r("system").args);
+}*/
 }
