@@ -165,6 +165,7 @@ var Simulator = {
                   $("<button>")
                     .addClass("pushButton")
                     .append("<img src='device.png' height='14'> Push")
+                    .css("opacity", Simulator.deviceConnected ? 1 : 0)
                     .click(function(evt) {
                       window.postMessage({ name: "pushAppToDevice", id: id }, "*");
                     })
@@ -228,12 +229,6 @@ var Simulator = {
               // FIXME: Make an actual list, add a template engine
               container.append(entry);
             });
-
-            // Now that we have the list of apps, we check if a device
-            // is connected so we know whether or not to enable the Push buttons
-            // for each app (and the overall "device connected" indicator).
-            window.postMessage({ name: "getDeviceConnected" }, "*");
-
             break;
         }
       },
@@ -241,6 +236,7 @@ var Simulator = {
     );
 
     window.postMessage({ name: "getIsRunning" }, "*");
+    window.postMessage({ name: "getDeviceConnected" }, "*");
     // Clears removed apps on reload
     window.postMessage({ name: "listApps", flush: true }, "*");
     window.postMessage({ name: "listTabs" }, "*");
