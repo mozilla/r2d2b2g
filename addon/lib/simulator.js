@@ -19,6 +19,14 @@ const WindowUtils = require("window/utils");
 const Timer = require("timer");
 const RemoteSimulatorClient = require("remote-simulator-client");
 const xulapp = require("sdk/system/xul-app");
+const ADB = require("adb");
+const Promise = require("sdk/core/promise");
+
+// The b2gremote debugger module that installs apps to devices.
+const Debugger = require("debugger");
+
+// The b2gremote debugger port.
+const DEBUGGER_PORT = 6000;
 
 const { rootURI: ROOT_URI } = require('@loader/options');
 const PROFILE_URL = ROOT_URI + "profile/";
@@ -44,6 +52,7 @@ const PR_TRUNCATE = 0x20;
 const PR_USEC_PER_MSEC = 1000;
 
 let worker, remoteSimulator;
+let deviceConnected, adbReady, debuggerReady;
 
 let simulator = module.exports = {
   get apps() {
@@ -760,6 +769,25 @@ let simulator = module.exports = {
     return remoteSimulator;
   },
 
+  observe: function(subject, topic, data) {
+    console.log("simulator.observe: " + topic);
+    switch (topic) {
+      case "adb-ready":
+        ADB.trackDevices();
+        break;
+      case "adb-device-connected":
+        deviceConnected = true;
+        this.postDeviceConnected();
+        break;
+      case "adb-device-disconnected":
+        deviceConnected = false;
+        adbReady = false;
+        debuggerReady = false;
+        this.postDeviceConnected();
+        break;
+    }
+  },
+
   onMessage: function onMessage(message) {
     console.log("Simulator.onMessage " + message.name);
     switch (message.name) {
@@ -843,6 +871,21 @@ let simulator = module.exports = {
       case "validateUrl":
         simulator.validateUrl(message.url);
         break;
+      case "getDeviceConnected":
+        simulator.postDeviceConnected();
+        break;
+      case "pushAppToDevice":
+        simulator.pushAppToDevice(message.id);
+        break;
+    }
+  },
+
+  postDeviceConnected: function postDeviceConnected() {
+    if (this.worker) {
+      this.worker.postMessage({
+        name: "deviceConnected",
+        value: deviceConnected
+      });
     }
   },
 
@@ -868,9 +911,232 @@ let simulator = module.exports = {
       nb.PRIORITY_WARNING_MEDIUM,
       null
     );
-  }
+  },
+
+  pushAppToDevice: function pushAppToDevice(id) {
+    console.log("Simulator.pushAppToDevice: " + id);
+
+    this.connectToDevice().then(
+      function success() {
+        let app = simulator.apps[id];
+
+        if (app.type == "local") {
+          simulator.pushPackagedAppToDevice(id, app);
+        } else {
+          simulator.pushHostedAppToDevice(id, app);
+        }
+      },
+      function failure(error) {
+        console.error("pushAppToDevice error: " + error);
+      }
+    );
+
+  },
+
+  connectToDevice: function() {
+    let deferred = Promise.defer();
+
+    this.connectADBToDevice().
+    then(this.connectDebuggerToDevice.bind(this)).
+    then(
+        function success(data) {
+          console.log("connectToDevice success: " + data);
+          deferred.resolve();
+        },
+        function failure(error) {
+          console.error("connectToDevice error: " + error);
+          deferred.reject();
+        }
+    );
+
+    return deferred.promise;
+  },
+
+  connectADBToDevice: function() {
+    let deferred = Promise.defer();
+
+    if (adbReady) {
+      deferred.resolve();
+    } else {
+      ADB.forwardPort(DEBUGGER_PORT).then(
+        function success(data) {
+          console.log("ADB.forwardPort success: " + data);
+          adbReady = true;
+          deferred.resolve();
+        }
+      );
+    }
+
+    return deferred.promise;
+  },
+
+  connectDebuggerToDevice: function connectDebuggerToDevice() {
+    let deferred = Promise.defer();
+
+    if (debuggerReady) {
+      deferred.resolve();
+    } else {
+      Debugger.init(DEBUGGER_PORT).then(
+        function success(data) {
+          console.log("Debugger.init success: " + data);
+          debuggerReady = true;
+
+          Debugger.setWebappsListener(function listener(state, type, packet) {
+            if (type.error) {
+              console.error("Debugger install error: " + type.message);
+            } else {
+              console.log("Debugger install success");
+            }
+          });
+
+          deferred.resolve();
+        }
+      );
+    }
+
+    return deferred.promise;
+  },
+
+  pushHostedAppToDevice: function pushHostedAppToDevice(id, app) {
+    this.buildHostedAppFiles(id, function(error, manifestFile, metadataFile) {
+      if (error) {
+        console.error("buildHostedAppFiles error: " + error);
+        return;
+      }
+
+      let destDir = "/data/local/tmp/b2g/" + app.xkey + "/";
+
+      ADB.push(manifestFile, destDir + "manifest.webapp").then(
+        function success(data) {
+          console.log("ADB.push manifest file success: " + data);
+
+          ADB.push(metadataFile, destDir + "metadata.json").then(
+            function success(data) {
+              console.log("ADB.push metadata file success: " + data);
+
+              Debugger.webappsRequest({
+                type: "install",
+                appId: app.xkey,
+                appType: Ci.nsIPrincipal.APP_STATUS_INSTALLED,
+              }).then(
+                function success(data) {
+                  console.log("Debugger.webappsRequest success: " + data);
+                },
+                function failure(error) {
+                  console.error("Debugger.webappsRequest error: " + error);
+                }
+              );
+
+            },
+            function failure(error) {
+              console.error("ADB.push metadata file error: " + error);
+            }
+          );
+
+        },
+        function failure(error) {
+          console.error("ADB.push manifest file error: " + error);
+        }
+      );
+    });
+  },
+
+  buildHostedAppFiles: function buildHostedAppFiles(id, next) {
+    let app = this.apps[id];
+    let tempDir = File.join(this.tempDir, app.xkey);
+    File.mkpath(tempDir);
+
+    let manifest = JSON.stringify(app.manifest, null, 2);
+    let manifestFile = File.join(tempDir, "manifest.webapp");
+
+    console.log("manifest: " + manifest);
+
+    File.open(manifestFile, "w").writeAsync(manifest, function(error) {
+      if (error) {
+        console.error("erroring writing manifest.webapp: " + error);
+        next(error);
+        return;
+      }
+
+      console.log("wrote " + manifestFile);
+
+      let metadata = JSON.stringify({
+        origin: app.origin,
+        manifestURL: id,
+      }, null, 2);
+      let metadataFile = File.join(tempDir, "metadata.json");
+
+      console.log("metadata: " + metadata);
+
+      File.open(metadataFile, "w").writeAsync(metadata, function(error) {
+        if (error) {
+          console.error("erroring writing metadata.json: " + error);
+          next(error);
+          return;
+        }
+
+        console.log("wrote " + metadataFile);
+        next(null, manifestFile, metadataFile);
+
+      }); // END writeAsync metadataFile
+    }); // END writeAsync manifest.webapp
+  },
+
+  pushPackagedAppToDevice: function pushPackagedAppToDevice(id, app) {
+    this.buildPackage(id, function(error, pkg) {
+      if (error) {
+        console.error("buildPackage error: " + error);
+        return;
+      }
+
+      let destDir = "/data/local/tmp/b2g/" + app.xkey + "/";
+      ADB.push(pkg, destDir + "application.zip").then(
+        function success(data) {
+          console.log("ADB.push success: " + data);
+          Debugger.webappsRequest({
+            type: "install",
+            appId: app.xkey,
+            appType: Ci.nsIPrincipal.APP_STATUS_INSTALLED,
+          }).then(
+            function success(data) {
+              console.log("Debugger.webappsRequest success: " + data);
+            }
+          );
+        },
+        function failure(error) {
+          console.error("Debugger.webappsRequest error: " + error);
+        }
+      );
+    });
+  },
+
+  buildPackage: function(id, next) {
+    console.log("buildPackage");
+
+    let app = this.apps[id];
+    let tempDir = File.join(this.tempDir, app.xkey);
+    File.mkpath(tempDir);
+
+    let sourceDir = id.replace(/[\/\\][^\/\\]*$/, "");
+    let archiveFile = File.join(tempDir, "application.zip");
+
+    console.log("archiving " + sourceDir + " to " + archiveFile);
+    archiveDir(archiveFile, sourceDir, function onArchiveDir(error) {
+        if (error) {
+          if (next) {
+            next(error);
+          }
+        } else {
+          next(null, archiveFile);
+        }
+    });
+  },
 
 };
+
+Services.obs.addObserver(simulator, "adb-device-connected", false);
+Services.obs.addObserver(simulator, "adb-device-disconnected", false);
+Services.obs.addObserver(simulator, "adb-ready", false);
 
 /**
  * Convert an XPConnect result code to its name and message.
