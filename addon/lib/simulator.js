@@ -52,6 +52,7 @@ const PR_TRUNCATE = 0x20;
 const PR_USEC_PER_MSEC = 1000;
 
 let worker, remoteSimulator;
+let adbReady, debuggerReady;
 
 let simulator = module.exports = {
   get apps() {
@@ -769,13 +770,19 @@ let simulator = module.exports = {
   },
 
   observe: function(subject, topic, data) {
+    console.log("simulator.observe: " + topic);
     switch (topic) {
       case "adb-ready":
         ADB.trackDevices();
         break;
       case "adb-device-connected":
+        if (this.worker) {
+          this.worker.postMessage({ name: topic });
+        }
+        break;
       case "adb-device-disconnected":
-        console.log("Simulator: " + topic);
+        adbReady = false;
+        debuggerReady = false;
         if (this.worker) {
           this.worker.postMessage({ name: topic });
         }
@@ -919,30 +926,63 @@ let simulator = module.exports = {
   connectToDevice: function() {
     let deferred = Promise.defer();
 
-    ADB.forwardPort(DEBUGGER_PORT).then(
-      function success(data) {
-        console.log("ADB.forwardPort success: " + data);
-        Debugger.init(DEBUGGER_PORT).then(
-          function success(data) {
-            console.log("Debugger.init success: " + data);
-
-            Debugger.setWebappsListener(function listener(state, type, packet) {
-              if (type.error) {
-                console.error("Debugger install error: " + type.message);
-              } else {
-                console.log("Debugger install success");
-              }
-            });
-
-            deferred.resolve();
-          }
-        );
-      },
-      function failure(error) {
-        console.error("connectToDevice error: " + error);
-        deferred.reject();
-      }
+    this.connectADBToDevice().
+    then(this.connectDebuggerToDevice.bind(this)).
+    then(
+        function success(data) {
+          console.log("connectToDevice success: " + data);
+          deferred.resolve();
+        },
+        function failure(error) {
+          console.error("connectToDevice error: " + error);
+          deferred.reject();
+        }
     );
+
+    return deferred.promise;
+  },
+
+  connectADBToDevice: function() {
+    let deferred = Promise.defer();
+
+    if (adbReady) {
+      Timer.setTimeout(function() deferred.resolve(), 0);
+    } else {
+      ADB.forwardPort(DEBUGGER_PORT).then(
+        function success(data) {
+          console.log("ADB.forwardPort success: " + data);
+          adbReady = true;
+          deferred.resolve();
+        }
+      );
+    }
+
+    return deferred.promise;
+  },
+
+  connectDebuggerToDevice: function connectDebuggerToDevice() {
+    let deferred = Promise.defer();
+
+    if (debuggerReady) {
+      Timer.setTimeout(function() deferred.resolve(), 0);
+    } else {
+      Debugger.init(DEBUGGER_PORT).then(
+        function success(data) {
+          console.log("Debugger.init success: " + data);
+          debuggerReady = true;
+
+          Debugger.setWebappsListener(function listener(state, type, packet) {
+            if (type.error) {
+              console.error("Debugger install error: " + type.message);
+            } else {
+              console.log("Debugger install success");
+            }
+          });
+
+          deferred.resolve();
+        }
+      );
+    }
 
     return deferred.promise;
   },
