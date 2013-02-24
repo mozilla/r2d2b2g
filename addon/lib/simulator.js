@@ -104,45 +104,22 @@ let simulator = module.exports = {
 
     let ret = fp.show();
     if (ret == Ci.nsIFilePicker.returnOK || ret == Ci.nsIFilePicker.returnReplace) {
-      let webappFile = fp.file.path;
-      console.log("Selected " + webappFile);
-      let webapp;
-      try {
-        webapp = JSON.parse(File.read(webappFile));
-      } catch (e) {
-        console.error("Error loading " + webappFile, e);
-        simulator.error("Could not load " + webappFile + " (" + e.name + ")");
-        return;
-      }
-
-      console.log("Loaded " + webapp.name);
-
-      let icon = null;
-      if (webapp.icons) {
-        let size = Object.keys(webapp.icons).sort(function(a, b) b - a)[0] || null;
-        if (size) {
-          icon = webapp.icons[size];
-        }
-      }
+      let manifestFile = fp.file.path;
+      console.log("Selected " + manifestFile);
 
       let apps = simulator.apps;
-      apps[webappFile] = {
+      apps[manifestFile] = {
         type: "local",
-        xid: null,
         xkey: null,
-        name: webapp.name,
-        icon: icon,
-        manifest: webapp,
       }
-      console.log("Stored " + JSON.stringify(apps[webappFile]));
+      console.log("Registered App " + JSON.stringify(apps[manifestFile]));
 
-      this.updateApp(webappFile, function next(error, app) {
+      this.updateApp(manifestFile, function next(error, app) {
         // app reinstall completed
         // success/error detection and report to the user
         if (error) {
           simulator.error(error);
         } else {
-          simulator.sendListApps();
           simulator.runApp(app);
         }
       });
@@ -151,7 +128,15 @@ let simulator = module.exports = {
 
   updateAll: function(oncompleted) {
     simulator.showRemoteNotification("Reinstalling registered apps...");
-    this.run(function () {
+    this.run(function (error) {
+      if (error) {
+        if (typeof oncompleted === "function") {
+          oncompleted(error);
+        } else {
+          simulator.error(error);
+        }
+        return;
+      }
       function next(error, app) {
         // Call iterator.next() in a timeout to ensure updateApp() has returned;
         // otherwise we might raise "TypeError: already executing generator".
@@ -178,8 +163,10 @@ let simulator = module.exports = {
   },
 
   showRemoteNotification: function(userMessage) {
-    this.run(function () {
-      simulator.remoteSimulator.showNotification(userMessage);
+    this.run(function (error) {
+      if (!error) {
+        simulator.remoteSimulator.showNotification(userMessage);
+      }
     });
   },
 
@@ -191,11 +178,17 @@ let simulator = module.exports = {
   updateApp: function(id, next) {
     console.log("Simulator.updateApp " + id);
     simulator.validateApp(id, function(error, app) {
+      // update dashboard app validation info
       simulator.sendListApps();
 
       if (!error) {
         // NOTE: try to updateApp if there isn't any blocking error
         simulator._updateApp(id, next);
+      } else {
+        // validation error
+        if (typeof next === "function") {
+          next(error, app);
+        }
       }
     });
   },
@@ -203,11 +196,7 @@ let simulator = module.exports = {
   _updateApp: function(id, next) {
     console.log("Simulator._updateApp " + id);
 
-    let webappsDir = URL.toFilename(PROFILE_URL + "webapps");
     let tempDir = this.tempDir;
-    let webappsFile = File.join(webappsDir, "webapps.json");
-    let webapps = JSON.parse(File.read(webappsFile));
-
     let apps = simulator.apps;
     let config = apps[id];
 
@@ -221,14 +210,10 @@ let simulator = module.exports = {
       return;
     }
 
-    if (!config.xid) {
-      config.xid = ++[id for each ({ localId: id } in webapps)].sort(function(a, b) b - a)[0];
-
-      // NOTE: we can't currently use localId as code because webappsActor
-      // if the emulator doesn't exit clean DOMApplicationRegistry._nextLocalId
-      // will not be able to serialize "dom.mozApps.maxLocalId" and will be the
-      // same for new app installed
-      config.xkey = UUID.uuid().toString(); //"myapp" + config.xid + ".gaiamobile.org";
+    if (!config.xkey) {
+      // generate an unique id for a registed app (used as appId by the
+      // remote b2g-desktop install command)
+      config.xkey = UUID.uuid().toString();
 
       if (!config.origin) {
         config.origin = "app://" + config.xkey;
@@ -247,15 +232,9 @@ let simulator = module.exports = {
     }
     console.log("Updating webapp entry: " + JSON.stringify(config, null, 2));
 
-    // Create the webapp record and write it to the registry.
-    // NOTE: we don't need this anymore
-    webapps[config.xkey] = config;
-
     // Create target folder
     let tempWebappDir = File.join(tempDir, config.xkey);
-    // if (File.exists(webappDir)) {
-    //   File.rmdir(webappDir);
-    // }
+
     File.mkpath(tempWebappDir);
     console.log("Created " + tempWebappDir);
 
@@ -280,11 +259,20 @@ let simulator = module.exports = {
           simulator.defaultApp = null;
           console.log("Requesting webappsActor to install packaged app: ",
                       config.xkey);
-          simulator.run(function() {
+          simulator.run(function(error) {
+            // exit if error running b2g-desktop
+            if (error) {
+              if (typeof next === "function") {
+                next(error, config);
+              } else {
+                simulator.error(error);
+              }
+              return;
+            }
             simulator.remoteSimulator.install(config.xkey, null, function(res) {
               console.debug("webappsActor install packaged app reply: ",
                             JSON.stringify(res));
-              if (next) {
+              if (typeof next === "function") {
                 // detect success/error and report to the "next" callback
                 if (res.error) {
                   next(res.error + ": " + res.message, config);
@@ -346,7 +334,16 @@ let simulator = module.exports = {
               // Complete install (Hosted)
               // DISABLED: because on the first run the app will be not already installed
               simulator.defaultApp = null;
-              simulator.run(function() {
+              simulator.run(function(error) {
+                if (error) {
+                  // exit on error running b2g-desktop
+                  if (typeof next === "function") {
+                    next(error, config);
+                  } else {
+                    simulator.error(error);
+                  }
+                  return;
+                }
                 console.log("Requesting webappsActor to install hosted app: ",config.xkey);
                 simulator.remoteSimulator.install(config.xkey, null, function(res) {
                   console.debug("webappsActor install hosted app reply: ",
@@ -382,7 +379,14 @@ let simulator = module.exports = {
     config.removed = true;
     apps[id] = config;
 
-    simulator.run(function() {
+    simulator.run(function(error) {
+      // on error flag app as not removed and exit
+      if (error) {
+        simulator.error(error);
+        config.removed = false;
+        simulator.sendListApps();
+        return;
+      }
       simulator.remoteSimulator.uninstall(config.xkey, function() {
         // app uninstall completed
         // TODO: add success/error detection and report to the user
@@ -586,7 +590,6 @@ let simulator = module.exports = {
     let apps = simulator.apps;
     apps[id] = {
       type: (generated) ? "generated" : "hosted",
-      xid: null,
       xkey: null,
       name: webapp.name,
       icon: icon,
@@ -595,7 +598,7 @@ let simulator = module.exports = {
       host: manifestUrl.host,
       installOrigin: installOrigin,
     }
-    console.log("Stored " + JSON.stringify(apps[id], null, 2));
+    console.log("Registered App " + JSON.stringify(apps[id], null, 2));
 
     this.updateApp(id, function next(error, app) {
       // success/error detection and report to the user
@@ -666,7 +669,7 @@ let simulator = module.exports = {
         app.validation.errors.push("Error updating cached Manifest: " + error);
         if (typeof next === "function") {
           // NOTE: blocking error
-          next(error, app);
+          next(Error("Unable to read manifest: '" + id + "'."), app);
         }
         return;
       }
@@ -675,7 +678,7 @@ let simulator = module.exports = {
         app.validation.errors.push("Missing Manifest.");
         if (typeof next === "function") {
           // NOTE: blocking error
-          next(Error("Invalid App"), app);
+          next(Error("Missing manifest: '" + id + "'."), app);
           return;
         }
       }
@@ -686,6 +689,12 @@ let simulator = module.exports = {
 
       if (!app.manifest.icons || Object.keys(app.manifest.icons).length == 0) {
         app.validation.errors.push("Missing 'icons' in Manifest.");
+      } else {
+        // update registered app icon
+        let size = Object.keys(app.manifest.icons).sort(function(a, b) b - a)[0] || null;
+        if (size) {
+          app.icon = app.manifest.icons[size];
+        }
       }
 
       // update name visible in the dashboard
@@ -696,11 +705,21 @@ let simulator = module.exports = {
         app.validation.errors.push("Hosted App can't be type '" + app.manifest.type + "'.");
         if (typeof next === "function") {
           // NOTE: blocking error
-          next(Error("Invalid Manifest"), app);
+          next(Error("Invalid Manifest."), app);
           return;
         }
       } else {
-        simulator.run(function () {
+        simulator.run(function (error) {
+          // on error running b2g-desktop, reports error and exits
+          if (error) {
+            if (typeof next === "function") {
+              app.validation.errors.push("Unable to complete manifest validation: " + 
+                                         error);
+              next(null, app);
+            }
+            return;
+          }
+
           simulator.remoteSimulator.validateManifest(app.manifest, function (reply) {
             if (reply.success) {
               if (typeof next === "function") {
@@ -709,9 +728,9 @@ let simulator = module.exports = {
               }
             } else {
               // concatenate validation errors
-              if (reply.validation && reply.validation.errors.length > 0) {
+              if (reply.errors && reply.errors.length > 0) {
                 app.validation.errors = app.validation.errors.
-                  concat(reply.validation.errors);
+                  concat(reply.errors);
               }
               if (typeof next === "function") {
                 // NOTE: non blocking errors (does not corrupt the b2g profile)
@@ -830,10 +849,9 @@ let simulator = module.exports = {
     let next = null;
     // if needsUpdateAll try to reinstall all active registered app
     if (SStorage.storage.needsUpdateAll) {
-      SStorage.storage.needsUpdateAll = false;
       next = (typeof cb === "function") ? 
-        (function() simulator.updateAll(cb)) : 
-        (function() simulator.updateAll());
+        (function(e) e ? cb(e) : simulator.updateAll(cb)) : 
+        (function(e) e ? null  : simulator.updateAll());
     } else {
       next = (typeof cb === "function") ? cb : (function() {});
     }
@@ -843,17 +861,43 @@ let simulator = module.exports = {
     if (this.isRunning) {
       next();
     } else {
-      this.remoteSimulator.once("ready", next);
-
-      this.remoteSimulator.run({
-        defaultApp: appName
+      this.remoteSimulator.once("ready", function ready() {
+        // once we reach ready we can disable needsUpdateAll       
+        if (SStorage.storage.needsUpdateAll) {
+          SStorage.storage.needsUpdateAll = false;
+        }
+        next();
       });
+
+      try {
+        this.remoteSimulator.run({
+          defaultApp: appName
+        });
+      } catch(e) {
+        if (!cb) {
+          // report error if simulator.run is called
+          // without a cb to handle the error.
+          simulator.error(e);
+        }
+        simulator.postIsRunning();
+        next(e);
+      }
     }
   },
 
   runApp: function(app, next) {
-    this.run(function () {
-      simulator.remoteSimulator.runApp(app.xkey, next);
+    this.run(function (error) {
+      if (error) {
+        if (typeof next === "function") {
+          next(error);
+        } else {
+          simulator.error(error);
+        }
+      }
+      else {
+        let cb = typeof next === "function" ? (function(res) next(null,res)) : null;
+        simulator.remoteSimulator.runApp(app.xkey, cb);
+      }
     });
   },
 
@@ -949,7 +993,12 @@ let simulator = module.exports = {
         break;
       case "runApp":
         app = this.apps[message.id];
-        simulator.runApp(app, function (res) {
+        simulator.runApp(app, function (error,res) {
+          if (error) {
+            simulator.error(error);
+            return;
+          }
+
           if (res.success === false) {
             if (res.error === 'app-not-installed') {
               // install and run if not installed
