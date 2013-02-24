@@ -237,7 +237,7 @@ var Simulator = {
                   var errorsEl = $("<ul class='app-validation-errors'>");
 
                   errors.forEach(function (msg) {
-                    errorsEl.append($("<li>").text(msg));
+                    errorsEl.append($("<li>").html(msg));
                   });
 
                   errorsEl.hide();

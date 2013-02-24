@@ -619,7 +619,7 @@ let simulator = module.exports = {
         next(null, app.manifest);
       } catch(e) {
         if (typeof next === "function") {
-          next(e, null);
+          next("<pre>"+e+"</pre>", null);
         }
       }
       break;
