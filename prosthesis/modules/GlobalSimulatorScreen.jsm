@@ -3,27 +3,33 @@ this.EXPORTED_SYMBOLS = [ "GlobalSimulatorScreen" ];
 const Cc = Components.classes;
 const Ci = Components.interfaces;
 
-let rotateButtonEl = null;
-
 this.GlobalSimulatorScreen = {
   width: 320,
   height: 480,
   mozOrientationLocked: false,
   mozOrientation: "portrait-primary",
-  get rotateButton() {
-    if (rotateButtonEl) {
-      return rotateButtonEl;
+  get window() {
+    if (this._window) {
+      return this._window;
     }
 
-    var window = XPCNativeWrapper.unwrap(
-        Cc['@mozilla.org/appshell/window-mediator;1']
-          .getService(Ci.nsIWindowMediator)
-          .getMostRecentWindow("navigator:browser")
-      );
+    this._window = XPCNativeWrapper.unwrap(
+      Cc['@mozilla.org/appshell/window-mediator;1'].
+        getService(Ci.nsIWindowMediator).
+        getMostRecentWindow("navigator:browser")
+    );
 
-    rotateButtonEl = window.document.getElementById("rotateButton");
+    return this._window;
+  },
+  get rotateButton() {
+    if (this._rotateButtonEl) {
+      return this._rotateButtonEl;
+    }
 
-    return rotateButtonEl;
+    let window = GlobalSimulatorScreen.window;
+    this._rotateButtonEl = window.document.getElementById("rotateButton");
+
+    return this._rotateButtonEl;
   },
   locked: function() {
     GlobalSimulatorScreen.mozOrientationLocked = true;
@@ -36,48 +42,44 @@ this.GlobalSimulatorScreen = {
   flipScreen: function() {
     if (GlobalSimulatorScreen.mozOrientationLocked) {
       // disabled
-    } else {
-      var window = XPCNativeWrapper.unwrap(
-        Cc['@mozilla.org/appshell/window-mediator;1']
-          .getService(Ci.nsIWindowMediator)
-          .getMostRecentWindow("navigator:browser")
-      );
-
-      var homescreen = XPCNativeWrapper.unwrap(
-        window.document.getElementById("homescreen").contentWindow
-      );
-      var iframe = homescreen.WindowManager.getCurrentDisplayedApp().iframe;
-
-      if (GlobalSimulatorScreen.mozOrientation.match(/^portrait/)) {
-        GlobalSimulatorScreen.mozOrientation = "landscape-primary";
-        GlobalSimulatorScreen.adjustWindowSize();
-        let evt = window.document.createEvent('CustomEvent');
-        evt.initCustomEvent('mozorientationchange', true, false, {
-          orientation: GlobalSimulatorScreen.mozOrientation
-        });
-        iframe.contentWindow.dispatchEvent(evt);
-
-        return true;
-      } else if (GlobalSimulatorScreen.mozOrientation.match(/^landscape/)) {
-        GlobalSimulatorScreen.mozOrientation = "portrait-primary";
-        GlobalSimulatorScreen.adjustWindowSize();
-        let evt = window.document.createEvent('CustomEvent');
-        evt.initCustomEvent('mozorientationchange', true, false, {
-          orientation: GlobalSimulatorScreen.mozOrientation
-        });
-        iframe.contentWindow.dispatchEvent(evt);
-
-        return true;
-      }
+      return false;
     }
+
+    let window = GlobalSimulatorScreen.window
+    let homescreen = XPCNativeWrapper.unwrap(
+      window.document.getElementById("homescreen").contentWindow
+    );
+    let iframe = homescreen.WindowManager.getCurrentDisplayedApp().iframe;
+
+    if (GlobalSimulatorScreen.mozOrientation.match(/^portrait/)) {
+      GlobalSimulatorScreen.mozOrientation = "landscape-primary";
+      GlobalSimulatorScreen.adjustWindowSize();
+
+      let evt = window.document.createEvent('CustomEvent');
+      evt.initCustomEvent('mozorientationchange', true, false, {
+        orientation: GlobalSimulatorScreen.mozOrientation
+      });
+      iframe.contentWindow.dispatchEvent(evt);
+
+      return true;
+    } else if (GlobalSimulatorScreen.mozOrientation.match(/^landscape/)) {
+      GlobalSimulatorScreen.mozOrientation = "portrait-primary";
+      GlobalSimulatorScreen.adjustWindowSize();
+
+      let evt = window.document.createEvent('CustomEvent');
+      evt.initCustomEvent('mozorientationchange', true, false, {
+        orientation: GlobalSimulatorScreen.mozOrientation
+      });
+      iframe.contentWindow.dispatchEvent(evt);
+
+      return true;
+    }
+
+    return false;
   },
   adjustWindowSize: function() {
-    var window = XPCNativeWrapper.unwrap(
-      Cc['@mozilla.org/appshell/window-mediator;1']
-      .getService(Ci.nsIWindowMediator)
-      .getMostRecentWindow("navigator:browser")
-    );
-    var document = window.document;
+    let window = GlobalSimulatorScreen.window
+    let document = window.document;
 
     if (GlobalSimulatorScreen.mozOrientation.match(/^portrait/)) {
       GlobalSimulatorScreen.width = 320;
@@ -87,28 +89,26 @@ this.GlobalSimulatorScreen = {
       GlobalSimulatorScreen.height = 320;
     }
 
-    var width = GlobalSimulatorScreen.width+"px";
-    var height = GlobalSimulatorScreen.height+"px";
-    dump("ROTATE: "+width+" "+height+"\n");
+    let width = GlobalSimulatorScreen.width+"px";
+    let height = GlobalSimulatorScreen.height+"px";
+    dump("ROTATE: " + width + " " + height + "\n");
 
     let homescreen = document.getElementById("homescreen");
     let shell = document.getElementById("shell");
     shell.setAttribute("style", "overflow: hidden;");
     homescreen.setAttribute("style", "-moz-box-flex: 1; overflow: hidden;");
 
-    ["width", "min-width", "max-width"].forEach(function (i) {
-      shell.style[i] = width;
-      homescreen.style[i] = width;
-    });
-    ["height", "min-height", "max-height"].forEach(function (i) {
-      shell.style[i] = height;
-      homescreen.style[i] = height;
-    });
-    // WORKAROUND: run window.resizeTo immediately will not resize it correctly
-    window.setTimeout(function () {
-      dump("RESIZE TO: "+width+" "+height+"\n");
+    homescreen.contentWindow.onresize = function () {
+      // WORKAROUND: keep the simulator window size
       window.resizeTo(parseInt(width), parseInt(height));
-    },100);
-  },
+    };
 
+    dump("RESIZE TO: " + width + " "+height + "\n");
+    GlobalSimulatorScreen._fixSizeInStyle(homescreen.style, width, height);
+    GlobalSimulatorScreen._fixSizeInStyle(shell.style, width, height);
+  },
+  _fixSizeInStyle: function(style, width, height) {
+    style["width"] = style["min-width"] = style["max-width"] = width;
+    style["height"] = style["min-height"] = style["max-height"] = height;
+  }
 }
