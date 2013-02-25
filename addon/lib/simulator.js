@@ -713,7 +713,7 @@ let simulator = module.exports = {
           // on error running b2g-desktop, reports error and exits
           if (error) {
             if (typeof next === "function") {
-              app.validation.errors.push("Unable to complete manifest validation: " + 
+              app.validation.errors.push("Unable to complete manifest validation: " +
                                          error);
               next(null, app);
             }
@@ -850,7 +850,7 @@ let simulator = module.exports = {
     // if needsUpdateAll try to reinstall all active registered app
     if (SStorage.storage.needsUpdateAll) {
       next = (typeof cb === "function") ? 
-        (function(e) e ? cb(e) : simulator.updateAll(cb)) : 
+        (function(e) e ? cb(e) : simulator.updateAll(cb)) :
         (function(e) e ? null  : simulator.updateAll());
     } else {
       next = (typeof cb === "function") ? cb : (function() {});
@@ -862,7 +862,7 @@ let simulator = module.exports = {
       next();
     } else {
       this.remoteSimulator.once("ready", function ready() {
-        // once we reach ready we can disable needsUpdateAll       
+        // once we reach ready we can disable needsUpdateAll
         if (SStorage.storage.needsUpdateAll) {
           SStorage.storage.needsUpdateAll = false;
         }
