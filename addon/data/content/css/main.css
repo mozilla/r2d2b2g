@@ -582,6 +582,11 @@ figure {
     color: darkred;
 }
 
+#apps-list .app.warning-manifest {
+    border: 2px orange dashed;
+    background-color: #FCF5BA;
+}
+
 #apps-list .app.invalid-manifest {
     border: 2px darkred dashed;
     background-color: #E5CBCB;

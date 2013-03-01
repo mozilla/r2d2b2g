@@ -230,29 +230,46 @@ var Simulator = {
                 var validationEl = $("<div class='app-validation'>");
 
                 var errors = app.validation.errors;
+                var warnings = app.validation.warnings;
 
-                if (errors.length > 0) {
-                  entry.addClass("invalid-manifest");
+                if (errors.length > 0 || warnings.length > 0) {
+                  if (errors.length > 0) {
+                    entry.addClass("invalid-manifest");
+                  }
+                  if (warnings.length > 0) {
+                    entry.addClass("warning-manifest");
+                  }
 
                   var errorsEl = $("<ul class='app-validation-errors'>");
+                  var warningsEl = $("<ul class='app-validation-warnings'>");
 
                   errors.forEach(function (msg) {
                     errorsEl.append($("<li>").html(msg));
                   });
+                  warnings.forEach(function (msg) {
+                    warningsEl.append($("<li>").html(msg));
+                  });
 
-                  errorsEl.hide();
+                  var listContainerEl = $("<ul class='app-validation-list'>");
+                  listContainerEl.append($("<li>").
+                                         text("Manifest Errors:").
+                                         append(errorsEl));
+                  listContainerEl.append($("<li>").
+                                         text("Simulator Warnings:").
+                                         append(warningsEl));
+                  listContainerEl.hide();
 
                   validationEl.append(
                     $("<span>")
                       .text("Validation Result: INVALID")
                       .prop("class", "app-validation-result"),
                     $("<a href='#'>")
-                      .text(" ("+errors.length+" errors)")
-                      .prop("title", "expand validation errors")
+                      .text(" ("+errors.length+" errors and "+warnings.length+" warnings)")
+                      .prop("title", "expand validation messages")
                       .click(function(evt) {
-                        errorsEl.toggle();
+                        listContainerEl.toggle();
                       }),
-                    errorsEl);
+                    listContainerEl);
                 } else {
                   validationEl.append(
                     $("<span>")

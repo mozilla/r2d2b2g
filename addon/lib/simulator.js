@@ -660,9 +660,25 @@ let simulator = module.exports = {
     }
   },
 
+  // validateApp: updates and validate app manifest
+  // - blocking errors:
+  //   - missing manifest
+  //   - invalid json
+  //   - hosted app can not be type privileged/certified
+  // - non-blocking errors:
+  //   - missing name
+  //   - missing icons
+  //   - app submission to the Marketplace needs at least an 128 icon 
+  //   - unknown type
+  //   - unknown permission
+  //   - unknwon permission access
+  //   - deny permission
+  // - warnings:
+  //   - certified apps are fully supported on the simulator
+  //   - WebAPI XXX is not currently supported on the simulator
   validateApp: function(id, next) {
     let app = simulator.apps[id];
-    app.validation = {errors: []};
+    app.validation = {errors: [], warnings: []};
 
     this._updateCachedManifest(id, function(error, manifest) {
       if (error) {
@@ -695,6 +711,20 @@ let simulator = module.exports = {
         if (size) {
           app.icon = app.manifest.icons[size];
         }
+
+        // NOTE: add non-blocking error if 128x128 icon is missing
+        if (! app.manifest.icons["128"]) {
+          app.validations.errors.
+            push("app submission to the Marketplace needs at least an 128 icon");
+        }
+      }
+
+      // NOTE: add warnings for WebAPI not supported by the simulator
+      let notSupportedWebAPIWarnings = simulator.
+        _generateNotSupportedWebAPIWarnings(app.manifest);
+      if (notSupportedWebAPIWarnings && notSupportedWebAPIWarnings.length > 0) {
+        app.validation.warnings = app.validation.warnings.
+          concat(notSupportedWebAPIWarnings);
       }
 
       // update name visible in the dashboard
@@ -721,6 +751,10 @@ let simulator = module.exports = {
           }
 
           simulator.remoteSimulator.validateManifest(app.manifest, function (reply) {
+            console.log("VALIDATE REPLY: ", JSON.stringify(reply, null, 2));
+            if (reply.error) {             
+              // TODO: handle other remote debugging protocol errors
+            }
             if (reply.success) {
               if (typeof next === "function") {
                 next(null, app);
@@ -742,6 +776,36 @@ let simulator = module.exports = {
         });
       }
     });
+  },
+
+  _generateNotSupportedWebAPIWarnings: function(manifest) {
+    let warnings = [];
+
+    // certified app are not fully supported on the simulator
+    if (manifest.type === "certified") {
+      warnings.push("'certified' apps are not fully supported on the Simulator");
+    }
+
+    if (!manifest.permissions) {
+      return warnings;
+    }
+
+    let permissions = Object.keys(manifest.permissions);   
+    let formatMessage = function (apiName) {
+      return "WebAPI '"+ apiName + "' is not currently supported on the Simulator";
+    };
+
+    // WebSMS is not currectly supported on the simulator
+    if (permissions.indexOf("sms") > -1) {
+      warnings.push(formatMessage("WebSMS"));
+    }
+
+    // WebTelephony is not currectly supported on the simulator
+    if (permissions.indexOf("telephony") > -1) {
+      warnings.push(formatMessage("WebTelephony"));
+    }
+
+    return warnings;
   },
 
   sendListApps: function() {
