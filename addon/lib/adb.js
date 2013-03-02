@@ -70,7 +70,11 @@ this.ADB = {
         bin = uri + "linux/adb";
         break;
       case "Darwin":
-        bin = uri + "darwin/adb";
+        if (COMMONJS_MODULE) {
+          bin = uri + "mac64/adb";
+        } else {
+          bin = uri + "darwin/adb";
+        }
         break;
       default:
         debug("Unsupported platform : " + platform);
