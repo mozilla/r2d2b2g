@@ -76,6 +76,9 @@ this.ADB = {
           bin = uri + "darwin/adb";
         }
         break;
+      case "WINNT":
+        bin = uri + "win32/adb.exe";
+        break;
       default:
         debug("Unsupported platform : " + platform);
         return;
