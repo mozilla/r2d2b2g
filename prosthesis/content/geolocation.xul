@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this file,
+   - You can obtain one at http://mozilla.org/MPL/2.0/.  -->
+
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="chrome://prosthesis/skin/geo.css" type="text/css"?>
+
+<window id="geolocationWindow"
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        title="GPS Coordinates">
+  <script type="application/javascript"
+          src="chrome://prosthesis/content/geolocation.js"/>
+  <hbox>
+    <spacer flex="1"/>
+    <vbox>
+      <radiogroup>
+        <radio id="current" label="Use my current coordinates"/>
+        <radio id="custom" label="Use custom coordinates"/>
+      </radiogroup>
+    </vbox>
+    <spacer flex="1"/>
+  </hbox>
+  <grid>
+    <columns>
+      <column flex="1"/>
+      <column flex="2"/>
+      <column flex="1"/>
+      <column flex="2"/>
+    </columns>
+    <rows>
+      <row align="center">
+        <!-- More information on geolocation:
+             http://en.wikipedia.org/wiki/Decimal_degrees -->
+        <label control="latitude" value="Latitude:"/>
+        <textbox id="latitude" type="number" min="-90" max="90" increment="0.1"
+                 decimalplaces="5" disabled="true"/>
+        <label control="longitude" value="Longitude:"/>
+        <textbox id="longitude" type="number" min="-180" max="180"
+                 increment="0.1" decimalplaces="5" disabled="true"/>
+      </row>
+    </rows>
+  </grid>
+  <hbox>
+    <spacer flex="1"/>
+    <button label="Apply" class="choice" id="apply"/>
+    <button label="Cancel" class="choice" id="cancel"/>
+    <spacer flex="1"/>
+  </hbox>
+</window>

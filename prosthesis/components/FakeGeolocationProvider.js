@@ -2,11 +2,16 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
-Components.utils.import("resource://gre/modules/Services.jsm");
+// http://www.w3.org/TR/2010/CR-geolocation-API-20100907/#api_description
+// http://mxr.mozilla.org/mozilla-central/source/xpcom/system/nsIGeolocationProvider.idl#32
+// http://mxr.mozilla.org/mozilla-central/source/dom/system/NetworkGeolocationProvider.js#279
 
 const Ci = Components.interfaces;
 const Cc = Components.classes;
+const Cu = Components.utils;
+
+Cu.import("resource://gre/modules/XPCOMUtils.jsm");
+Cu.import("resource://gre/modules/Services.jsm");
 
 function FakeGeoCoordsObject(lat, lon, acc, alt, altacc) {
   this.latitude = lat;
@@ -40,8 +45,17 @@ FakeGeoPositionObject.prototype = {
 };
 
 function FakeGeoPositionProvider() {
+  this.updateTimer = null;
+  this.started = false;
   this.callback = null;
   this.currentLoc = null;
+
+  Services.obs.addObserver((function (message) {
+    dump(message.wrappedJSObject.lat + ',' + message.wrappedJSObject.lon + '\n');
+    this.currentLoc = new FakeGeoPositionObject(message.wrappedJSObject.lat,
+                                                message.wrappedJSObject.lon);
+    this.callback.update(this.currentLoc);
+  }).bind(this), "r2d2b2g-geolocation-response", false);
 }
 
 FakeGeoPositionProvider.prototype = {
@@ -50,20 +64,36 @@ FakeGeoPositionProvider.prototype = {
                                            Ci.nsIFakeListener,
                                            Ci.nsITimerCallback]),
   startup:  function() {
-    Services.obs.notifyObservers(null, "r2d2b2g-geolocation-request", null);
-    Services.obs.addObserver((function (message) {
-      this.currentLoc = new FakeGeoPositionObject(message.wrappedJSObject.lat,
-                                                  message.wrappedJSObject.lon);
-      this.callback.update(this.currentLoc);
-    }).bind(this), "r2d2b2g-geolocation-response", false);
+    if (this.started) return;
+    this.started = true;
+    this.walk();
+    this.updateTimer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
+    this.updateTimer.initWithCallback(this, 1000, this.updateTimer.TYPE_REPEATING_SLACK);
   },
 
   watch: function(c) {
     this.callback = c;
   },
 
-  notify: function () {
-    this.callback.update(this.currentLoc);
+  shutdown: function() {
+    if (this.updateTimer) {
+      this.updateTimer.cancel();
+      this.updateTimer = null;
+    }
+    this.callback = null;
+    this.currentLoc = null;
+    this.started = false;
+  },
+
+  // Needed to implement the nsIGeolocationProvider interface
+  setHighAccuracy: function(enable) {},
+
+  walk: function() {
+    Services.obs.notifyObservers(null, "r2d2b2g-geolocation-request", null);
+  },
+
+  notify: function(timer) {
+    this.walk();
   },
 
 };
