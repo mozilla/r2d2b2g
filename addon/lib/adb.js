@@ -67,7 +67,11 @@ this.ADB = {
     let bin;
     switch(platform) {
       case "Linux":
-        bin = uri + "linux/adb";
+        if (COMMONJS_MODULE) {
+          bin = uri + (require("runtime").XPCOMABI.indexOf("x86_64") == 0 ? "linux64" : "linux") + "/adb";
+        } else {
+          bin = uri + "linux/adb";
+        }
         break;
       case "Darwin":
         if (COMMONJS_MODULE) {
