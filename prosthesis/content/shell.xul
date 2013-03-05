@@ -43,6 +43,7 @@
   <toolbox>
     <toolbar align="center" pack="center">
       <toolbarbutton id="homeButton"/>
+      <toolbarbutton id="rotateButton"/>
     </toolbar>
   </toolbox>
 
