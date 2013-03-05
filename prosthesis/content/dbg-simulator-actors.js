@@ -242,7 +242,7 @@ SimulatorActor.prototype = {
 
     permissionsNames.forEach(function(pname) {
       let permission = utils.PermissionsTable[pname];
-      
+
       if (permission) {
         let permissionAction = permission[appType];
         if (!permissionAction) {
