@@ -233,30 +233,30 @@ var Simulator = {
                 var warnings = app.validation.warnings;
 
                 if (errors.length > 0 || warnings.length > 0) {
+                  var listContainerEl = $("<ul class='app-validation-list'>");
+
                   if (errors.length > 0) {
                     entry.addClass("invalid-manifest");
+                    var errorsEl = $("<ul class='app-validation-errors'>");
+                    errors.forEach(function (msg) {
+                      errorsEl.append($("<li>").html(msg));
+                    });
+                    listContainerEl.append($("<li>").
+                                           text("Errors:").
+                                           append(errorsEl));
                   }
+
                   if (warnings.length > 0) {
                     entry.addClass("warning-manifest");
+                    var warningsEl = $("<ul class='app-validation-warnings'>");
+                    warnings.forEach(function (msg) {
+                      warningsEl.append($("<li>").html(msg));
+                    });
+                    listContainerEl.append($("<li>").
+                                           text("Warnings:").
+                                           append(warningsEl));
                   }
 
-                  var errorsEl = $("<ul class='app-validation-errors'>");
-                  var warningsEl = $("<ul class='app-validation-warnings'>");
-
-                  errors.forEach(function (msg) {
-                    errorsEl.append($("<li>").html(msg));
-                  });
-                  warnings.forEach(function (msg) {
-                    warningsEl.append($("<li>").html(msg));
-                  });
-
-                  var listContainerEl = $("<ul class='app-validation-list'>");
-                  listContainerEl.append($("<li>").
-                                         text("Manifest Errors:").
-                                         append(errorsEl));
-                  listContainerEl.append($("<li>").
-                                         text("Simulator Warnings:").
-                                         append(warningsEl));
                   listContainerEl.hide();
 
                   validationEl.append(
@@ -274,8 +274,7 @@ var Simulator = {
                   validationEl.append(
                     $("<span>")
                       .text("Validation Result: OK")
-                      .prop("class", "app-validation-result"),
-                    $("<span>").text(" (0 errors)"));
+                      .prop("class", "app-validation-result"));
                 }
 
                 entry.append(validationEl);
