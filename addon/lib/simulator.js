@@ -797,8 +797,6 @@ let simulator = module.exports = {
     if (permissions.indexOf("telephony") > -1) {
       warnings.push(formatMessage("WebTelephony"));
     }
-
-    return warnings;
   },
 
   sendListApps: function() {
