@@ -721,7 +721,7 @@ let simulator = module.exports = {
       }
 
       // NOTE: add warnings for WebAPI not supported by the simulator
-      simulator._validateWebAPIs(app.manifest, app.validation.errors, app.validation.warnings);
+      simulator._validateWebAPIs(app.validation.errors, app.validation.warnings, app.manifest);
 
       // update name visible in the dashboard
       app.name = app.manifest.name;
@@ -773,7 +773,7 @@ let simulator = module.exports = {
     });
   },
 
-  _validateWebAPIs: function(manifest, errors, warnings) {
+  _validateWebAPIs: function(errors, warnings, manifest) {
     // certified app are not fully supported on the simulator
     if (manifest.type === "certified") {
       warnings.push("'certified' apps are not fully supported on the Simulator");
