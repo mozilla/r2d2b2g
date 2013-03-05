@@ -661,21 +661,22 @@ let simulator = module.exports = {
   },
 
   // validateApp: updates and validate app manifest
-  // - blocking errors:
+  // - errors:
   //   - missing manifest
   //   - invalid json
-  //   - hosted app can not be type privileged/certified
-  // - non-blocking errors:
   //   - missing name
-  //   - missing icons
-  //   - app submission to the Marketplace needs at least an 128 icon 
-  //   - unknown type
-  //   - unknown permission
-  //   - unknwon permission access
-  //   - deny permission
+  //   - hosted app can not be type privileged/certified
   // - warnings:
-  //   - certified apps are fully supported on the simulator
-  //   - WebAPI XXX is not currently supported on the simulator
+  //   - non-blocking manifest errors:
+  //     - missing icons
+  //     - app submission to the Marketplace needs at least an 128 icon
+  //     - unknown type
+  //     - unknown permission
+  //     - unknwon permission access
+  //     - deny permission
+  //   - simulator supported warnings:
+  //     - certified apps are fully supported on the simulator
+  //     - WebAPI XXX is not currently supported on the simulator
   validateApp: function(id, next) {
     let app = simulator.apps[id];
     app.validation = {errors: [], warnings: []};
@@ -704,7 +705,7 @@ let simulator = module.exports = {
       }
 
       if (!app.manifest.icons || Object.keys(app.manifest.icons).length == 0) {
-        app.validation.errors.push("Missing 'icons' in Manifest.");
+        app.validation.warnings.push("Missing 'icons' in Manifest.");
       } else {
         // update registered app icon
         let size = Object.keys(app.manifest.icons).sort(function(a, b) b - a)[0] || null;
@@ -714,18 +715,13 @@ let simulator = module.exports = {
 
         // NOTE: add non-blocking error if 128x128 icon is missing
         if (! app.manifest.icons["128"]) {
-          app.validations.errors.
+          app.validations.warnings.
             push("app submission to the Marketplace needs at least an 128 icon");
         }
       }
 
       // NOTE: add warnings for WebAPI not supported by the simulator
-      let notSupportedWebAPIWarnings = simulator.
-        _generateNotSupportedWebAPIWarnings(app.manifest);
-      if (notSupportedWebAPIWarnings && notSupportedWebAPIWarnings.length > 0) {
-        app.validation.warnings = app.validation.warnings.
-          concat(notSupportedWebAPIWarnings);
-      }
+      simulator._validateWebAPIs(app.manifest, app.validation.errors, app.validation.warnings);
 
       // update name visible in the dashboard
       app.name = app.manifest.name;
@@ -745,31 +741,30 @@ let simulator = module.exports = {
             if (typeof next === "function") {
               app.validation.errors.push("Unable to complete manifest validation: " +
                                          error);
-              next(null, app);
+              next(Error("Unable to complete manifest validation."), app);
             }
             return;
           }
 
           simulator.remoteSimulator.validateManifest(app.manifest, function (reply) {
             console.log("VALIDATE REPLY: ", JSON.stringify(reply, null, 2));
-            if (reply.error) {             
-              // TODO: handle other remote debugging protocol errors
+            if (reply.error) {
+              app.validation.errors.push("Unable to complete manifest validation: " +
+                                         reply.error);
+              next(Error("Unable to complete manifest validation."), app);
+              return;
             }
-            if (reply.success) {
-              if (typeof next === "function") {
+            if (!reply.success && reply.errors && reply.errors.length > 0) {
+              // concatenate validation errors as warnings (non-blocking errors)
+              app.validation.warnings = app.validation.warnings.
+                concat(reply.errors);
+            }
+            // check if there's any validation error
+            if (typeof next === "function") {
+              if (app.validation.errors.length === 0) {
                 next(null, app);
-                return;
-              }
-            } else {
-              // concatenate validation errors
-              if (reply.errors && reply.errors.length > 0) {
-                app.validation.errors = app.validation.errors.
-                  concat(reply.errors);
-              }
-              if (typeof next === "function") {
-                // NOTE: non blocking errors (does not corrupt the b2g profile)
-                next(null, app);
-                return;
+              } else {
+                next(Error("Invalid Manifest."), app);
               }
             }
           });
@@ -778,9 +773,7 @@ let simulator = module.exports = {
     });
   },
 
-  _generateNotSupportedWebAPIWarnings: function(manifest) {
-    let warnings = [];
-
+  _validateWebAPIs: function(manifest, errors, warnings) {
     // certified app are not fully supported on the simulator
     if (manifest.type === "certified") {
       warnings.push("'certified' apps are not fully supported on the Simulator");
@@ -790,7 +783,7 @@ let simulator = module.exports = {
       return warnings;
     }
 
-    let permissions = Object.keys(manifest.permissions);   
+    let permissions = Object.keys(manifest.permissions);
     let formatMessage = function (apiName) {
       return "WebAPI '"+ apiName + "' is not currently supported on the Simulator";
     };
