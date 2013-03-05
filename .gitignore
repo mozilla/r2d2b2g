@@ -13,4 +13,3 @@ addon/data/mac64/adb
 addon/data/win32/adb.exe
 addon/data/win32/AdbWinApi.dll
 addon/data/win32/AdbWinUsbApi.dll
-
