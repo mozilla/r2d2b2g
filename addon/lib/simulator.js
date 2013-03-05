@@ -788,12 +788,12 @@ let simulator = module.exports = {
       return "WebAPI '"+ apiName + "' is not currently supported on the Simulator";
     };
 
-    // WebSMS is not currectly supported on the simulator
+    // WebSMS is not currently supported on the simulator
     if (permissions.indexOf("sms") > -1) {
       warnings.push(formatMessage("WebSMS"));
     }
 
-    // WebTelephony is not currectly supported on the simulator
+    // WebTelephony is not currently supported on the simulator
     if (permissions.indexOf("telephony") > -1) {
       warnings.push(formatMessage("WebTelephony"));
     }
