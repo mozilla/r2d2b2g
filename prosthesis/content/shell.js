@@ -16,6 +16,11 @@ document.getElementById("homeButton").addEventListener("mouseup", function() {
   window.dispatchEvent(event);
 }, false);
 
+document.getElementById("rotateButton").addEventListener("click", function() {
+  Cu.import("resource://prosthesis/modules/GlobalSimulatorScreen.jsm");
+  GlobalSimulatorScreen.flipScreen();
+}, false);
+
 {
   let initialLatitude = 0,
       initialLongitude = 0,
@@ -61,3 +66,4 @@ document.getElementById("homeButton").addEventListener("mouseup", function() {
   Services.obs.addObserver(gotCoords, "r2d2b2g-geolocation-setup", false);
   Services.obs.addObserver(sendCoords, "r2d2b2g-geolocation-request", false);
 }
+

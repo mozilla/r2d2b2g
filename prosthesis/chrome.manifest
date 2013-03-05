@@ -7,3 +7,4 @@ skin prosthesis skin skin/
 override chrome://browser/content/shell.xul chrome://prosthesis/content/shell.xul
 
 manifest components/FakeGeolocationProvider.manifest
+manifest components/SimulatorScreen.manifest

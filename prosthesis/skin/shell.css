@@ -26,6 +26,19 @@ toolbarbutton > .toolbarbutton-text {
   -moz-image-region: rect(0, 24px, 12px, 12px);
 }
 
+#rotateButton {
+  list-style-image: url("chrome://prosthesis/skin/rotate.png");
+  -moz-image-region: rect(0, 36px, 12px, 24px);
+}
+
+#rotateButton.active {
+  -moz-image-region: rect(0, 24px, 12px, 12px);
+}
+
+#rotateButton.active:hover {
+  -moz-image-region: rect(0, 12px, 12px, 0);
+}
+
 #geolocationButton {
   list-style-image: url("chrome://prosthesis/skin/geo.png");
   -moz-image-region: rect(0, 9px, 14px, 0);
@@ -34,3 +47,4 @@ toolbarbutton > .toolbarbutton-text {
 #geolocationButton:hover {
   -moz-image-region: rect(0, 18px, 14px, 9px);
 }
+
