@@ -30,51 +30,28 @@ SimulatorScreen.prototype = {
   init: function (aWindow) {
     dump("SIMULATOR SCREEN INIT CALLED\n");
 
-    let aWindow = XPCNativeWrapper.unwrap(aWindow);
+    aWindow = XPCNativeWrapper.unwrap(aWindow);
+
     let globalScreen = GlobalSimulatorScreen;
 
     dump("SCREEN: " + globalScreen.mozOrientation + "\n");
 
     let chromeObject = {
-      get top() {
-        return 0;
-      },
-      get left() {
-        return 0;
-      },
-      get width() {
-        return globalScreen.width;
-      },
-      get height() {
-        return globalScreen.height;
-      },
-      get colorDepth() {
-        return 24;
-      },
-      get pixelDepth() {
-        return 24;
-      },
-      get availWidth() {
-        return 0;
-      },
-      get availHeight() {
-        return 0;
-      },
-      get availTop() {
-        return 0;
-      },
-      get availLeft() {
-        return 0;
-      },
-      get mozOrientation() {
-        return globalScreen.mozOrientation;
-      },
-      addEventListener: aWindow.addEventListener,
-      removeEventListener: aWindow.removeEventListener,
+      get top() 0,
+      get left() 0,
+      get availWidth() 0,
+      get availHeight() 0,
+      get availTop() 0,
+      get availLeft() 0,
+      get colorDepth() 24,
+      get pixelDepth() 24,
+
+      get width() globalScreen.width,
+      get height() globalScreen.height,
+      get mozOrientation() globalScreen.mozOrientation,
+
       _onmozorientationchange: null,
-      get onmozorientationchange() {
-        return this._onmozorientationchange;
-      },
+      get onmozorientationchange() this._onmozorientationchange,
       set onmozorientationchange(value) {
         if (this._onmozorientationchange) {
           aWindow.removeEventListener(this._onmozorientationchange);
@@ -84,13 +61,16 @@ SimulatorScreen.prototype = {
 
         return value;
       },
+      addEventListener: aWindow.addEventListener,
+      removeEventListener: aWindow.removeEventListener,
+
       mozLockOrientation: function(orientation) {
         dump("REQUEST ORIENTATION LOCK: " + orientation + "\n");
         let changed = orientation !== globalScreen.mozOrientation;
 
         if (orientation.match(/^portrait/)) {
           globalScreen.mozOrientation = orientation;
-          globalScreen.locked();
+          globalScreen.lock();
 
           if (changed) {
             globalScreen.adjustWindowSize();
@@ -105,7 +85,7 @@ SimulatorScreen.prototype = {
         }
         if (orientation.match(/^landscape/)) {
           globalScreen.mozOrientation = orientation;
-          globalScreen.locked();
+          globalScreen.lock();
 
           if (changed) {
             globalScreen.adjustWindowSize();
@@ -122,9 +102,10 @@ SimulatorScreen.prototype = {
 
         return true;
       },
+
       mozUnlockOrientation: function() {
         dump("REQUEST ORIENTATION UNLOCK\n");
-        globalScreen.unlocked();
+        globalScreen.unlock();
         return true;
       },
       __exposedProps__: {

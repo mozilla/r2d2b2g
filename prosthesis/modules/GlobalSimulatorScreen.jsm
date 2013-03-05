@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
 this.EXPORTED_SYMBOLS = [ "GlobalSimulatorScreen" ];
 
 const Cc = Components.classes;
@@ -8,6 +12,7 @@ this.GlobalSimulatorScreen = {
   height: 480,
   mozOrientationLocked: false,
   mozOrientation: "portrait-primary",
+
   get window() {
     if (this._window) {
       return this._window;
@@ -21,6 +26,7 @@ this.GlobalSimulatorScreen = {
 
     return this._window;
   },
+
   get rotateButton() {
     if (this._rotateButtonEl) {
       return this._rotateButtonEl;
@@ -31,14 +37,17 @@ this.GlobalSimulatorScreen = {
 
     return this._rotateButtonEl;
   },
-  locked: function() {
+
+  lock: function() {
     GlobalSimulatorScreen.mozOrientationLocked = true;
     GlobalSimulatorScreen.rotateButton.classList.remove("active");
   },
-  unlocked: function() {
+
+  unlock: function() {
     GlobalSimulatorScreen.mozOrientationLocked = false;
     GlobalSimulatorScreen.rotateButton.classList.add("active");
   },
+
   flipScreen: function() {
     if (GlobalSimulatorScreen.mozOrientationLocked) {
       // disabled
@@ -77,6 +86,7 @@ this.GlobalSimulatorScreen = {
 
     return false;
   },
+
   adjustWindowSize: function() {
     let window = GlobalSimulatorScreen.window
     let document = window.document;
@@ -107,6 +117,7 @@ this.GlobalSimulatorScreen = {
     GlobalSimulatorScreen._fixSizeInStyle(homescreen.style, width, height);
     GlobalSimulatorScreen._fixSizeInStyle(shell.style, width, height);
   },
+
   _fixSizeInStyle: function(style, width, height) {
     style["width"] = style["min-width"] = style["max-width"] = width;
     style["height"] = style["min-height"] = style["max-height"] = height;
