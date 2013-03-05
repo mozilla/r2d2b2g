@@ -27,15 +27,6 @@ function SimulatorActor(aConnection)
   this._connection = aConnection;
   this._listeners = {};
   this.clientReady = false;
-
-  /*Services.obs.addObserver((function() {
-    if (this.clientReady) {
-      this._connection.send({
-        from: this.actorID,
-        type: "geolocationRequest"
-      });
-    }
-  }).bind(this), "r2d2b2g-geolocation-request", false);*/
 }
 
 SimulatorActor.prototype = {
