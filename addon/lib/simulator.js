@@ -213,7 +213,7 @@ let simulator = module.exports = {
       // if the emulator doesn't exit clean DOMApplicationRegistry._nextLocalId
       // will not be able to serialize "dom.mozApps.maxLocalId" and will be the
       // same for new app installed
-      config.xkey = UUID.uuid().toString(); //"myapp" + config.xid + ".gaiamobile.org";
+      config.xkey = UUID.uuid().toString().slice(1, -1);
 
       if (!config.origin) {
         config.origin = "app://" + config.xkey;

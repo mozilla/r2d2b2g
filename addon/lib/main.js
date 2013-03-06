@@ -41,7 +41,7 @@ function ensureXkeysUnique() {
     let app = Simulator.apps[key];
 
     // Give the app a new unique xkey.
-    app.xkey = UUID.uuid().toString();
+    app.xkey = UUID.uuid().toString().slice(1, -1);
 
     // For "local" (i.e. packaged) apps, make the origin and manifest URL match
     // the xkey, since we'll use the xkey as the ID of the app in
