@@ -2,10 +2,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-// http://www.w3.org/TR/2010/CR-geolocation-API-20100907/#api_description
-// http://mxr.mozilla.org/mozilla-central/source/xpcom/system/nsIGeolocationProvider.idl#32
-// http://mxr.mozilla.org/mozilla-central/source/dom/system/NetworkGeolocationProvider.js#279
-
 const Ci = Components.interfaces;
 const Cc = Components.classes;
 const Cu = Components.utils;
