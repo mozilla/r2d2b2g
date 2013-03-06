@@ -134,9 +134,7 @@ b2g:
 
 adb:
 	mkdir -p addon/data/$(B2G_PLATFORM)
-	cd addon/data/$(B2G_PLATFORM)
-	rm -f $(ADB_BINARIES)
-	cd ../../..
+	cd addon/data/$(B2G_PLATFORM) && rm -f $(ADB_BINARIES)
 	$(DOWNLOAD_CMD) $(ADB_URL)
 	unzip $(ADB_PACKAGE) -d addon/data/$(B2G_PLATFORM)
 
