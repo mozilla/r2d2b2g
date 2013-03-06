@@ -215,7 +215,8 @@ SimulatorActor.prototype = {
     let valid = utils.AppsUtils.checkManifest(manifest, {});
 
     if (!valid) {
-      errors.push("AppsUtils.checkManifest return false.");
+      errors.push("This app can't be installed on a production device "+
+                  "(AppsUtils.checkManifest return false).");
     }
 
     if (manifest.permissions) {
