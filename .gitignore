@@ -2,14 +2,15 @@
 addon/template
 
 # platform-specific directories containing B2G Desktop binaries
-addon/data/win32/b2g
 addon/data/mac64/B2G.app
 addon/data/linux/b2g
 addon/data/linux64/b2g
+addon/data/win32/b2g
 
 # platform-specific ADB binaries
-addon/data/linux/adb
 addon/data/mac64/adb
+addon/data/linux/adb
+addon/data/linux64/adb
 addon/data/win32/adb.exe
 addon/data/win32/AdbWinApi.dll
 addon/data/win32/AdbWinUsbApi.dll
