@@ -5,7 +5,6 @@
    - You can obtain one at http://mozilla.org/MPL/2.0/.  -->
 
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
-<?xml-stylesheet href="chrome://prosthesis/skin/geo.css" type="text/css"?>
 
 <window id="geolocationWindow"
         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"

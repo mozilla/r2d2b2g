@@ -5,6 +5,7 @@ locale prosthesis en-US locale/en-US/
 skin prosthesis skin skin/
 
 override chrome://browser/content/shell.xul chrome://prosthesis/content/shell.xul
+override chrome://browser/content/content.css chrome://prosthesis/content/global.css
 
 manifest components/FakeGeolocationProvider.manifest
 manifest components/SimulatorScreen.manifest
