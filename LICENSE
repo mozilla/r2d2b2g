@@ -7,8 +7,12 @@ Some of it is available under other licenses, as specified below.
 --------------------------------------------------------------------------------
 The following files, comprising the ADB executable:
 
-    addon/data/darwin/adb
+    addon/data/mac64/adb
     addon/data/linux/adb
+    addon/data/linux64/adb
+    addon/data/windows/adb.exe
+    addon/data/windows/AdbWinApi.dll
+    addon/data/windows/AdbWinUsbApi.dll
 
 Are available under the following license:
 
