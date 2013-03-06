@@ -60,7 +60,7 @@ FakeGeoPositionProvider.prototype = {
                                            Ci.nsIFakeListener,
                                            Ci.nsITimerCallback]),
   startup:  function() {
-    if (this.started) return;
+    if (this.started) { return; }
     this.started = true;
     this.walk();
     this.updateTimer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
