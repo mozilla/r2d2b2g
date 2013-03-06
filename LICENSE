@@ -10,9 +10,9 @@ The following files, comprising the ADB executable:
     addon/data/mac64/adb
     addon/data/linux/adb
     addon/data/linux64/adb
-    addon/data/windows/adb.exe
-    addon/data/windows/AdbWinApi.dll
-    addon/data/windows/AdbWinUsbApi.dll
+    addon/data/win32/adb.exe
+    addon/data/win32/AdbWinApi.dll
+    addon/data/win32/AdbWinUsbApi.dll
 
 Are available under the following license:
 
