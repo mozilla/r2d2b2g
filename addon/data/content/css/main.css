@@ -527,7 +527,7 @@ figure {
 }
 #apps-list .app {
     margin: 5px 0 10px;
-    padding: 9px 0;
+    padding: 6px;
     border-radius: 5px;
 }
 #apps-list .app.removed h4 {
@@ -569,6 +569,29 @@ figure {
     color: #888;
     padding: 0 10px;
 }
+
+#apps-list .app-validation {
+    font-size: 0.8em;
+}
+
+#apps-list .app-validation > span.app-validation-result {
+    font-weight: bold;
+}
+
+#apps-list .app-validation > a {
+    color: darkred;
+}
+
+#apps-list .app.warning-manifest {
+    border: 2px orange dashed;
+    background-color: #FCF5BA;
+}
+
+#apps-list .app.invalid-manifest {
+    border: 2px darkred dashed;
+    background-color: #E5CBCB;
+}
+
 button, input[type="url"], input[type="text"] {
     font-size: 0.8em;
     color: #444;

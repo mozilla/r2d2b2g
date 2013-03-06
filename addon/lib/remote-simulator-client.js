@@ -121,6 +121,9 @@ const RemoteSimulatorClient = Class({
       this._pingbackTimeout = null;
     }
 
+    // resolve b2g binaries path (raise exception if not found)
+    let b2gExecutable = this.b2gExecutable;
+
     // kill before start if already running
     if (this.process != null) {
       this.process.kill();
@@ -136,7 +139,7 @@ const RemoteSimulatorClient = Class({
           console.debug("WORKAROUND run osascript to show b2g-desktop window"+
                         " on Runtime.OS=='Darwin'");
         // Escape double quotes and escape characters for use in AppleScript.
-        let path = this.b2gExecutable.path
+        let path = b2gExecutable.path
           .replace(/\\/g, "\\\\").replace(/\"/g, '\\"');
 
         Subprocess.call({
@@ -148,7 +151,7 @@ const RemoteSimulatorClient = Class({
 
     // spawn a b2g instance
     this.process = Subprocess.call({
-      command: this.b2gExecutable,
+      command: b2gExecutable,
       arguments: this.b2gArguments,
 
       // emit stdout messages
@@ -265,6 +268,14 @@ const RemoteSimulatorClient = Class({
                                 onResponse);
   },
 
+validateManifest: function(manifest, onResponse) {
+    this._remote.client.request({ to: this._remote.simulator,
+                                  type: "validateManifest",
+                                  manifest: manifest,
+                                },
+                                onResponse);
+  },
+
   showNotification: function(userMessage, onResponse) {
     this._remote.client.request({ to: this._remote.simulator,
                                   type: "showNotification",
@@ -368,6 +379,11 @@ const RemoteSimulatorClient = Class({
       let path = URL.toFilename(url);
       executable.initWithPath(path);
       executableFilename = executables[Runtime.OS];
+    }
+
+    if (!executable.exists()) {
+      // B2G binaries not found
+      throw Error("b2g-desktop Executable not found.");
     }
 
     this._executable = executable;

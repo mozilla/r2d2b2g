@@ -226,6 +226,60 @@ var Simulator = {
                 );
               }
 
+              if (!app.removed && app.validation) {
+                var validationEl = $("<div class='app-validation'>");
+
+                var errors = app.validation.errors;
+                var warnings = app.validation.warnings;
+
+                if (errors.length > 0 || warnings.length > 0) {
+                  var listContainerEl = $("<ul class='app-validation-list'>");
+
+                  if (errors.length > 0) {
+                    entry.addClass("invalid-manifest");
+                    var errorsEl = $("<ul class='app-validation-errors'>");
+                    errors.forEach(function (msg) {
+                      errorsEl.append($("<li>").html(msg));
+                    });
+                    listContainerEl.append($("<li>").
+                                           text("Errors:").
+                                           append(errorsEl));
+                  }
+
+                  if (warnings.length > 0) {
+                    entry.addClass("warning-manifest");
+                    var warningsEl = $("<ul class='app-validation-warnings'>");
+                    warnings.forEach(function (msg) {
+                      warningsEl.append($("<li>").html(msg));
+                    });
+                    listContainerEl.append($("<li>").
+                                           text("Warnings:").
+                                           append(warningsEl));
+                  }
+
+                  listContainerEl.hide();
+
+                  validationEl.append(
+                    $("<span>")
+                      .text("Validation Result: INVALID")
+                      .prop("class", "app-validation-result"),
+                    $("<a href='#'>")
+                      .text(" ("+errors.length+" errors and "+warnings.length+" warnings)")
+                      .prop("title", "expand validation messages")
+                      .click(function(evt) {
+                        listContainerEl.toggle();
+                      }),
+                    listContainerEl);
+                } else {
+                  validationEl.append(
+                    $("<span>")
+                      .text("Validation Result: OK")
+                      .prop("class", "app-validation-result"));
+                }
+
+                entry.append(validationEl);
+              }
+
               // FIXME: Make an actual list, add a template engine
               container.append(entry);
             });
