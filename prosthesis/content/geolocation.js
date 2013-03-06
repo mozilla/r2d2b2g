@@ -8,8 +8,6 @@ window.addEventListener("DOMContentLoaded", function() {
       custom = $("custom"),
       latitudeEle = $("latitude"),
       longitudeEle = $("longitude"),
-      apply = $("apply"),
-      cancel = $("cancel"),
       inputOutput = window.arguments[0].wrappedJSObject,
       input = inputOutput.input,
       output = inputOutput.output,
@@ -35,6 +33,5 @@ window.addEventListener("DOMContentLoaded", function() {
 
   current.addEventListener("command", setTextBoxes.bind(this, true));
   custom.addEventListener("command", setTextBoxes.bind(this, false));
-  cancel.addEventListener("command", window.close.bind(window));
-  apply.addEventListener("command", accept);
+  window.addEventListener("dialogaccept", accept);
 });

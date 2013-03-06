@@ -6,7 +6,7 @@
 
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
 
-<window id="geolocationWindow"
+<dialog id="geolocationWindow"
         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
         title="GPS Coordinates">
   <script type="application/javascript"
@@ -41,10 +41,4 @@
       </row>
     </rows>
   </grid>
-  <hbox>
-    <spacer flex="1"/>
-    <button label="Apply" class="choice" id="apply"/>
-    <button label="Cancel" class="choice" id="cancel"/>
-    <spacer flex="1"/>
-  </hbox>
-</window>
+</dialog>
