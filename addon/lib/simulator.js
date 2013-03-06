@@ -700,31 +700,13 @@ let simulator = module.exports = {
         }
       }
 
-      if (!app.manifest.name) {
-        app.validation.errors.push("Missing mandatory 'name' in Manifest.");
-      }
-
-      if (!app.manifest.icons || Object.keys(app.manifest.icons).length == 0) {
-        app.validation.warnings.push("Missing 'icons' in Manifest.");
-      } else {
-        // update registered app icon
-        let size = Object.keys(app.manifest.icons).sort(function(a, b) b - a)[0] || null;
-        if (size) {
-          app.icon = app.manifest.icons[size];
-        }
-
-        // NOTE: add non-blocking error if 128x128 icon is missing
-        if (! app.manifest.icons["128"]) {
-          app.validations.warnings.
-            push("app submission to the Marketplace needs at least an 128 icon");
-        }
-      }
-
-      // NOTE: add warnings for WebAPI not supported by the simulator
-      simulator._validateWebAPIs(app.validation.errors, app.validation.warnings, app.manifest);
-
-      // update name visible in the dashboard
-      app.name = app.manifest.name;
+      // NOTE: add errors/warnings for name and icons manifest attributes
+      //       and updates name and icon attributes on the registered app object
+      simulator._validateNameIcons(app.validation.errors, app.validation.warnings, 
+                                   app.manifest, app);
+      // NOTE: add errors/warnings for WebAPIs not supported by the simulator
+      simulator._validateWebAPIs(app.validation.errors, app.validation.warnings, 
+                                 app.manifest);
 
       if (["generated", "hosted"].indexOf(app.type) !== -1 &&
           ["certified", "privileged"].indexOf(app.manifest.type) !== -1) {
@@ -771,6 +753,30 @@ let simulator = module.exports = {
         });
       }
     });
+  },
+
+  _validateNameIcons: function(errors, warnings, manifest, app) {
+      if (!manifest.name) {
+        errors.push("Missing mandatory 'name' in Manifest.");
+      }
+
+      if (!manifest.icons || Object.keys(manifest.icons).length == 0) {
+        warnings.push("Missing 'icons' in Manifest.");
+      } else {
+        // update registered app icon
+        let size = Object.keys(manifest.icons).sort(function(a, b) b - a)[0] || null;
+        if (size) {
+          app.icon = manifest.icons[size];
+        }
+
+        // NOTE: add warnins if 128x128 icon is missing
+        if (! manifest.icons["128"]) {
+          warnings.push("app submission to the Marketplace needs at least an 128 icon");
+        }
+      }
+
+      // update name visible in the dashboard
+      app.name = manifest.name;
   },
 
   _validateWebAPIs: function(errors, warnings, manifest) {
