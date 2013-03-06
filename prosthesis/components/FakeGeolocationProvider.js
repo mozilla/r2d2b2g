@@ -47,10 +47,11 @@ function FakeGeoPositionProvider() {
   this.currentLoc = null;
 
   Services.obs.addObserver((function (message) {
-    dump(message.wrappedJSObject.lat + ',' + message.wrappedJSObject.lon + '\n');
     this.currentLoc = new FakeGeoPositionObject(message.wrappedJSObject.lat,
                                                 message.wrappedJSObject.lon);
-    this.callback.update(this.currentLoc);
+    if (this.callback && typeof this.callback.update === "function") {
+      this.callback.update(this.currentLoc);
+    }
   }).bind(this), "r2d2b2g-geolocation-response", false);
 }
 
