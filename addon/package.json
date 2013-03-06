@@ -20,5 +20,6 @@
   "dependencies": ["gcli",
                    "menuitems",
                    "subprocess",
-                   "vold-utils"]
+                   "vold-utils",
+                   "jsonlint"]
 }
