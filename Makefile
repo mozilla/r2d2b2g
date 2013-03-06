@@ -150,10 +150,11 @@ test:
 help:
 	@echo 'Targets:'
 	@echo "  build: [default] build, download, install everything;\n"\
-	"         combines the profile, prosthesis, and b2g make targets"
+	"         combines the profile, prosthesis, b2g, and adb make targets"
 	@echo '  profile: make the Gaia profile'
 	@echo '  prosthesis: make the prosthesis addon that enhances B2G'
 	@echo '  b2g: download and install B2G'
+	@echo '  adb: download and install ADB'
 	@echo '  run: start Firefox with the addon installed into a new profile'
 	@echo '  package: package the addon into a XPI'
 	@echo '  help: show this message'
