@@ -202,11 +202,11 @@ SimulatorActor.prototype = {
   onValidateManifest: function(aRequest) {
     log("simulator actor received 'validateManifest' command: " + JSON.stringify(aRequest));
     let manifest = aRequest.manifest;
-    let appType = manifest.type || "app";
+    let appType = manifest.type || "web";
 
     let errors = [];
 
-    if (["app", "privileged", "certified"].indexOf(appType) === -1) {
+    if (["web", "privileged", "certified"].indexOf(appType) === -1) {
       errors.push("Unknown app type: '" + appType + "'.");
     }
 
@@ -241,15 +241,24 @@ SimulatorActor.prototype = {
 
     let permissionsNames = Object.keys(permissions);
 
+    let appStatus;
+    // NOTE: If it isn't certified or privileged, it's appStatus "app"
+    // https://hg.mozilla.org/releases/mozilla-b2g18/file/d9278721eea1/dom/apps/src/PermissionsTable.jsm#l413
+    if (["privileged", "certified"].indexOf(appType) === -1) {
+      appStatus = "app";
+    } else {
+      appStatus = appType;
+    }
+
     permissionsNames.forEach(function(pname) {
       let permission = utils.PermissionsTable[pname];
 
       if (permission) {
-        let permissionAction = permission[appType];
+        let permissionAction = permission[appStatus];
         if (!permissionAction) {
-          errors.push("Ignored permission '" + pname + "' (invalid type).");
+          errors.push("Ignored permission '" + pname + "' (invalid type '" + appType + "').");
         } else if (permissionAction === Ci.nsIPermissionManager.DENY_ACTION) {
-          errors.push("Denied permission '" + pname + "'.");
+          errors.push("Denied permission '" + pname + "' for type '" + appType + "'.");
         } else {
           let access = permissions[pname].access;
           try {
