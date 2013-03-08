@@ -27,12 +27,21 @@ SimulatorScreen.prototype = {
     flags: Ci.nsIClassInfo.DOM_OBJECT
   }),
 
+  _getOrigin: function(aURL) {
+    let uri = Services.io.newURI(aURL, null, null);
+    return uri.prePath;
+  },
+
   init: function (aWindow) {
-    dump("SIMULATOR SCREEN INIT CALLED\n");
-
-    aWindow = XPCNativeWrapper.unwrap(aWindow);
-
     let globalScreen = GlobalSimulatorScreen;
+    let appOrigin = this._getOrigin(aWindow.location.href);
+    dump("SIMULATOR SCREEN INIT CALLED: " + appOrigin + "\n");
+
+    aWindow.onready = function fix() {
+      globalScreen.fixAppOrientation(appOrigin);
+    };
+    
+    aWindow = XPCNativeWrapper.unwrap(aWindow);
 
     dump("SCREEN: " + globalScreen.mozOrientation + "\n");
 
@@ -66,6 +75,7 @@ SimulatorScreen.prototype = {
 
       mozLockOrientation: function(orientation) {
         dump("REQUEST ORIENTATION LOCK: " + orientation + "\n");
+        dump("\twindow.location: " + appOrigin + "\n");
         let changed = orientation !== globalScreen.mozOrientation;
 
         if (orientation.match(/^portrait/)) {
@@ -105,6 +115,7 @@ SimulatorScreen.prototype = {
 
       mozUnlockOrientation: function() {
         dump("REQUEST ORIENTATION UNLOCK\n");
+        dump("\twindow.location: " + appOrigin + "\n");
         globalScreen.unlock();
         return true;
       },

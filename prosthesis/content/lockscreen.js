@@ -16,6 +16,7 @@ SettingsListener.observe("lockscreen.enabled", false, function(value) {
     .createLock().set({'homescreen.ready': false});
 
   let homescreen = document.getElementById("homescreen").contentWindow.wrappedJSObject;
+
   dump("simulator - HOMESCREEN LOCKED: wait for lockscreen.locked \n");
   // keep the lockscreen unlocked
   SettingsListener.observe("lockscreen.locked", true, function(value) {
@@ -24,6 +25,12 @@ SettingsListener.observe("lockscreen.enabled", false, function(value) {
       if (value) {
         homescreen.LockScreen.unlock(true);
       } else {
+        homescreen.addEventListener("mozContentEvent", function (evt) {
+          dump("MOZ CONTENT EVENT: ");
+          if (evt.detail)
+            dump("\t"+evt.detail.type);
+        }, true);
+
         navigator.mozSettings
           .createLock().set({'homescreen.ready': true});
         dump("simulator - HOMESCREEN READY\n");

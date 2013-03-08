@@ -25,7 +25,7 @@ this.GlobalSimulatorScreen = {
     );
 
     return this._window;
-  },
+  },  
 
   get rotateButton() {
     if (this._rotateButtonEl) {
@@ -46,6 +46,25 @@ this.GlobalSimulatorScreen = {
   unlock: function() {
     GlobalSimulatorScreen.mozOrientationLocked = false;
     GlobalSimulatorScreen.rotateButton.classList.add("active");
+  },
+
+  fixAppOrientation: function(appOrigin) {
+    let reg = this.window.DOMApplicationRegistry;
+    
+    let appId = reg._appId(appOrigin);
+    let manifest = reg._manifestCache[appId];
+
+    if (manifest.orientation && this._isValidOrientation(manifest.orientation)) {
+      this.mozOrientation = manifest.orientation;
+      this.adjustWindowSize();
+      this.lock();
+    }
+  },
+
+  _isValidOrientation: function (orientation) {
+    return ["portrait", "portrait-primary", "portrait-secondary",
+            "landscape", "landscape-primary", "landscape-secondary"].
+            indexOf(orientation) > -1;
   },
 
   flipScreen: function() {
