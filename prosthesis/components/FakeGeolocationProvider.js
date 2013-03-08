@@ -44,13 +44,12 @@ function FakeGeoPositionProvider() {
   this.updateTimer = null;
   this.started = false;
   this.callback = null;
-  this.currentLoc = null;
 
   Services.obs.addObserver((function (message) {
-    this.currentLoc = new FakeGeoPositionObject(message.wrappedJSObject.lat,
+    let currentLoc = new FakeGeoPositionObject(message.wrappedJSObject.lat,
                                                 message.wrappedJSObject.lon);
-    if (this.callback && typeof this.callback.update === "function") {
-      this.callback.update(this.currentLoc);
+    if (this.callback) {
+      this.callback.update(currentLoc);
     }
   }).bind(this), "r2d2b2g-geolocation-response", false);
 }
@@ -81,7 +80,6 @@ FakeGeoPositionProvider.prototype = {
       this.updateTimer = null;
     }
     this.callback = null;
-    this.currentLoc = null;
     this.started = false;
   },
 
