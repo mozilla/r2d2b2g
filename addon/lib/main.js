@@ -34,14 +34,16 @@ PageMod({
 });
 
 /**
- * Ensure app xkeys are unique.
+ * Ensure app xkeys are valid, since older versions of the addon created
+ * invalid ones (not guaranteed to be unique, or containing curly braces,
+ * which are invalid in app: URLs).
  */
-function ensureXkeysUnique() {
+function ensureXkeysValid() {
   for (let key in Simulator.apps) {
     let app = Simulator.apps[key];
 
     // Give the app a new unique xkey.
-    app.xkey = UUID.uuid().toString();
+    app.xkey = UUID.uuid().toString().slice(1, -1);
 
     // For "local" (i.e. packaged) apps, make the origin and manifest URL match
     // the xkey, since we'll use the xkey as the ID of the app in
@@ -71,8 +73,8 @@ if (["install", "downgrade", "upgrade"].indexOf(Self.loadReason) >= 0) {
       filter(function (appId) !Simulator.apps[appId].deleted);
 
     if (activeAppIds.length > 0) {
-      if (Services.vc.compare(lastVersion, "2.0pre5") < 0) {
-        ensureXkeysUnique();
+      if (Services.vc.compare(lastVersion, "3.0pre3") < 0) {
+        ensureXkeysValid();
       }
       SStorage.storage.needsUpdateAll = true;
     }
