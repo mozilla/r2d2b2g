@@ -268,6 +268,7 @@ var Simulator = {
                       .prop("title", "expand validation messages")
                       .click(function(evt) {
                         listContainerEl.toggle();
+                        return false;
                       }),
                     listContainerEl);
                 } else {
