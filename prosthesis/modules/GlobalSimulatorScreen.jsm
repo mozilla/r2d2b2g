@@ -50,15 +50,24 @@ this.GlobalSimulatorScreen = {
 
   fixAppOrientation: function(appOrigin) {
     let reg = this.window.DOMApplicationRegistry;
+
+    // DOMApplicationRegistry is not ready
+    if (!reg) {
+      return;
+    }
     
     let appId = reg._appId(appOrigin);
     let manifest = reg._manifestCache[appId];
 
-    if (manifest.orientation && this._isValidOrientation(manifest.orientation)) {
+    if (manifest && manifest.orientation && 
+        this._isValidOrientation(manifest.orientation)) {
       this.mozOrientation = manifest.orientation;
-      this.adjustWindowSize();
       this.lock();
     }
+
+    // adjust simulator window size, and fix app iframe sizing 
+    // if origin is an installed openwebapp
+    this.adjustWindowSize(manifest ? appOrigin : null);
   },
 
   _isValidOrientation: function (orientation) {
@@ -106,7 +115,8 @@ this.GlobalSimulatorScreen = {
     return false;
   },
 
-  adjustWindowSize: function() {
+  // adjust shell, homescreen and optional app div container (if appOrigin != null)
+  adjustWindowSize: function(appOrigin) {
     let window = GlobalSimulatorScreen.window
     let document = window.document;
 
@@ -135,6 +145,21 @@ this.GlobalSimulatorScreen = {
     dump("RESIZE TO: " + width + " "+height + "\n");
     GlobalSimulatorScreen._fixSizeInStyle(homescreen.style, width, height);
     GlobalSimulatorScreen._fixSizeInStyle(shell.style, width, height);
+
+    let appFrame;
+
+    if(!homescreen.contentWindow.wrappedJSObject.
+       WindowManager) {
+      // gaia WindowManager is not ready, just return
+      return;
+    }
+
+    if (appOrigin && appOrigin !== "app://homescreen.gaiamobile.org" &&
+       appOrigin !== "app://system.gaiamobile.org") {
+      dump("FIX APP SIZING\n");
+      // request gaia WindowManager to fix app sizing
+      homescreen.contentWindow.wrappedJSObject.WindowManager.launch(appOrigin)
+    } 
   },
 
   _fixSizeInStyle: function(style, width, height) {

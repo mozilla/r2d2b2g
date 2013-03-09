@@ -37,9 +37,7 @@ SimulatorScreen.prototype = {
     let appOrigin = this._getOrigin(aWindow.location.href);
     dump("SIMULATOR SCREEN INIT CALLED: " + appOrigin + "\n");
 
-    aWindow.onready = function fix() {
-      globalScreen.fixAppOrientation(appOrigin);
-    };
+    globalScreen.fixAppOrientation(appOrigin);
     
     aWindow = XPCNativeWrapper.unwrap(aWindow);
 
@@ -74,8 +72,8 @@ SimulatorScreen.prototype = {
       removeEventListener: aWindow.removeEventListener,
 
       mozLockOrientation: function(orientation) {
-        dump("REQUEST ORIENTATION LOCK: " + orientation + "\n");
-        dump("\twindow.location: " + appOrigin + "\n");
+        dump("REQUEST ORIENTATION LOCK: " + orientation + " from " + 
+             appOrigin + "\n");
         let changed = orientation !== globalScreen.mozOrientation;
 
         if (orientation.match(/^portrait/)) {
@@ -114,8 +112,7 @@ SimulatorScreen.prototype = {
       },
 
       mozUnlockOrientation: function() {
-        dump("REQUEST ORIENTATION UNLOCK\n");
-        dump("\twindow.location: " + appOrigin + "\n");
+        dump("REQUEST ORIENTATION UNLOCK: " + appOrigin + "\n");
         globalScreen.unlock();
         return true;
       },
