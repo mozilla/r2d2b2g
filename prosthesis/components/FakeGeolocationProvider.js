@@ -46,10 +46,9 @@ function FakeGeoPositionProvider() {
   this.callback = null;
 
   Services.obs.addObserver((function (message) {
-    let currentLoc = new FakeGeoPositionObject(message.wrappedJSObject.lat,
-                                                message.wrappedJSObject.lon);
     if (this.callback) {
-      this.callback.update(currentLoc);
+      this.callback.update(new FakeGeoPositionObject(
+        message.wrappedJSObject.lat, message.wrappedJSObject.lon));
     }
   }).bind(this), "r2d2b2g-geolocation-response", false);
 }
