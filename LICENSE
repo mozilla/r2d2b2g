@@ -5,6 +5,17 @@ free and open source.  Most of it is available under the Mozilla Public License
 Some of it is available under other licenses, as specified below.
 
 --------------------------------------------------------------------------------
+The following files:
+
+    prosthesis/skin/geo.png
+
+Are available under the following license:
+
+  Collaboration by Karen McGrane, Josh Clark & Aliona Katz United States 2011
+  http://thenounproject.com/noun/geolocation/#icon-No721
+  Published under the Public Domain
+
+--------------------------------------------------------------------------------
 The following files, comprising the ADB executable:
 
     addon/data/mac64/adb

@@ -27,15 +27,6 @@ function SimulatorActor(aConnection)
   this._connection = aConnection;
   this._listeners = {};
   this.clientReady = false;
-
-  Services.obs.addObserver((function() {
-    if (this.clientReady) {
-      this._connection.send({
-        from: this.actorID,
-        type: "geolocationRequest"
-      });
-    }
-  }).bind(this), "r2d2b2g-geolocation-request", false);
 }
 
 SimulatorActor.prototype = {
@@ -49,6 +40,13 @@ SimulatorActor.prototype = {
   onPing: function(aRequest) {
     log("simulator actor received a 'ping' command");
     this.clientReady = true;
+
+    // After ping we know we can request geolocation coordinates from client
+    this._connection.send({
+      from: this.actorID,
+      type: "geolocationRequest"
+    });
+
     return { "msg": "pong" };
   },
 
@@ -350,7 +348,7 @@ SimulatorActor.prototype = {
         lat: aRequest.message.lat,
         lon: aRequest.message.lon,
       }
-    }, "r2d2b2g-geolocation-response", null);
+    }, "r2d2b2g-geolocation-setup", null);
   },
 
   _unsubscribeWindowManagerEvents: function() {
