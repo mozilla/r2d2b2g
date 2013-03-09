@@ -213,7 +213,7 @@ let simulator = module.exports = {
     if (!config.xkey) {
       // generate an unique id for a registed app (used as appId by the
       // remote b2g-desktop install command)
-      config.xkey = UUID.uuid().toString();
+      config.xkey = UUID.uuid().toString().slice(1, -1);
 
       if (!config.origin) {
         config.origin = "app://" + config.xkey;
