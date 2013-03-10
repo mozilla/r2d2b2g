@@ -22,6 +22,7 @@
     window.addEventListener("ContentStart", function() {
       Services.scriptloader.loadSubScript("chrome://prosthesis/content/shell.js");
       Services.scriptloader.loadSubScript("chrome://prosthesis/content/lockscreen.js");
+      Services.scriptloader.loadSubScript("chrome://prosthesis/content/window_manager.js");
     }, false);
   </script>
 

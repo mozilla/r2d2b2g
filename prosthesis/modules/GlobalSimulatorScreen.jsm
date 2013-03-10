@@ -65,9 +65,8 @@ this.GlobalSimulatorScreen = {
       this.lock();
     }
 
-    // adjust simulator window size, and fix app iframe sizing 
-    // if origin is an installed openwebapp
-    this.adjustWindowSize(manifest ? appOrigin : null);
+    // adjust simulator window size
+    this.adjustWindowSize();
   },
 
   _isValidOrientation: function (orientation) {
@@ -116,7 +115,7 @@ this.GlobalSimulatorScreen = {
   },
 
   // adjust shell, homescreen and optional app div container (if appOrigin != null)
-  adjustWindowSize: function(appOrigin) {
+  adjustWindowSize: function() {
     let window = GlobalSimulatorScreen.window
     let document = window.document;
 
@@ -130,40 +129,24 @@ this.GlobalSimulatorScreen = {
 
     let width = GlobalSimulatorScreen.width+"px";
     let height = GlobalSimulatorScreen.height+"px";
+    let fixedSizeStyle = GlobalSimulatorScreen._fixSizeInStyle(width, height);
+
     dump("ROTATE: " + width + " " + height + "\n");
 
-    let homescreen = document.getElementById("homescreen");
     let shell = document.getElementById("shell");
-    shell.setAttribute("style", "overflow: hidden;");
-    homescreen.setAttribute("style", "-moz-box-flex: 1; overflow: hidden;");
-
-    homescreen.contentWindow.onresize = function () {
-      // WORKAROUND: keep the simulator window size
-      window.resizeTo(parseInt(width), parseInt(height));
-    };
-
-    dump("RESIZE TO: " + width + " "+height + "\n");
-    GlobalSimulatorScreen._fixSizeInStyle(homescreen.style, width, height);
-    GlobalSimulatorScreen._fixSizeInStyle(shell.style, width, height);
-
-    let appFrame;
-
-    if(!homescreen.contentWindow.wrappedJSObject.
-       WindowManager) {
-      // gaia WindowManager is not ready, just return
-      return;
-    }
-
-    if (appOrigin && appOrigin !== "app://homescreen.gaiamobile.org" &&
-       appOrigin !== "app://system.gaiamobile.org") {
-      dump("FIX APP SIZING\n");
-      // request gaia WindowManager to fix app sizing
-      homescreen.contentWindow.wrappedJSObject.WindowManager.launch(appOrigin)
-    } 
+    shell.setAttribute("style", "overflow: hidden; border: none;" + 
+                                "width: auto; height: auto;");
+    let homescreen = document.getElementById("homescreen");
+    homescreen.setAttribute("style", "-moz-box-flex: 1; overflow: hidden;" + 
+                                     "border: none;"+fixedSizeStyle);
   },
 
-  _fixSizeInStyle: function(style, width, height) {
-    style["width"] = style["min-width"] = style["max-width"] = width;
-    style["height"] = style["min-height"] = style["max-height"] = height;
+  _fixSizeInStyle: function(width, height) {
+    return ["width: ", width, ";", 
+            "min-width: ", width, ";",
+            "max-width: ", width, ";",
+            "height: ", height, ";", 
+            "min-height: ", height, ";",
+            "max-height: ", height, ";"].join("");
   }
 }

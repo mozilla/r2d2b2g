@@ -32,16 +32,32 @@ SimulatorScreen.prototype = {
     return uri.prePath;
   },
 
+  _fixAppIframe: function(appOrigin) {
+    Services.obs.notifyObservers(
+      {
+        wrappedJSObject: {
+          appOrigin: appOrigin
+        }
+      }, 
+      "simulator-fix-app-iframe", 
+      null);
+  },
+
   init: function (aWindow) {
     let globalScreen = GlobalSimulatorScreen;
-    let appOrigin = this._getOrigin(aWindow.location.href);
-    dump("SIMULATOR SCREEN INIT CALLED: " + appOrigin + "\n");
+    let nodePrincipal = aWindow.document.nodePrincipal;
 
-    globalScreen.fixAppOrientation(appOrigin);
-    
+    dump("SIMULATOR SCREEN INIT CALLED: " + nodePrincipal.origin + "\n");
+
+    // fix orientation based on app manifest and
+    // purge old app iframes (because a rapid kill-run sequence 
+    // leave old iframes)
+    let appOrigin = this._getOrigin(aWindow.location.href);
+    this._fixAppIframe(appOrigin);
+
     aWindow = XPCNativeWrapper.unwrap(aWindow);
 
-    dump("SCREEN: " + globalScreen.mozOrientation + "\n");
+    dump("SCREEN ORIENTATION: " + globalScreen.mozOrientation + "\n");
 
     let chromeObject = {
       get top() 0,
