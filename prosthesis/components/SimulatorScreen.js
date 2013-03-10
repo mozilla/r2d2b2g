@@ -88,6 +88,14 @@ SimulatorScreen.prototype = {
       removeEventListener: aWindow.removeEventListener,
 
       mozLockOrientation: function(orientation) {
+        if (nodePrincipal.appStatus == nodePrincipal.APP_STATUS_NOT_INSTALLED && 
+            !aWindow.document.mozFullScreen) {
+          // NOTE: refused lock because app is not installed and
+          // it's not in fullscreen mode
+          dump("DENY LOCKROTATION FROM NOT INSTALLED: " + nodePrincipal.origin + "\n");
+          return false;
+        }
+
         dump("REQUEST ORIENTATION LOCK: " + orientation + " from " + 
              appOrigin + "\n");
         let changed = orientation !== globalScreen.mozOrientation;
