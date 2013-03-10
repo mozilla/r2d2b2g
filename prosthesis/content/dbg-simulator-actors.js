@@ -9,7 +9,7 @@ Components.utils.import("resource://gre/modules/Services.jsm");
 this.EXPORTED_SYMBOLS = ["SimulatorActor"];
 
 function log(msg) {
-  var DEBUG_LOG = true;
+  var DEBUG_LOG = false;
 
   if (DEBUG_LOG)
     dump("prosthesis:"+msg+"\n");
