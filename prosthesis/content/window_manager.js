@@ -29,12 +29,13 @@ let purgeOldAppIframes = function(appOrigin) {
 let fixAllAppsSize = function() {
   let $$ = homescreen.document.querySelectorAll.bind(homescreen.document);
   let homescreenFrame = $$(".appWindow.homescreen")[0];
+  let homeStyle = homescreenFrame.getAttribute("style");
   let appsFrames = Array.slice($$("iframe[data-frame-origin]")).
     map(function(el) el.parentNode).
     filter(function(el) !el.classList.contains("homescreen"));
 
   appsFrames.forEach(function (el) {
-    el.setAttribute("style", homescreenFrame.getAttribute("style"));
+    el.setAttribute("style", homeStyle);
   });
 }
 

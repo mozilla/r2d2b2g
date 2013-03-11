@@ -6,6 +6,14 @@ this.EXPORTED_SYMBOLS = [ "GlobalSimulatorScreen" ];
 
 const Cc = Components.classes;
 const Ci = Components.interfaces;
+const Cu = Components.utils;
+
+Cu.import("resource://gre/modules/XPCOMUtils.jsm");
+Cu.import("resource://gre/modules/Services.jsm");
+
+XPCOMUtils.defineLazyServiceGetter(this, "ppmm",
+    "@mozilla.org/parentprocessmessagemanager;1",
+    "nsIMessageBroadcaster"); 
 
 this.GlobalSimulatorScreen = {
   width: 320,
@@ -46,6 +54,15 @@ this.GlobalSimulatorScreen = {
   unlock: function() {
     GlobalSimulatorScreen.mozOrientationLocked = false;
     GlobalSimulatorScreen.rotateButton.classList.add("active");
+  },
+
+  broadcastOrientationChange: function() {
+    dump("BROADCAST ORIENTATION\n");
+    try {
+      ppmm.broadcastAsyncMessage("SimulatorScreen:orientationChange", { });
+    } catch(e) {
+      dump("\n\nEXCEPTION: "+e+"\n\n");
+    }
   },
 
   fixAppOrientation: function(appOrigin) {
@@ -90,24 +107,12 @@ this.GlobalSimulatorScreen = {
     if (GlobalSimulatorScreen.mozOrientation.match(/^portrait/)) {
       GlobalSimulatorScreen.mozOrientation = "landscape-primary";
       GlobalSimulatorScreen.adjustWindowSize();
-
-      let evt = window.document.createEvent('CustomEvent');
-      evt.initCustomEvent('mozorientationchange', true, false, {
-        orientation: GlobalSimulatorScreen.mozOrientation
-      });
-      iframe.contentWindow.dispatchEvent(evt);
-
+      GlobalSimulatorScreen.broadcastOrientationChange();
       return true;
     } else if (GlobalSimulatorScreen.mozOrientation.match(/^landscape/)) {
       GlobalSimulatorScreen.mozOrientation = "portrait-primary";
       GlobalSimulatorScreen.adjustWindowSize();
-
-      let evt = window.document.createEvent('CustomEvent');
-      evt.initCustomEvent('mozorientationchange', true, false, {
-        orientation: GlobalSimulatorScreen.mozOrientation
-      });
-      iframe.contentWindow.dispatchEvent(evt);
-
+      GlobalSimulatorScreen.broadcastOrientationChange();
       return true;
     }
 
