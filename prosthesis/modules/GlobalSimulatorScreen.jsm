@@ -15,81 +15,47 @@ XPCOMUtils.defineLazyServiceGetter(this, "ppmm",
     "@mozilla.org/parentprocessmessagemanager;1",
     "nsIMessageBroadcaster"); 
 
+let DEBUG = true;
+let DEBUG_PREFIX = "prosthesis: GlobalSimulatorScreen.jsm - ";
+let debug = DEBUG ? function debug(msg) dump(DEBUG_PREFIX+msg+"\n") : function() {};
+
 this.GlobalSimulatorScreen = {
   width: 320,
   height: 480,
   mozOrientationLocked: false,
   mozOrientation: "portrait-primary",
-
-  get window() {
-    if (this._window) {
-      return this._window;
-    }
-
-    this._window = XPCNativeWrapper.unwrap(
-      Cc['@mozilla.org/appshell/window-mediator;1'].
-        getService(Ci.nsIWindowMediator).
-        getMostRecentWindow("navigator:browser")
-    );
-
-    return this._window;
-  },  
-
-  get rotateButton() {
-    if (this._rotateButtonEl) {
-      return this._rotateButtonEl;
-    }
-
-    let window = GlobalSimulatorScreen.window;
-    this._rotateButtonEl = window.document.getElementById("rotateButton");
-
-    return this._rotateButtonEl;
-  },
-
   lock: function() {
     GlobalSimulatorScreen.mozOrientationLocked = true;
-    GlobalSimulatorScreen.rotateButton.classList.remove("active");
+    try {
+      Services.obs.notifyObservers(null, "simulator-orientation-lock-change", null);
+    } catch(e) {
+      debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+    }
   },
 
   unlock: function() {
     GlobalSimulatorScreen.mozOrientationLocked = false;
-    GlobalSimulatorScreen.rotateButton.classList.add("active");
+    try {
+      Services.obs.notifyObservers(null, "simulator-orientation-lock-change", null);
+    } catch(e) {
+      debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+    }
   },
 
   broadcastOrientationChange: function() {
-    dump("BROADCAST ORIENTATION\n");
+    debug("broadcast 'SimulatorScreen:orientationChange'.");
     try {
       ppmm.broadcastAsyncMessage("SimulatorScreen:orientationChange", { });
     } catch(e) {
-      dump("\n\nEXCEPTION: "+e+"\n\n");
+      debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
     }
   },
 
-  fixAppOrientation: function(appOrigin) {
-    let reg = this.window.DOMApplicationRegistry;
-
-    // DOMApplicationRegistry is not ready
-    if (!reg) {
-      return;
-    }
-    
-    let appId = reg._appId(appOrigin);
-    let manifest = reg._manifestCache[appId];
-
-    if (manifest && manifest.orientation && 
-        this._isValidOrientation(manifest.orientation)) {
-      this.mozOrientation = manifest.orientation;
-      this.lock();
-    }
-
-    // adjust simulator window size
-    this.adjustWindowSize();
-  },
-
-  _isValidOrientation: function (orientation) {
-    return ["portrait", "portrait-primary", "portrait-secondary",
-            "landscape", "landscape-primary", "landscape-secondary"].
-            indexOf(orientation) > -1;
+  isSameOrientation: function(appOrigin) {
+    let orientation = this.getAppOrientation(appOrigin);
+    if (!orientation)
+      return true;
+    return this.mozOrientation.split("-")[0] === orientation.split("-")[0];
   },
 
   flipScreen: function() {
@@ -97,12 +63,6 @@ this.GlobalSimulatorScreen = {
       // disabled
       return false;
     }
-
-    let window = GlobalSimulatorScreen.window
-    let homescreen = XPCNativeWrapper.unwrap(
-      window.document.getElementById("homescreen").contentWindow
-    );
-    let iframe = homescreen.WindowManager.getCurrentDisplayedApp().iframe;
 
     if (GlobalSimulatorScreen.mozOrientation.match(/^portrait/)) {
       GlobalSimulatorScreen.mozOrientation = "landscape-primary";
@@ -121,9 +81,6 @@ this.GlobalSimulatorScreen = {
 
   // adjust shell, homescreen and optional app div container (if appOrigin != null)
   adjustWindowSize: function() {
-    let window = GlobalSimulatorScreen.window
-    let document = window.document;
-
     if (GlobalSimulatorScreen.mozOrientation.match(/^portrait/)) {
       GlobalSimulatorScreen.width = 320;
       GlobalSimulatorScreen.height = 480;
@@ -132,26 +89,7 @@ this.GlobalSimulatorScreen = {
       GlobalSimulatorScreen.height = 320;
     }
 
-    let width = GlobalSimulatorScreen.width+"px";
-    let height = GlobalSimulatorScreen.height+"px";
-    let fixedSizeStyle = GlobalSimulatorScreen._fixSizeInStyle(width, height);
-
-    dump("ROTATE: " + width + " " + height + "\n");
-
-    let shell = document.getElementById("shell");
-    shell.setAttribute("style", "overflow: hidden; border: none;" + 
-                                "width: auto; height: auto;");
-    let homescreen = document.getElementById("homescreen");
-    homescreen.setAttribute("style", "-moz-box-flex: 1; overflow: hidden;" + 
-                                     "border: none;"+fixedSizeStyle);
-  },
-
-  _fixSizeInStyle: function(width, height) {
-    return ["width: ", width, ";", 
-            "min-width: ", width, ";",
-            "max-width: ", width, ";",
-            "height: ", height, ";", 
-            "min-height: ", height, ";",
-            "max-height: ", height, ";"].join("");
+    debug("notify 'simulator-adjust-window-size'.");
+    Services.obs.notifyObservers(null, "simulator-adjust-window-size", null);
   }
 }

@@ -4,18 +4,16 @@
 
 "use strict";
 
+let DEBUG = false;
+let DEBUG_PREFIX = "prosthesis: dbg-simulator-actors.js - ";
+let debug = DEBUG ? function debug(msg) dump(DEBUG_PREFIX+msg+"\n") : function() {};
+
+debug("loading simulator actor definition");
+
 Components.utils.import("resource://gre/modules/Services.jsm");
 
 this.EXPORTED_SYMBOLS = ["SimulatorActor"];
 
-function log(msg) {
-  var DEBUG_LOG = false;
-
-  if (DEBUG_LOG)
-    dump("prosthesis:"+msg+"\n");
-}
-
-log("loading simulator actor definition");
 
 /**
   * Creates a SimulatorActor. SimulatorActor provides remote access to the
@@ -23,7 +21,7 @@ log("loading simulator actor definition");
   */
 function SimulatorActor(aConnection)
 {
-  log("simulator actor created for a new connection");
+  debug("simulator actor created for a new connection");
   this._connection = aConnection;
   this._listeners = {};
   this.clientReady = false;
@@ -33,12 +31,12 @@ SimulatorActor.prototype = {
   actorPrefix: "simulator",
 
   disconnect: function() {
-    log("simulator actor connection closed");
+    debug("simulator actor connection closed");
     this._unsubscribeWindowManagerEvents();
   },
 
   onPing: function(aRequest) {
-    log("simulator actor received a 'ping' command");
+    debug("simulator actor received a 'ping' command");
     this.clientReady = true;
 
     // After ping we know we can request geolocation coordinates from client
@@ -51,7 +49,7 @@ SimulatorActor.prototype = {
   },
 
   onGetBuildID: function(aRequest) {
-    log("simulator actor received a 'getBuildID'");
+    debug("simulator actor received a 'getBuildID'");
     var buildID = this.simulatorWindow.navigator.buildID;
 
     return {
@@ -60,7 +58,7 @@ SimulatorActor.prototype = {
   },
 
   onLogStdout: function(aRequest) {
-    log("simulator actor received a 'logStdout' command");
+    debug("simulator actor received a 'logStdout' command");
     // HACK: window.dump should dump on stdout
     // https://developer.mozilla.org/en/docs/DOM/window.dump#Notes
     let dumpStdout = this.simulatorWindow.dump;
@@ -71,134 +69,134 @@ SimulatorActor.prototype = {
     };
   },
 
-  onRunApp: function(aRequest) {
-    log("simulator actor received a 'runApp' command:" + aRequest.appId);
-    let window = this.simulatorWindow;
-    let homescreen = XPCNativeWrapper.unwrap(this.homescreenWindow);
-    let WindowManager = homescreen.WindowManager;
-    let DOMApplicationRegistry = window.DOMApplicationRegistry;
-    let appId = aRequest.appId;
+onRunApp: function(aRequest) {
+      debug("simulator actor received a 'runApp' command:" + aRequest.appId);
+      let window = this.simulatorWindow;
+      let homescreen = XPCNativeWrapper.unwrap(this.homescreenWindow);
+      let WindowManager = homescreen.WindowManager;
+      let DOMApplicationRegistry = window.DOMApplicationRegistry;
+      let appId = aRequest.appId;
 
-    if (!DOMApplicationRegistry.webapps[appId]) {
-      return { success: false, error: 'app-not-installed', message: 'App not installed.'}
-    }
+      if (!DOMApplicationRegistry.webapps[appId]) {
+        return { success: false, error: 'app-not-installed', message: 'App not installed.'}
+      }
 
-    let appOrigin = DOMApplicationRegistry.webapps[appId].origin;
+      let appOrigin = DOMApplicationRegistry.webapps[appId].origin;
 
-    let runnable = {
-      run: function() {
-        try {
-          runnable.waitHomescreenReady(function () {
-            runnable.killAppByOrigin(appOrigin, function () {
-              runnable.findAppByOrigin(appOrigin, function (e, app) {
-                if (e) {
-                  log("RUNAPP ERROR: " + e);
-                  return;
-                }
+      let runnable = {
+        run: function() {
+          try {
+            runnable.waitHomescreenReady(function () {
+              runnable.tryAppReloadByOrigin(appOrigin, function () {
+                runnable.findAppByOrigin(appOrigin, function (e, app) {
+                  if (e) {
+                    debug("RUNAPP ERROR: " + e);
+                    return;
+                  }
 
-                try {
-                  log("RUNAPP LAUNCHING:" + app.origin);
-                  app.launch();
-                  log("RUNAPP SUCCESS:" + appOrigin);
-                } catch(e) {
-                  log("RUNAPP EXCEPTION: " + e);
-                }
+                  try {
+                    debug("RUNAPP LAUNCHING:" + app.origin);
+                    app.launch();
+                    debug("RUNAPP SUCCESS:" + appOrigin);
+                  } catch(e) {
+                    debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+                  }
+                });
               });
             });
-          });
-        } catch(e) {
-          log("RUNAPP EXCEPTION: " + e);
-        }
-      },
-      waitHomescreenReady: function(cb) {
-        log("RUNAPP - wait homescreen ready...");
-        let res = homescreen.navigator.mozSettings.createLock().get('homescreen.ready');
-        res.onsuccess = function() {
-          if (res.result["homescreen.ready"]) {
-            log("RUNAPP - homescreen ready");
-            cb();
-          } else {
-            log("RUNAPP - wait for homescreen ready");
-            let wait = function (notify) {
-              log("RUNAPP - homescreen ready: "+notify.settingValue);
-              if(notify.settingValue) {
-                homescreen.navigator.mozSettings.removeObserver("homescreen.ready", wait);
-                cb();
-              }
-            };
-            homescreen.navigator.mozSettings.
-              addObserver("homescreen.ready", wait);
+          } catch(e) {
+            debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
           }
-        }
-        res.onerror = function() {
-          log("RUNAPP ERROR - waitHomescreenReady: "+res.error.name);
-        }
-      },
-      killAppByOrigin: function(origin, cb) {
-        log("RUNAPP: killAppByOrigin - " + origin);
-        try {
-          if (WindowManager.getRunningApps()[origin] &&
-              !WindowManager.getRunningApps()[origin].killed) {
-            // app running: kill and wait for appterminated
-            let app = WindowManager.getRunningApps()[origin];
-            log("RUNAPP: killAppByOrigin - wait for appterminated");
-            let once = function (evt) {
-              // filtering out other appterminated with different origin
-              if (evt.detail.origin !== origin) {
-                return;
-              }
-              log("RUNAPP: killAppByOrigin - appterminated received");
-              homescreen.removeEventListener("appterminated", once);
-              // WORKAROUND: bug (probably related to disabled oop) restarted
-              // app keep to be flagged as killed and never restarted
-              delete WindowManager.getRunningApps()[origin];
-
+        },
+        waitHomescreenReady: function(cb) {
+          debug("RUNAPP - wait homescreen ready...");
+          let res = homescreen.navigator.mozSettings.createLock().get('homescreen.ready');
+          res.onsuccess = function() {
+            if (res.result["homescreen.ready"]) {
+              debug("RUNAPP - homescreen ready");
+              cb();
+            } else {
+              debug("RUNAPP - wait for homescreen ready");
+              let wait = function (notify) {
+                debug("RUNAPP - homescreen ready: "+notify.settingValue);
+                if(notify.settingValue) {
+                  homescreen.navigator.mozSettings.removeObserver("homescreen.ready", wait);
+                  cb();
+                }
+              };
+              homescreen.navigator.mozSettings.
+                addObserver("homescreen.ready", wait);
+            }
+          }
+          res.onerror = function() {
+            debug("RUNAPP ERROR - waitHomescreenReady: "+res.error.name);
+          }
+        },
+        tryAppReloadByOrigin: function(origin, cb) {
+          debug("RUNAPP: tryAppReloadByOrigin - " + origin);
+          try {
+            if (WindowManager.getRunningApps()[origin] &&
+                !WindowManager.getRunningApps()[origin].killed) {
+              let app = WindowManager.getRunningApps()[origin];
+              WindowManager.setDisplayedApp(origin);
+              app.reload();
+              debug("RUNAPP: RELOADED:" + app.origin);
+            } else {
+              // app not running
+              runnable._fixSetDisplayedApp(appOrigin);
+              debug("RUNAPP: killAppByOrigin - app is not running");
               cb();
             }
-            homescreen.addEventListener("appterminated", once, false);
-            WindowManager.kill(origin);
-          } else {
-            // app not running
-            log("RUNAPP: killAppByOrigin - app is not running");
+          } catch(e) {
+            // go on and launch by mozApps API on exception 
+            // (e.g. window manager is not ready)
+            debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+            runnable._fixSetDisplayedApp(appOrigin);
             cb();
           }
-        } catch(e) {
-          log("RUNAPP EXCEPTION: killAppByOrigin - " + e);
-          cb();
-        }
-      },
-      findAppByOrigin: function(origin, cb) {
-        let mgmt = window.navigator.mozApps.mgmt;
-        let req = mgmt.getAll();
-        req.onsuccess = function() {
-          let found = req.result.filter(function (app) {
-            if (app.origin === origin) {
-              return true;
+        },
+        _fixSetDisplayedApp: function(appOrigin) {
+          Services.obs.notifyObservers(
+            {
+              wrappedJSObject: {
+                appOrigin: appOrigin
+              }
+            }, 
+            "simulator-set-displayed-app", 
+            null);
+        },
+        findAppByOrigin: function(origin, cb) {
+          let mgmt = window.navigator.mozApps.mgmt;
+          let req = mgmt.getAll();
+          req.onsuccess = function() {
+            let found = req.result.filter(function (app) {
+              if (app.origin === origin) {
+                return true;
+              }
+            });
+
+            if (found.length == 0) {
+              cb("app not found");
+            } else {
+              cb(null, found[0]);
             }
-          });
+          };
+          req.onerror = function() {
+            cb(req.error.name);
+          };
+        }
+      };
 
-          if (found.length == 0) {
-            cb("app not found");
-          } else {
-            cb(null, found[0]);
-          }
-        };
-        req.onerror = function() {
-          cb(req.error.name);
-        };
-      }
-    };
-
-    Services.tm.currentThread.dispatch(runnable,
-                                       Ci.nsIThread.DISPATCH_NORMAL);
-    return {
-      message: "runApp request received: " + appOrigin,
-      success: true
-    };
-  },
+      Services.tm.currentThread.dispatch(runnable,
+                                         Ci.nsIThread.DISPATCH_NORMAL);
+      return {
+        message: "runApp request received: " + appOrigin,
+        success: true
+      };
+    },
 
   onValidateManifest: function(aRequest) {
-    log("simulator actor received 'validateManifest' command: " + JSON.stringify(aRequest));
+    debug("simulator actor received 'validateManifest' command: " + JSON.stringify(aRequest));
     let manifest = aRequest.manifest;
     let appType = manifest.type || "web";
 
@@ -264,7 +262,7 @@ SimulatorActor.prototype = {
               errors.push("Invalid access '" + access + "' in permission '" + pname + "'.");
             }
           } catch(e) {
-            log("VALIDATE MANIFEST EXCEPTION: " + e);
+            debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
             errors.push("Invalid access '" + paccess + "' in permission '" + pname + "'.");
           }
         }
@@ -275,7 +273,7 @@ SimulatorActor.prototype = {
   },
 
   onUninstallApp: function(aRequest) {
-    log("simulator actor received 'uninstallApp' command: " + aRequest.appId);
+    debug("simulator actor received 'uninstallApp' command: " + aRequest.appId);
     let window = this.simulatorWindow;
     let DOMApplicationRegistry = window.DOMApplicationRegistry;
     let appId = aRequest.appId;
@@ -286,7 +284,7 @@ SimulatorActor.prototype = {
 
     let appOrigin = DOMApplicationRegistry.webapps[appId].origin;
 
-    log("uninstalling app by origin:"+appOrigin);
+    debug("uninstalling app by origin:"+appOrigin);
 
     let runnable = {
       run: function() {
@@ -294,13 +292,13 @@ SimulatorActor.prototype = {
           let mgmt = window.navigator.mozApps.mgmt;
           let req = mgmt.uninstall({origin: appOrigin});
           req.onsuccess = function () {
-            log("uninstallApp success: " + req.result);
+            debug("uninstallApp success: " + req.result);
           }
           req.onerror = function () {
-            log("uninstallApp error: " + req.error.name);
+            debug("uninstallApp error: " + req.error.name);
           }
         } catch(e) {
-          log(e);
+          debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
         }
       }
     };
@@ -314,7 +312,7 @@ SimulatorActor.prototype = {
   },
 
   onShowNotification: function (aRequest) {
-    log("simulator actor received a 'showNotification' command");
+    debug("simulator actor received a 'showNotification' command");
     let window = this.simulatorWindow;
     window.AlertsHelper.showNotification(null, "Simulator", aRequest.userMessage);
 
@@ -325,7 +323,7 @@ SimulatorActor.prototype = {
   },
 
   onSubscribeWindowManagerEvents: function (aRequest) {
-    log("simulator actor received a 'subscribeWindowManagerEvents' command");
+    debug("simulator actor received a 'subscribeWindowManagerEvents' command");
     let ok = this._subscribeWindowManagerEvents();
 
     if (ok) {
@@ -342,7 +340,7 @@ SimulatorActor.prototype = {
   },
 
   onUnsubscribeWindowManagerEvents: function (aRequest) {
-    log("simulator actor received a 'unsubscribeWindowManagerEvents' command");
+    debug("simulator actor received a 'unsubscribeWindowManagerEvents' command");
     this._unsubscribeWindowManagerEvents();
 
     return {

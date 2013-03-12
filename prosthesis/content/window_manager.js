@@ -1,78 +1,144 @@
-{
-Cu.import("resource://prosthesis/modules/GlobalSimulatorScreen.jsm");
-let homescreen = document.getElementById("homescreen").contentWindow.wrappedJSObject;
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-let getAppIframes = function (appOrigin) {
-  return homescreen.document.
-    querySelectorAll("iframe[data-frame-origin='"+appOrigin+"']");
-};
+try {
+  let DEBUG = true;
+  let DEBUG_PREFIX = "prosthesis: window_manager.js - ";
+  let debug = DEBUG ? function debug(msg) dump(DEBUG_PREFIX+msg+"\n") : function() {};
 
-let purgeOldAppIframes = function(appOrigin) {
-  let iframes = getAppIframes(appOrigin);
-    
-  if (iframes.length == 0) {
-    return null;
-  } else if (iframes.length == 1) {
-    return iframes[0];
-  }
-  
-  let last = iframes[iframes.length-1];
-  for (let i=0; i<iframes.length-1; i++) {
-    let node = iframes[i];
-    let container = node.parentNode.parentNode;
-    container.removeChild(node.parentNode);
-  }
-  
-  return last;
-};
+  debug("loading window_manager tweaks.");
 
-let fixAllAppsSize = function() {
-  let $$ = homescreen.document.querySelectorAll.bind(homescreen.document);
-  let homescreenFrame = $$(".appWindow.homescreen")[0];
-  let homeStyle = homescreenFrame.getAttribute("style");
-  let appsFrames = Array.slice($$("iframe[data-frame-origin]")).
-    map(function(el) el.parentNode).
-    filter(function(el) !el.classList.contains("homescreen"));
+  Cu.import("resource://prosthesis/modules/GlobalSimulatorScreen.jsm");
 
-  appsFrames.forEach(function (el) {
-    el.setAttribute("style", homeStyle);
-  });
-}
+  let homescreen = shell.contentBrowser.contentWindow.wrappedJSObject;
 
+  let shellElement = document.getElementById("shell");
+  let homescreenElement = document.getElementById("homescreen");
 
-Services.obs.addObserver((function (message){
-  let appOrigin = message.wrappedJSObject.appOrigin;
-  dump("ON simulator-fix-app-iframe: " + appOrigin + "\n");
-  try {
-    dump("PURGE OLD IFRAMES\n");
-    purgeOldAppIframes(appOrigin);
-    dump("ON FIX APP ORIENTATION\n");
-    GlobalSimulatorScreen.fixAppOrientation(appOrigin);
-  } catch(e) {
-    dump("\n\n\nEXCEPTION: "+e+"\n"+e.filename+":"+e.lineNumber+"\n\n");
-  }
-}).bind(this), "simulator-fix-app-iframe", false);
+  // adjust window size
+  let fixSizeInStyle = function(width, height) {
+    return ["width: ", width, "px;", 
+            "min-width: ", width, "px;",
+            "max-width: ", width, "px;",
+            "height: ", height, "px;", 
+            "min-height: ", height, "px;",
+            "max-height: ", height, "px;"].join("");
+  };
 
-homescreen.addEventListener("resize", function() {
-  dump("ON HOMESCREEN RESIZE\n");
-  // WORKAROUND: keep the simulator window size
-  window.resizeTo(GlobalSimulatorScreen.width, GlobalSimulatorScreen.height+35);
-}, true);
+  let adjustWindowSize = function(width, height) {
+    debug("adjustWindowSize: " + width + " " + height + "\n");
+    let fixedSizeStyle = fixSizeInStyle(width, height);
+    shellElement.setAttribute("style", "overflow: hidden; border: none;" + 
+                              "width: auto; height: auto;");
+    homescreenElement.setAttribute("style", "-moz-box-flex: 1; overflow: hidden;" + 
+                                   "border: none;"+fixedSizeStyle);
+  };
 
-Services.scriptloader.loadSubScript("chrome://prosthesis/content/mutation_summary.js");
-
-var observer = new MutationSummary({
-  rootNode: shell.contentBrowser.contentDocument,
-  callback: function(summaries){
+  Services.obs.addObserver(function (message){
     try {
-      dump("FIX ALL APPS SIZE\n");
-      fixAllAppsSize();
+      debug("received 'simulator-adjust-window-size'.");
+      adjustWindowSize(GlobalSimulatorScreen.width,
+                       GlobalSimulatorScreen.height);
     } catch(e) {
-      dump("\n\n\nEXCEPTION: "+e+"\n"+e.filename+":"+e.lineNumber+"\n\n");
+      debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
     }
-  },
-  queries: [{ element: '.appWindow.homescreen', elementAttributes: "style" }]
-});
+  }, "simulator-adjust-window-size", false);
 
+  // handling rotate button enabling/disabling
+  let rotateButtonElement = document.getElementById("rotateButton");
+  Services.obs.addObserver(function (message){
+    try {
+      debug("received 'simulator-orientation-lock-change'.");
+      if (GlobalSimulatorScreen.mozOrientationLocked) {
+        rotateButtonElement.classList.remove("active");
+      } else {
+        rotateButtonElement.classList.add("active");
+      }
+    } catch(e) {
+      debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+    }
+  }, "simulator-orientation-lock-change", false);
+
+  // WORKAROUND: keep the simulator window size
+  let TOOLBOX_H = document.querySelector("toolbox").clientHeight;
+  homescreen.addEventListener("resize", function() {
+    debug("homescreen resize event received, resize window to fit.");
+    window.resizeTo(GlobalSimulatorScreen.width, GlobalSimulatorScreen.height+TOOLBOX_H);
+  }, true);
+
+  // WORKAROUND: force setDisplayedApp
+
+  let getAppOrientation = function(appOrigin) {
+    let appId = DOMApplicationRegistry._appId(appOrigin);
+    let manifest = DOMApplicationRegistry._manifestCache[appId];
+
+    if (manifest && manifest.orientation && 
+        isValidOrientation(manifest.orientation)) {
+      return manifest.orientation;
+    }
+  };
+
+  let isValidOrientation = function (orientation) {
+    return ["portrait", "portrait-primary", "portrait-secondary",
+            "landscape", "landscape-primary", "landscape-secondary"].
+            indexOf(orientation) > -1;
+  };
+
+  let fixAppOrientation = function(appOrigin) {
+    let orientation = getAppOrientation(appOrigin);
+    if (orientation) {
+      GlobalSimulatorScreen.mozOrientation = orientation;
+      GlobalSimulatorScreen.adjustWindowSize();      
+    }
+
+    // adjust simulator window size
+    /*adjustWindowSize(GlobalSimulatorScreen.width,
+                     GlobalSimulatorScreen.height);*/
+  };
+
+  Services.scriptloader.loadSubScript("chrome://prosthesis/content/mutation_summary.js");
+  let FIXDisplayedApp = {
+    appOrigin: null
+  };
+  var appWindowObserver = new MutationSummary({
+    rootNode: shell.contentBrowser.contentDocument,
+    queries: [{ element: 'iframe[data-frame-origin]' }],
+    callback: function(summaries) {
+      try {
+        let appOrigin = FIXDisplayedApp.appOrigin;
+        debug("PRE: " + FIXDisplayedApp.appOrigin);
+        if(appOrigin) {
+          FIXDisplayedApp.appOrigin = null;
+          let appIframe = homescreen.document.
+            querySelector("iframe[data-frame-origin='" + appOrigin + "']");
+        debug("POST: " + FIXDisplayedApp.appOrigin);
+          if (appIframe) {
+            debug("detected iframe for app: " + appOrigin);
+            debug("\tfixAppOrientation");
+            fixAppOrientation(appOrigin);
+            debug("\tsetDisplayedApp");
+            homescreen.WindowManager.setDisplayedApp(appOrigin);
+          }
+        }
+      } catch(e) {
+        debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+      }
+    }
+  });
+
+  Services.obs.addObserver(function (message){
+    try {
+      let appOrigin = message.wrappedJSObject.appOrigin;
+      debug("received 'simulator-set-displayed-app': " + appOrigin);
+
+      FIXDisplayedApp.appOrigin = appOrigin;
+    } catch(e) {
+      debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+    }
+  }, "simulator-set-displayed-app", false);
+
+} catch(e) {
+  dump(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' ')+"\n");
 }
 
