@@ -68,20 +68,24 @@ this.ADB = {
     switch(platform) {
       case "Linux":
         if (COMMONJS_MODULE) {
-          bin = uri + (require("runtime").XPCOMABI.indexOf("x86_64") == 0 ? "linux64" : "linux") + "/adb";
+          bin = uri + (require("runtime").XPCOMABI.indexOf("x86_64") == 0 ? "linux64" : "linux") + "/adb/adb";
         } else {
           bin = uri + "linux/adb";
         }
         break;
       case "Darwin":
         if (COMMONJS_MODULE) {
-          bin = uri + "mac64/adb";
+          bin = uri + "mac64/adb/adb";
         } else {
           bin = uri + "darwin/adb";
         }
         break;
       case "WINNT":
-        bin = uri + "win32/adb.exe";
+        if (COMMONJS_MODULE) {
+          bin = uri + "win32/adb/adb.exe";
+        } else {
+          bin = uri + "win32/adb.exe";
+        }
         break;
       default:
         debug("Unsupported platform : " + platform);
