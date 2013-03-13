@@ -133,10 +133,15 @@ b2g:
 	python build/make-b2g.py $(B2G_TYPE_ARG) $(B2G_PLATFORM_ARG) $(B2G_ID_ARG) $(B2G_URL_ARG)
 
 adb:
+	# We used to store the binaries in the B2G_PLATFORM/ directory, whereas
+	# now we store them in B2G_PLATFORM/adb/, which happens to be the same
+	# as the names of the executables on Mac and Linux; so we need to remove
+	# the executables from B2G_PLATFORM/ before creating B2G_PLATFORM/adb/.
 	mkdir -p addon/data/$(B2G_PLATFORM)
 	cd addon/data/$(B2G_PLATFORM) && rm -f $(ADB_BINARIES)
+	mkdir addon/data/$(B2G_PLATFORM)/adb
 	$(DOWNLOAD_CMD) $(ADB_URL)
-	unzip $(ADB_PACKAGE) -d addon/data/$(B2G_PLATFORM)
+	unzip $(ADB_PACKAGE) -d addon/data/$(B2G_PLATFORM)/adb
 
 run:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx run --templatedir template/ $(BIN_ARG) $(PROFILE_ARG)
