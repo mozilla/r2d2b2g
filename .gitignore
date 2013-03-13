@@ -7,10 +7,8 @@ addon/data/linux/b2g
 addon/data/linux64/b2g
 addon/data/win32/b2g
 
-# platform-specific ADB binaries
+# platform-specific directories containing ADB binaries
 addon/data/mac64/adb
 addon/data/linux/adb
 addon/data/linux64/adb
-addon/data/win32/adb.exe
-addon/data/win32/AdbWinApi.dll
-addon/data/win32/AdbWinUsbApi.dll
+addon/data/win32/adb

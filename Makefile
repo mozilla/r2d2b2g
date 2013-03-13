@@ -138,7 +138,7 @@ adb:
 	# as the names of the executables on Mac and Linux; so we need to remove
 	# the executables from B2G_PLATFORM/ before creating B2G_PLATFORM/adb/.
 	mkdir -p addon/data/$(B2G_PLATFORM)
-	cd addon/data/$(B2G_PLATFORM) && rm -f $(ADB_BINARIES)
+	cd addon/data/$(B2G_PLATFORM) && rm -rf adb $(ADB_BINARIES)
 	mkdir addon/data/$(B2G_PLATFORM)/adb
 	$(DOWNLOAD_CMD) $(ADB_URL)
 	unzip $(ADB_PACKAGE) -d addon/data/$(B2G_PLATFORM)/adb
