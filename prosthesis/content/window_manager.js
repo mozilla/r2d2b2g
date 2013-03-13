@@ -30,7 +30,7 @@ try {
     debug("adjustWindowSize: " + width + " " + height + "\n");
     let fixedSizeStyle = fixSizeInStyle(width, height);
     shellElement.setAttribute("style", "overflow: hidden; border: none;" + 
-                              "width: auto; height: auto;");
+                              fixedSizeStyle);
     homescreenElement.setAttribute("style", "-moz-box-flex: 1; overflow: hidden;" + 
                                    "border: none;"+fixedSizeStyle);
   };
@@ -64,11 +64,12 @@ try {
   let TOOLBOX_H = document.querySelector("toolbox").clientHeight;
   homescreen.addEventListener("resize", function() {
     debug("homescreen resize event received, resize window to fit.");
-    window.resizeTo(GlobalSimulatorScreen.width, GlobalSimulatorScreen.height+TOOLBOX_H);
+    let height = window.fullScreen ? 
+      GlobalSimulatorScreen.height : GlobalSimulatorScreen.height+TOOLBOX_H;
+    window.resizeTo(GlobalSimulatorScreen.width, height);
   }, true);
 
   // WORKAROUND: force setDisplayedApp
-
   let getAppOrientation = function(appOrigin) {
     let appId = DOMApplicationRegistry._appId(appOrigin);
     let manifest = DOMApplicationRegistry._manifestCache[appId];
@@ -92,9 +93,10 @@ try {
       GlobalSimulatorScreen.adjustWindowSize();      
     }
 
-    // adjust simulator window size
-    /*adjustWindowSize(GlobalSimulatorScreen.width,
-                     GlobalSimulatorScreen.height);*/
+    // adjust simulator window size orientation 
+    // on app without manifests (website)
+    adjustWindowSize(GlobalSimulatorScreen.width,
+                     GlobalSimulatorScreen.height);
   };
 
   Services.scriptloader.loadSubScript("chrome://prosthesis/content/mutation_summary.js");
@@ -118,7 +120,14 @@ try {
             debug("\tfixAppOrientation");
             fixAppOrientation(appOrigin);
             debug("\tsetDisplayedApp");
-            homescreen.WindowManager.setDisplayedApp(appOrigin);
+            try {
+              homescreen.WindowManager.setDisplayedApp(appOrigin);
+            } catch(e) {
+              debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+              // retry once
+              debug("retry...");
+              homescreen.WindowManager.setDisplayedApp(appOrigin);
+            }
           }
         }
       } catch(e) {
