@@ -99,7 +99,7 @@ SimulatorScreen.prototype = {
   },
 
   uninit: function () {
-    debug("destroy window: " + this.nodePrincipal.origin);    
+    debug("destroy window: " + this.nodePrincipal.origin);
     this.nodePrincipal = null;
     this._chromeObject = null;
     this._eventListenersByType = null;
@@ -123,8 +123,8 @@ SimulatorScreen.prototype = {
     }
 
     let messages = ["SimulatorScreen:orientationChange"];
-    
-    this.initialized = true;    
+
+    this.initialized = true;
     this.initHelper(aWindow, messages);
 
     let globalScreen = GlobalSimulatorScreen;
@@ -134,7 +134,7 @@ SimulatorScreen.prototype = {
 
     let els = Cc["@mozilla.org/eventlistenerservice;1"]
       .getService(Ci.nsIEventListenerService);
-    
+
     els.addSystemEventListener(aWindow, "visibilitychange",
                                this._updateVisibility.bind(this),
                                /* useCapture = */ true);
@@ -172,7 +172,7 @@ SimulatorScreen.prototype = {
         if (!listener) {
           return;
         }
-        
+
         var listeners = self._eventListenersByType[type];
         if (!listeners) {
           listeners = self._eventListenersByType[type] = [];
@@ -185,13 +185,13 @@ SimulatorScreen.prototype = {
             return;
           }
         }
-        
+
         listeners.push({
           listener: listener,
           useCapture: useCapture
         });
       },
-      
+
       removeEventListener: function(type, listener, useCapture) {
         if (!self._eventListenersByType) {
           return;
@@ -211,11 +211,11 @@ SimulatorScreen.prototype = {
       },
 
       mozLockOrientation: function(orientation) {
-        if (nodePrincipal.appStatus == nodePrincipal.APP_STATUS_NOT_INSTALLED && 
+        if (nodePrincipal.appStatus == nodePrincipal.APP_STATUS_NOT_INSTALLED &&
             !aWindow.document.mozFullScreen) {
           // NOTE: refused lock because app is not installed and
           // it's not in fullscreen mode
-          debug("deny mozLockOrientation: " + origin + 
+          debug("deny mozLockOrientation: " + origin +
                 " is not installed or in fullscreen mode.");
           return false;
         }
@@ -281,7 +281,7 @@ SimulatorScreen.prototype = {
   init: function (aWindow) {
     let appOrigin = this._getOrigin(aWindow.location.href);
     debug("init called from: " + aWindow.document.nodePrincipal.origin);
-    
+
     let chromeObject = this._initChild(aWindow);
 
     debug("\tcurrent screen orientation: " + chromeObject.mozOrientation);

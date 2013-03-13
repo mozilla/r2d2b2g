@@ -13,7 +13,7 @@ Cu.import("resource://gre/modules/Services.jsm");
 
 XPCOMUtils.defineLazyServiceGetter(this, "ppmm",
     "@mozilla.org/parentprocessmessagemanager;1",
-    "nsIMessageBroadcaster"); 
+    "nsIMessageBroadcaster");
 
 let DEBUG = true;
 let DEBUG_PREFIX = "prosthesis: GlobalSimulatorScreen.jsm - ";

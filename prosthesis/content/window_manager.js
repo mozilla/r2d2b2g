@@ -18,10 +18,10 @@ try {
 
   // adjust window size
   let fixSizeInStyle = function(width, height) {
-    return ["width: ", width, "px;", 
+    return ["width: ", width, "px;",
             "min-width: ", width, "px;",
             "max-width: ", width, "px;",
-            "height: ", height, "px;", 
+            "height: ", height, "px;",
             "min-height: ", height, "px;",
             "max-height: ", height, "px;"].join("");
   };
@@ -29,9 +29,9 @@ try {
   let adjustWindowSize = function(width, height) {
     debug("adjustWindowSize: " + width + " " + height + "\n");
     let fixedSizeStyle = fixSizeInStyle(width, height);
-    shellElement.setAttribute("style", "overflow: hidden; border: none;" + 
+    shellElement.setAttribute("style", "overflow: hidden; border: none;" +
                               fixedSizeStyle);
-    homescreenElement.setAttribute("style", "-moz-box-flex: 1; overflow: hidden;" + 
+    homescreenElement.setAttribute("style", "-moz-box-flex: 1; overflow: hidden;" +
                                    "border: none;"+fixedSizeStyle);
   };
 
@@ -64,7 +64,7 @@ try {
   let TOOLBOX_H = document.querySelector("toolbox").clientHeight;
   homescreen.addEventListener("resize", function() {
     debug("homescreen resize event received, resize window to fit.");
-    let height = window.fullScreen ? 
+    let height = window.fullScreen ?
       GlobalSimulatorScreen.height : GlobalSimulatorScreen.height+TOOLBOX_H;
     window.resizeTo(GlobalSimulatorScreen.width, height);
   }, true);
@@ -74,7 +74,7 @@ try {
     let appId = DOMApplicationRegistry._appId(appOrigin);
     let manifest = DOMApplicationRegistry._manifestCache[appId];
 
-    if (manifest && manifest.orientation && 
+    if (manifest && manifest.orientation &&
         isValidOrientation(manifest.orientation)) {
       return manifest.orientation;
     }
@@ -90,10 +90,10 @@ try {
     let orientation = getAppOrientation(appOrigin);
     if (orientation) {
       GlobalSimulatorScreen.mozOrientation = orientation;
-      GlobalSimulatorScreen.adjustWindowSize();      
+      GlobalSimulatorScreen.adjustWindowSize();
     }
 
-    // adjust simulator window size orientation 
+    // adjust simulator window size orientation
     // on app without manifests (website)
     adjustWindowSize(GlobalSimulatorScreen.width,
                      GlobalSimulatorScreen.height);
@@ -150,4 +150,3 @@ try {
 } catch(e) {
   dump(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' ')+"\n");
 }
-
