@@ -118,8 +118,10 @@ let simulator = module.exports = {
         // app reinstall completed
         // success/error detection and report to the user
         if (error) {
+          simulator.sendListApps();
           simulator.error(error);
         } else {
+          simulator.sendListApps();
           simulator.runApp(app);
         }
       });
@@ -410,6 +412,7 @@ let simulator = module.exports = {
       // app reinstall completed
       // success/error detection and report to the user
       if (error) {
+        simulator.sendListApps();
         simulator.error(error);
       } else {
         simulator.sendListApps();
@@ -603,6 +606,7 @@ let simulator = module.exports = {
     this.updateApp(id, function next(error, app) {
       // success/error detection and report to the user
       if (error) {
+        simulator.sendListApps();
         simulator.error(error);
       } else {
         simulator.sendListApps();
@@ -1045,6 +1049,7 @@ let simulator = module.exports = {
         simulator.updateApp(message.id, function next(error, app) {
           // success/error detection and report to the user
           if (error) {
+            simulator.sendListApps();
             simulator.error(error);
           } else {
             simulator.sendListApps();
