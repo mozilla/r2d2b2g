@@ -59,6 +59,7 @@ var Simulator = {
         name: "addAppByTab",
         url: input.val()
       }, "*");
+      $("#form-add-app").get(0).reset();
     });
 
     document.documentElement.addEventListener(
