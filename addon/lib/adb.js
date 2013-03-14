@@ -9,10 +9,10 @@
 // Whether or not this script is being loaded as a CommonJS module
 // (from an addon built using the Add-on SDK).  If it isn't a CommonJS Module,
 // then it's a JavaScript Module.
-const COMMONJS_MODULE = ("require" in this);
+const COMMONJS = ("require" in this);
 
 let components;
-if (COMMONJS_MODULE) {
+if (COMMONJS) {
   components = require("chrome").components;
 } else {
   components = Components;
@@ -27,8 +27,8 @@ Cu.import("resource://gre/modules/Services.jsm");
 // since they aren't defined in a CommonJS module by default.
 let hiddenWindow = Cc['@mozilla.org/appshell/appShellService;1']
                      .getService(Ci.nsIAppShellService).hiddenDOMWindow;
-let TextEncoder = COMMONJS_MODULE ? hiddenWindow.TextEncoder : TextEncoder;
-let TextDecoder = COMMONJS_MODULE ? hiddenWindow.TextDecoder : TextDecoder;
+let TextEncoder = COMMONJS ? hiddenWindow.TextEncoder : TextEncoder;
+let TextDecoder = COMMONJS ? hiddenWindow.TextDecoder : TextDecoder;
 
 try {
   Cu.import("resource://gre/modules/commonjs/promise/core.js");
@@ -37,7 +37,7 @@ try {
 }
 Cu.import("resource://gre/modules/osfile.jsm");
 
-if (!COMMONJS_MODULE) {
+if (!COMMONJS) {
   this.EXPORTED_SYMBOLS = ["ADB"];
 }
 
@@ -58,7 +58,7 @@ this.ADB = {
     let platform = Services.appinfo.OS;
 
     let uri;
-    if (COMMONJS_MODULE) {
+    if (COMMONJS) {
       uri = require("self").data.url("");
     } else {
       uri = "chrome://b2g-remote/content/binaries/";
@@ -67,21 +67,21 @@ this.ADB = {
     let bin;
     switch(platform) {
       case "Linux":
-        if (COMMONJS_MODULE) {
+        if (COMMONJS) {
           bin = uri + (require("runtime").XPCOMABI.indexOf("x86_64") == 0 ? "linux64" : "linux") + "/adb/adb";
         } else {
           bin = uri + "linux/adb";
         }
         break;
       case "Darwin":
-        if (COMMONJS_MODULE) {
+        if (COMMONJS) {
           bin = uri + "mac64/adb/adb";
         } else {
           bin = uri + "darwin/adb";
         }
         break;
       case "WINNT":
-        if (COMMONJS_MODULE) {
+        if (COMMONJS) {
           bin = uri + "win32/adb/adb.exe";
         } else {
           bin = uri + "win32/adb.exe";
@@ -92,7 +92,7 @@ this.ADB = {
         return;
     }
 
-    if (COMMONJS_MODULE) {
+    if (COMMONJS) {
       let url = Services.io.newURI(bin, null, null)
                         .QueryInterface(Ci.nsIFileURL);
       this._adb = url.file;
@@ -588,6 +588,6 @@ this.ADB = {
 
 this.ADB.init();
 
-if (COMMONJS_MODULE) {
+if (COMMONJS) {
   module.exports = this.ADB;
 }
