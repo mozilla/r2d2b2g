@@ -83,7 +83,14 @@ let simulator = module.exports = {
 
     if (worker) {
       worker.on("message", this.onMessage.bind(this));
-      worker.on("detach", (function(message) worker = null).bind(this));
+      worker.on("detach", (function(message) {
+        worker = null;
+        ADB.kill();
+      }).bind(this));
+
+      if (!ADB.ready) {
+        ADB.start();
+      }
     }
   },
 

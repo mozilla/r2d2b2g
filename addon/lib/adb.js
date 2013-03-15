@@ -51,8 +51,6 @@ this.ADB = {
   get ready() ready,
   set ready(newVal) { ready = newVal },
 
-  // We startup by launching adb in server mode, and setting
-  // the tcp socket preference to |true|
   init: function adb_init() {
     debug("init");
     let platform = Services.appinfo.OS;
@@ -103,7 +101,11 @@ this.ADB = {
                          .QueryInterface(Ci.nsIFileURL);
       this._adb = url.file;
     }
+  },
 
+  // We startup by launching adb in server mode, and setting
+  // the tcp socket preference to |true|
+  start: function adb_start() {
     let process = Cc["@mozilla.org/process/util;1"]
                     .createInstance(Ci.nsIProcess);
     process.init(this._adb);
@@ -118,6 +120,33 @@ this.ADB = {
             self.ready = true;
             break;
           case "process-failed":
+            self.ready = false;
+            break;
+        }
+      }
+    }, false);
+  },
+
+  kill: function adb_kill() {
+    let process = Cc["@mozilla.org/process/util;1"]
+                    .createInstance(Ci.nsIProcess);
+    process.init(this._adb);
+    let params = ["kill-server"];
+    let self = this;
+    process.runAsync(params, params.length, {
+      observe: function(aSubject, aTopic, aData) {
+        switch(aTopic) {
+          case "process-finished":
+            debug("adb kill-server: " + process.exitValue);
+            Services.obs.notifyObservers(null, "adb-killed", null);
+            self.ready = false;
+            break;
+          case "process-failed":
+            debug("adb kill-server failure: " + process.exitValue);
+            // It's hard to say whether or not ADB is ready at this point,
+            // but it seems safer to assume that it isn't, so code that wants
+            // to use it later will try to restart it.
+            Services.obs.notifyObservers(null, "adb-killed", null);
             self.ready = false;
             break;
         }
