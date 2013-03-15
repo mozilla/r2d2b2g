@@ -117,11 +117,10 @@ let simulator = module.exports = {
       this.updateApp(manifestFile, function next(error, app) {
         // app reinstall completed
         // success/error detection and report to the user
+        simulator.sendListApps();
         if (error) {
-          simulator.sendListApps();
           simulator.error(error);
         } else {
-          simulator.sendListApps();
           simulator.runApp(app);
         }
       });
@@ -179,6 +178,10 @@ let simulator = module.exports = {
 
   updateApp: function(id, next) {
     console.log("Simulator.updateApp " + id);
+    // refresh app list on the dashboard before validation
+    // (prevents silent errors on a stalled validation)
+    simulator.sendListApps();
+
     simulator.validateApp(id, function(error, app) {
       // update dashboard app validation info
       simulator.sendListApps();
@@ -411,11 +414,10 @@ let simulator = module.exports = {
     simulator.updateApp(id, function next(error, app) {
       // app reinstall completed
       // success/error detection and report to the user
+      simulator.sendListApps();
       if (error) {
-        simulator.sendListApps();
         simulator.error(error);
       } else {
-        simulator.sendListApps();
         simulator.runApp(app);
       }
     });
@@ -605,11 +607,10 @@ let simulator = module.exports = {
 
     this.updateApp(id, function next(error, app) {
       // success/error detection and report to the user
+      simulator.sendListApps();
       if (error) {
-        simulator.sendListApps();
         simulator.error(error);
       } else {
-        simulator.sendListApps();
         simulator.runApp(app);
       }
     });
@@ -1047,12 +1048,11 @@ let simulator = module.exports = {
         break;
       case "updateApp":
         simulator.updateApp(message.id, function next(error, app) {
+          simulator.sendListApps();
           // success/error detection and report to the user
           if (error) {
-            simulator.sendListApps();
             simulator.error(error);
           } else {
-            simulator.sendListApps();
             simulator.runApp(app);
           }
         });
