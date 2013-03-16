@@ -178,23 +178,46 @@ let simulator = module.exports = {
 
   updateApp: function(id, next) {
     console.log("Simulator.updateApp " + id);
-    // refresh app list on the dashboard before validation
-    // (prevents silent errors on a stalled validation)
-    simulator.sendListApps();
 
-    simulator.validateApp(id, function(error, app) {
-      // update dashboard app validation info
-      simulator.sendListApps();
+    simulator._updateCachedManifest(id, function(error, manifest) {
+      let app = simulator.apps[id];
+      app.validation = {errors: [], warnings: []};
 
-      if (!error) {
-        // NOTE: try to updateApp if there isn't any blocking error
-        simulator._updateApp(id, next);
-      } else {
-        // validation error
+      if (error) {
+        app.validation.errors.push("Error updating cached Manifest: " + error);
         if (typeof next === "function") {
-          next(error, app);
+          // NOTE: blocking error
+          next(Error("Unable to read manifest: '" + id + "'."), app);
+        }
+        return;
+      }
+
+      if (!app.manifest) {
+        app.validation.errors.push("Missing Manifest.");
+        if (typeof next === "function") {
+          // NOTE: blocking error
+          next(Error("Missing manifest: '" + id + "'."), app);
+          return;
         }
       }
+      // update dashboard app validation info to prevents silent errors
+      // on stalled validations
+      simulator.sendListApps();
+
+      simulator.validateApp(id, function(error, app) {
+        // update dashboard app validation info
+        simulator.sendListApps();
+
+        if (!error) {
+          // NOTE: try to updateApp if there isn't any blocking error
+          simulator._updateApp(id, next);
+        } else {
+          // validation error
+          if (typeof next === "function") {
+            next(error, app);
+          }
+        }
+      });
     });
   },
 
@@ -686,78 +709,60 @@ let simulator = module.exports = {
     let app = simulator.apps[id];
     app.validation = {errors: [], warnings: []};
 
-    this._updateCachedManifest(id, function(error, manifest) {
-      if (error) {
-        app.validation.errors.push("Error updating cached Manifest: " + error);
-        if (typeof next === "function") {
-          // NOTE: blocking error
-          next(Error("Unable to read manifest: '" + id + "'."), app);
-        }
+    // NOTE: add errors/warnings for name and icons manifest attributes
+    //       and updates name and icon attributes on the registered app object
+    simulator._validateNameIcons(app.validation.errors, app.validation.warnings,
+                                 app.manifest, app);
+    // NOTE: add errors/warnings for WebAPIs not supported by the simulator
+    simulator._validateWebAPIs(app.validation.errors, app.validation.warnings,
+                               app.manifest);
+
+    if (["generated", "hosted"].indexOf(app.type) !== -1 &&
+        ["certified", "privileged"].indexOf(app.manifest.type) !== -1) {
+      app.validation.errors.push("Hosted App can't be type '" + app.manifest.type + "'.");
+      if (typeof next === "function") {
+        // NOTE: blocking error
+        next(Error("Invalid Manifest."), app);
         return;
       }
-
-      if (!app.manifest) {
-        app.validation.errors.push("Missing Manifest.");
-        if (typeof next === "function") {
-          // NOTE: blocking error
-          next(Error("Missing manifest: '" + id + "'."), app);
+    } else {
+      app.validation.running = true;
+      simulator.run(function (error) {
+        // on error running b2g-desktop, reports error and exits
+        if (error) {
+          if (typeof next === "function") {
+            app.validation.errors.push("Unable to complete manifest validation: " +
+                                       error);
+            next(Error("Unable to complete manifest validation."), app);
+          }
           return;
         }
-      }
 
-      // NOTE: add errors/warnings for name and icons manifest attributes
-      //       and updates name and icon attributes on the registered app object
-      simulator._validateNameIcons(app.validation.errors, app.validation.warnings, 
-                                   app.manifest, app);
-      // NOTE: add errors/warnings for WebAPIs not supported by the simulator
-      simulator._validateWebAPIs(app.validation.errors, app.validation.warnings, 
-                                 app.manifest);
-
-      if (["generated", "hosted"].indexOf(app.type) !== -1 &&
-          ["certified", "privileged"].indexOf(app.manifest.type) !== -1) {
-        app.validation.errors.push("Hosted App can't be type '" + app.manifest.type + "'.");
-        if (typeof next === "function") {
-          // NOTE: blocking error
-          next(Error("Invalid Manifest."), app);
-          return;
-        }
-      } else {
-        simulator.run(function (error) {
-          // on error running b2g-desktop, reports error and exits
-          if (error) {
-            if (typeof next === "function") {
-              app.validation.errors.push("Unable to complete manifest validation: " +
-                                         error);
-              next(Error("Unable to complete manifest validation."), app);
-            }
+        simulator.remoteSimulator.validateManifest(app.manifest, function (reply) {
+          app.validation.running = false;
+          console.debug("VALIDATE REPLY: ", JSON.stringify(reply, null, 2));
+          if (reply.error) {
+            app.validation.errors.push("Unable to complete manifest validation: " +
+                                       reply.error);
+            next(Error("Unable to complete manifest validation."), app);
             return;
           }
-
-          simulator.remoteSimulator.validateManifest(app.manifest, function (reply) {
-            console.log("VALIDATE REPLY: ", JSON.stringify(reply, null, 2));
-            if (reply.error) {
-              app.validation.errors.push("Unable to complete manifest validation: " +
-                                         reply.error);
-              next(Error("Unable to complete manifest validation."), app);
-              return;
+          if (!reply.success && reply.errors && reply.errors.length > 0) {
+            // concatenate validation errors as warnings (non-blocking errors)
+            app.validation.warnings = app.validation.warnings.
+              concat(reply.errors);
+          }
+          // check if there's any validation error
+          if (typeof next === "function") {
+            if (app.validation.errors.length === 0) {
+              next(null, app);
+            } else {
+              next(Error("Invalid Manifest."), app);
             }
-            if (!reply.success && reply.errors && reply.errors.length > 0) {
-              // concatenate validation errors as warnings (non-blocking errors)
-              app.validation.warnings = app.validation.warnings.
-                concat(reply.errors);
-            }
-            // check if there's any validation error
-            if (typeof next === "function") {
-              if (app.validation.errors.length === 0) {
-                next(null, app);
-              } else {
-                next(Error("Invalid Manifest."), app);
-              }
-            }
-          });
+          }
         });
-      }
-    });
+      });
+    }
   },
 
   _validateNameIcons: function(errors, warnings, manifest, app) {
