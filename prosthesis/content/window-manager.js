@@ -52,6 +52,20 @@ let SimulatorWindowManager = {
         this._rotateButtonElement.classList.add("active");
       }
     }).bind(this), "simulator-orientation-lock-change", false);
+
+    // inject b2g mobile agent stylesheet
+    Services.obs.addObserver(
+      function injectStylesheet(subject, topic, data) {
+        debug("injectStylesheet: " + data);
+        let URL = Services.io.newURI("chrome://prosthesis/content/b2g.css",
+                                     null, null);
+        let winUtils = subject.QueryInterface(Ci.nsIInterfaceRequestor).
+          getInterface(Ci.nsIDOMWindowUtils);
+        winUtils.loadSheet(URL, winUtils.AGENT_SHEET);
+      },
+      "content-document-global-created",
+      false
+    );
   },
   _initKeepWindowSize: function() {
     // WORKAROUND: keep the simulator window size
