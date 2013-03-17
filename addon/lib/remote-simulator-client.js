@@ -25,14 +25,14 @@ const PingbackServer = require("pingback-server");
 // import debuggerSocketConnect and DebuggerClient
 const dbgClient = Cu.import("resource://gre/modules/devtools/dbg-client.jsm");
 
-// add an unsolicited notification for geolocation
-dbgClient.UnsolicitedNotifications.geolocationRequest = "geolocationRequest";
+const RemoteGeolocationClient = require("remote-geolocation-client");
 
 const RemoteSimulatorClient = Class({
   extends: EventTarget,
   initialize: function initialize(options) {
     EventTarget.prototype.initialize.call(this, options);
     this._hookInternalEvents();
+    this._remoteGeolocationClient = new RemoteGeolocationClient();
   },
   // check if b2g is running and connected
   get isConnected() this._clientConnected,
@@ -84,17 +84,13 @@ const RemoteSimulatorClient = Class({
       }).bind(this));
     });
 
-    // on clientReady, track remote target, resubscribe old window manager
+    // on clientReady, track remote target
     // listeners and emit an high level "ready" event
     this.on("clientReady", function (remote) {
       console.debug("rsc.onClientReady");
       this._remote = remote;
-      this._unsubscribeWindowManagerEvents();
-      this._subscribeWindowManagerEvents(function(packet) {
-        console.debug("received a gaia WindowManager event: "+JSON.stringify(packet));
-      });
+      this._remoteGeolocationClient.connectDebuggerClient(this.remoteDebuggerPort);
       emit(this, "ready", null);
-      this.ping();
     });
 
     // on clientClosed, untrack old remote target and emit 
@@ -206,24 +202,6 @@ const RemoteSimulatorClient = Class({
       emit(this, "clientClosed", {client: client});
     }).bind(this));
 
-    client.addListener("geolocationRequest", (function() {
-      let geolocation = Cc["@mozilla.org/geolocation;1"].
-                        getService(Ci.nsIDOMGeoGeolocation);
-      geolocation.getCurrentPosition((function success(position) {
-        let remote = this._remote;
-        remote.client.request({
-          to: remote.simulator,
-          message: {
-            lat: position.coords.latitude,
-            lon: position.coords.longitude,
-          },
-          type: "geolocationResponse"
-        });
-      }).bind(this), function error() {
-        console.error("error getting current position");
-      });
-    }).bind(this));
-
     client.connect((function () {
       emit(this, "clientConnected", {client: client});
     }).bind(this));
@@ -268,7 +246,7 @@ const RemoteSimulatorClient = Class({
                                 onResponse);
   },
 
-validateManifest: function(manifest, onResponse) {
+  validateManifest: function(manifest, onResponse) {
     this._remote.client.request({ to: this._remote.simulator,
                                   type: "validateManifest",
                                   manifest: manifest,
@@ -288,33 +266,6 @@ validateManifest: function(manifest, onResponse) {
   ping: function(onResponse) {
     let remote = this._remote;
     remote.client.request({to: remote.simulator, type: "ping"}, onResponse);
-  },
-
-  // send a subscribeWindowManagerEvents request to the remote simulator actor
-  // NOTE: this events will be automatically sent on clientReady
-  _subscribeWindowManagerEvents: function(onEvent) {
-    let remote = this._remote;
-
-    let handler = (function(type, packet) {
-      let unregister = onEvent(packet);
-      if (unregister) {
-        this._offRemotePacket("windowManagerEvent", handler);
-      }
-    }).bind(this);
-
-    this._onRemotePacket("windowManagerEvent", handler);
-
-    let remote = this._remote;
-    remote.client.request({to: remote.simulator, type: "subscribeWindowManagerEvents"}, 
-                          onEvent);
-  },
-
-  // send a unsubscribeWindowManagerEvents request to the remote simulator actor
-  _unsubscribeWindowManagerEvents: function() {
-    let remote = this._remote;
-    this._unsubscribeRemotePacket("windowManagerEvent");
-    remote.client.request({to: remote.simulator, type: "unsubscribeWindowManagerEvents"}, 
-                          function() {});
   },
 
   /* REMOTE PACKET LISTENERS MANAGEMENT */
