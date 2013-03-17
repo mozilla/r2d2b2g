@@ -5,6 +5,7 @@
 debug("loading window_manager tweaks.");
 
 Cu.import("resource://prosthesis/modules/GlobalSimulatorScreen.jsm");
+Cu.import("resource://prosthesis/modules/B2GAgentSheet.jsm");
 
 navigator.mozSettings
   .createLock().set({'homescreen.ready': false});
@@ -89,6 +90,49 @@ let SimulatorWindowManager = {
     this._adjustWindowSize(GlobalSimulatorScreen.width,
                            GlobalSimulatorScreen.height);
   },
+  _applyB2GStylesheet: function(domEl) {
+    if (domEl.appManifestURL === "app://homescreen.gaiamobile.org/manifest.webapp") {
+      // NOTE: skip homescreen because as side-effects homescreen will not
+      // be rendered correctly
+      return;
+    }
+    debug("apply B2G stylesheet on contentWindow",
+      domEl.contentDocument.nodePrincipal.origin);
+    switchToB2GAgentSheet(domEl);
+    this._monitorForNestedMozBrowsers(domEl);
+  },
+  _monitorForNestedMozBrowsers: function(domEl) {
+    let doMonitor = (function () {
+      debug("MONITOR for mozbrowsers", domEl.contentDocument.nodePrincipal.origin);
+      if (this._mozBrowserObserver) {
+        this._mozBrowserObserver.disconnect();
+      }
+      this._mozBrowserObserver = new MutationSummary({
+        rootNode: domEl.contentDocument,
+        queries: [{ element: 'iframe[mozbrowser]' }],
+        callback: function(summaries) {
+          debug("MONITORED mozbrowsers", JSON.stringify(summaries,null,2));
+          if (summaries[0].added) {
+            summaries[0].added.forEach(function(nestedEl) {
+              debug("ELEMENT contentWindow", nestedEl.contentDocument.nodePrincipal.origin);
+              switchToB2GAgentSheet(nestedEl);
+            });
+          }
+        }
+      });
+    }).bind(this);
+
+    domEl.addEventListener("unload", (function cb() {
+      domEl.removeEventListener("unload", cb);
+      domEl.removeEventListener("load", doMonitor);
+      if (this._mozBrowserObserver) {
+        this._mozBrowserObserver.disconnect();
+        this._mozBrowserObserver = null;
+      }
+    }).bind(this), true);
+
+    domEl.addEventListener("load", doMonitor, true);
+  },
   // WORKAROUND: force setDisplayedApp
   _initMutationObservers: function() {
     let FIXDisplayedApp = {
@@ -119,6 +163,7 @@ let SimulatorWindowManager = {
 
     let homescreen = this._homescreen;
     let fixAppOrientation = this._fixAppOrientation.bind(this);
+    let applyB2GStylesheet = this._applyB2GStylesheet.bind(this);
 
     var appWindowObserver = new MutationSummary({
       rootNode: shell.contentBrowser.contentDocument,
@@ -128,6 +173,8 @@ let SimulatorWindowManager = {
         let appOrigin = FIXDisplayedApp.appOrigin;
         summaries[0].added.forEach(function(iframe) {
           try {
+            applyB2GStylesheet(iframe);
+
             if (detectHomescreen(iframe)) {
               FIXDisplayedApp.homescreenLoaded = true;
             }
