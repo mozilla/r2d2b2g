@@ -200,8 +200,11 @@ let simulator = module.exports = {
           return;
         }
       }
-      // update dashboard app validation info to prevents silent errors
-      // on stalled validations
+
+      // Update the app listing on the Dashboard.  We do this again after
+      // validation, but validation can stall and never call our callback;
+      // and we want to make sure the app listing is updated with the info
+      // we just got from the manifest; so we do it here as well.
       simulator.sendListApps();
 
       simulator.validateApp(id, function(error, app) {
