@@ -67,18 +67,3 @@ document.getElementById("rotateButton").addEventListener("click", function() {
   Services.obs.addObserver(sendCoords, "r2d2b2g-geolocation-request", false);
 }
 
-var provider = {
-  getFile : function(prop, persistent) {
-    persistent.value = true;
-    if (prop == "coreAppsDir") {
-      dump("CUSTOM PROVIDER for coreAppsDir\n");
-      return Components.classes["@mozilla.org/file/directory_service;1"].
-           getService(Components.interfaces.nsIProperties).
-           get("ProfD", Components.interfaces.nsIFile);
-    }
-    return null;
-  },
-}
-
-Components.classes["@mozilla.org/file/directory_service;1"]
-    .getService(Components.interfaces.nsIDirectoryService).registerProvider(provider)
