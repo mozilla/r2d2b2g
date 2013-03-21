@@ -15,7 +15,7 @@ XPCOMUtils.defineLazyServiceGetter(this, "ppmm",
     "@mozilla.org/parentprocessmessagemanager;1",
     "nsIMessageBroadcaster");
 
-let DEBUG = true;
+let DEBUG = false;
 let DEBUG_PREFIX = "prosthesis: GlobalSimulatorScreen.jsm - ";
 let debug = DEBUG ? function debug(msg) dump(DEBUG_PREFIX+msg+"\n") : function() {};
 
