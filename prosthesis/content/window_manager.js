@@ -2,12 +2,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-try {
-  let DEBUG = true;
+{
+  let DEBUG = false;
   let DEBUG_PREFIX = "prosthesis: window_manager.js - ";
-  let debug = DEBUG ? function debug(msg) dump(DEBUG_PREFIX+msg+"\n") : function() {};
+  let debug = DEBUG ? 
+    function debug() dump(DEBUG_PREFIX + Array.slice(arguments).join(" ") + "\n") : 
+    function() {};
 
   debug("loading window_manager tweaks.");
+
+  navigator.mozSettings
+    .createLock().set({'homescreen.ready': false});
 
   Cu.import("resource://prosthesis/modules/GlobalSimulatorScreen.jsm");
 
@@ -27,7 +32,7 @@ try {
   };
 
   let adjustWindowSize = function(width, height) {
-    debug("adjustWindowSize: " + width + " " + height + "\n");
+    debug("adjustWindowSize:", width, height);
     let fixedSizeStyle = fixSizeInStyle(width, height);
     shellElement.setAttribute("style", "overflow: hidden; border: none;" +
                               fixedSizeStyle);
@@ -41,7 +46,7 @@ try {
       adjustWindowSize(GlobalSimulatorScreen.width,
                        GlobalSimulatorScreen.height);
     } catch(e) {
-      debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+      Cu.reportError(e);
     }
   }, "simulator-adjust-window-size", false);
 
@@ -56,7 +61,7 @@ try {
         rotateButtonElement.classList.add("active");
       }
     } catch(e) {
-      debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+      Cu.reportError(e);
     }
   }, "simulator-orientation-lock-change", false);
 
@@ -100,52 +105,66 @@ try {
   };
 
   let FIXDisplayedApp = {
-    appOrigin: null
+    appOrigin: null,
+    homescreenLoaded: false,
+    appLoaded: false
   };
+
+  let detectHomescreen = function detectHomescreen(iframe) {
+    if (iframe.appManifestURL === "app://homescreen.gaiamobile.org/manifest.webapp") {
+        navigator.mozSettings
+          .createLock().set({'homescreen.ready': true});
+        debug("HOMESCREEN READY");      
+      return true;
+    }
+
+    return false;
+  };
+
+  let detectApp = function detectApp(iframe, appOrigin) {
+    debug("TRY TO DETECT APP:", appOrigin);
+    if (iframe.appManifestURL === appOrigin+"/manifest.webapp") {
+      return true;
+    }
+
+    return false;
+  };
+
   var appWindowObserver = new MutationSummary({
     rootNode: shell.contentBrowser.contentDocument,
     queries: [{ element: 'iframe[data-frame-origin]' }],
     callback: function(summaries) {
-      try {
-        let appOrigin = FIXDisplayedApp.appOrigin;
-        debug("PRE: " + FIXDisplayedApp.appOrigin);
-        if(appOrigin) {
-          FIXDisplayedApp.appOrigin = null;
-          let appIframe = homescreen.document.
-            querySelector("iframe[data-frame-origin='" + appOrigin + "']");
-        debug("POST: " + FIXDisplayedApp.appOrigin);
-          if (appIframe) {
-            debug("detected iframe for app: " + appOrigin);
-            debug("\tfixAppOrientation");
-            fixAppOrientation(appOrigin);
-            debug("\tsetDisplayedApp");
-            try {
-              homescreen.WindowManager.setDisplayedApp(appOrigin);
-            } catch(e) {
-              debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
-              // retry once
-              debug("retry...");
-              homescreen.WindowManager.setDisplayedApp(appOrigin);
-            }
+      debug("appWindowObserver", JSON.stringify(summaries, null, 2));
+      let appOrigin = FIXDisplayedApp.appOrigin;
+      summaries[0].added.forEach(function(iframe) {          
+        try {
+          if (detectHomescreen(iframe)) {
+            FIXDisplayedApp.homescreenLoaded = true;
           }
+          if (detectApp(iframe, FIXDisplayedApp.appOrigin)) {
+            FIXDisplayedApp.appLoaded = true;
+          }
+          if(FIXDisplayedApp.homescreenLoaded &&
+             FIXDisplayedApp.appLoaded) {
+            FIXDisplayedApp.appOrigin = null;
+            fixAppOrientation(appOrigin);
+            homescreen.WindowManager.setDisplayedApp(appOrigin);
+          }
+        } catch(e) {
+          Cu.reportError(e);
         }
-      } catch(e) {
-        debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
-      }
+      });
     }
   });
 
   Services.obs.addObserver(function (message){
     try {
       let appOrigin = message.wrappedJSObject.appOrigin;
-      debug("received 'simulator-set-displayed-app': " + appOrigin);
-
+      debug("received 'simulator-set-displayed-app':", appOrigin);
       FIXDisplayedApp.appOrigin = appOrigin;
     } catch(e) {
-      debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+      Cu.reportError(e);
     }
   }, "simulator-set-displayed-app", false);
+} 
 
-} catch(e) {
-  dump(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' ')+"\n");
-}
