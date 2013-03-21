@@ -41,27 +41,19 @@
   };
 
   Services.obs.addObserver(function (message){
-    try {
-      debug("received 'simulator-adjust-window-size'.");
-      adjustWindowSize(GlobalSimulatorScreen.width,
-                       GlobalSimulatorScreen.height);
-    } catch(e) {
-      Cu.reportError(e);
-    }
+    debug("received 'simulator-adjust-window-size'.");
+    adjustWindowSize(GlobalSimulatorScreen.width,
+                     GlobalSimulatorScreen.height);
   }, "simulator-adjust-window-size", false);
 
   // handling rotate button enabling/disabling
   let rotateButtonElement = document.getElementById("rotateButton");
   Services.obs.addObserver(function (message){
-    try {
-      debug("received 'simulator-orientation-lock-change'.");
-      if (GlobalSimulatorScreen.mozOrientationLocked) {
-        rotateButtonElement.classList.remove("active");
-      } else {
-        rotateButtonElement.classList.add("active");
-      }
-    } catch(e) {
-      Cu.reportError(e);
+    debug("received 'simulator-orientation-lock-change'.");
+    if (GlobalSimulatorScreen.mozOrientationLocked) {
+      rotateButtonElement.classList.remove("active");
+    } else {
+      rotateButtonElement.classList.add("active");
     }
   }, "simulator-orientation-lock-change", false);
 
@@ -158,13 +150,9 @@
   });
 
   Services.obs.addObserver(function (message){
-    try {
-      let appOrigin = message.wrappedJSObject.appOrigin;
-      debug("received 'simulator-set-displayed-app':", appOrigin);
-      FIXDisplayedApp.appOrigin = appOrigin;
-    } catch(e) {
-      Cu.reportError(e);
-    }
+    let appOrigin = message.wrappedJSObject.appOrigin;
+    debug("received 'simulator-set-displayed-app':", appOrigin);
+    FIXDisplayedApp.appOrigin = appOrigin;
   }, "simulator-set-displayed-app", false);
 
 }
