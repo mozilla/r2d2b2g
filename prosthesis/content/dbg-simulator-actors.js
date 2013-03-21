@@ -21,8 +21,7 @@ this.EXPORTED_SYMBOLS = ["SimulatorActor"];
   * Creates a SimulatorActor. SimulatorActor provides remote access to the
   * FirefoxOS Simulator module.
   */
-let SimulatorActor = function(aConnection)
-{
+let SimulatorActor = function SimulatorActor(aConnection) {
   debug("simulator actor created for a new connection");
   this._connection = aConnection;
   this._listeners = {};
@@ -180,7 +179,7 @@ SimulatorActor.prototype = {
               return true;
             }
           });
-          
+
           if (found.length == 0) {
             cb("app not found");
           } else {
