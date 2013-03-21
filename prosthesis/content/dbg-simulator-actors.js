@@ -303,7 +303,7 @@ SimulatorActor.prototype = {
             debug("uninstallApp error: " + req.error.name);
           }
         } catch(e) {
-          debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+          Cu.reportError(e);
         }
       }
     };
