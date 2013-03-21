@@ -21,16 +21,18 @@ dbgClient.UnsolicitedNotifications.geolocationRequest = "geolocationRequest";
 
 const RemoteGeolocationClient = Class({
   extends: EventTarget,
+
   initialize: function initialize(options) {
     EventTarget.prototype.initialize.call(this, options);
     this._hookInternalEvents();
   },
-  _hookInternalEvents: function () {
+
+  _hookInternalEvents: function _hookInternalEvents() {
     // on clientConnected, register an handler to close current connection 
     // on kill and send a "listTabs" debug protocol request, finally
     // emit a clientReady event on "listTabs" reply
     this.on("clientConnected", function (data) {
-      console.debug("rsc.onClientConnected");
+      console.debug("RemoteGeolocationClient.onClientConnected");
       this._clientConnecting = false;
       this._clientConnected = true;
       let client = data.client;
@@ -50,7 +52,7 @@ const RemoteGeolocationClient = Class({
     // on clientReady, track remote target
     // listeners and emit an high level "ready" event
     this.on("clientReady", function (remote) {
-      console.debug("rsc.onClientReady");
+      console.debug("RemoteGeolocationClient.onClientReady");
       this._remote = remote;
       this._sendGeolocationReady(function(packet) {
         console.debug("GEOLOCATION READY REPLY:: "+JSON.stringify(packet, null, 2));
@@ -62,7 +64,7 @@ const RemoteGeolocationClient = Class({
     // on clientClosed, untrack old remote target and emit 
     // an high level "disconnected" event
     this.on("clientClosed", function () {
-      console.debug("rsc.onClientClosed");
+      console.debug("RemoteGeolocationClient.onClientClosed");
       this._clientConnected = false;
       this._clientConnecting = false;
       this._remote = null;
