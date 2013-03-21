@@ -1,6 +1,6 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. 
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
 'use strict';
@@ -28,7 +28,7 @@ const RemoteGeolocationClient = Class({
   },
 
   _hookInternalEvents: function _hookInternalEvents() {
-    // on clientConnected, register an handler to close current connection 
+    // on clientConnected, register an handler to close current connection
     // on kill and send a "listTabs" debug protocol request, finally
     // emit a clientReady event on "listTabs" reply
     this.on("clientConnected", function (data) {
@@ -61,7 +61,7 @@ const RemoteGeolocationClient = Class({
       emit(this, "ready", null);
     });
 
-    // on clientClosed, untrack old remote target and emit 
+    // on clientClosed, untrack old remote target and emit
     // an high level "disconnected" event
     this.on("clientClosed", function () {
       console.debug("RemoteGeolocationClient.onClientClosed");
@@ -112,7 +112,7 @@ const RemoteGeolocationClient = Class({
         console.error("error getting current position");
       });
     }).bind(this));
- 
+
     client.connect((function () {
       emit(this, "clientConnected", {client: client});
     }).bind(this));

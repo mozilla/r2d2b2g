@@ -15,8 +15,8 @@ XPCOMUtils.defineLazyModuleGetter(this, "GlobalSimulatorScreen",
 
 let DEBUG = false;
 let DEBUG_PREFIX = "prosthesis: SimulatorScreen.js - ";
-let debug = DEBUG ? 
-  function debug() dump(DEBUG_PREFIX + Array.slice(arguments) + "\n") : 
+let debug = DEBUG ?
+  function debug() dump(DEBUG_PREFIX + Array.slice(arguments) + "\n") :
   function() {};
 
 debug("loading component definition.");

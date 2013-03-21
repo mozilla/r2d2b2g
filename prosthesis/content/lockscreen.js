@@ -5,8 +5,8 @@
 {
   let DEBUG = false;
   let DEBUG_PREFIX = "prosthesis: lockscreen.js - ";
-  let debug = DEBUG ? 
-    function debug() dump(DEBUG_PREFIX + Array.slice(arguments).join(" ") + "\n") : 
+  let debug = DEBUG ?
+    function debug() dump(DEBUG_PREFIX + Array.slice(arguments).join(" ") + "\n") :
     function() {};
 
   // NOTE: disable lockscreen by default on FirefoxOS Simulator
@@ -28,7 +28,7 @@
       try {
         if (value) {
           homescreen.LockScreen.unlock(true);
-        } 
+        }
       } catch(e) {
         // keep trying to unlock (preserving lockscreen.locked=true)
         setTimeout(function () {
@@ -39,4 +39,3 @@
     });
   });
 }
-

@@ -85,7 +85,7 @@ SimulatorActor.prototype = {
     if (!DOMApplicationRegistry.webapps[appId]) {
       return { success: false, error: 'app-not-installed', message: 'App not installed.'}
     }
-    
+
     let appOrigin = DOMApplicationRegistry.webapps[appId].origin;
 
     let runnable = {
@@ -98,7 +98,7 @@ SimulatorActor.prototype = {
                   debug("RUNAPP ERROR: " + e);
                   return;
                 }
-                
+
                 try {
                   debug("RUNAPP LAUNCHING:" + app.origin);
                   app.launch();
@@ -153,7 +153,7 @@ SimulatorActor.prototype = {
             cb();
           }
         } catch(e) {
-          // go on and launch by mozApps API on exception 
+          // go on and launch by mozApps API on exception
           // (e.g. window manager is not ready)
           debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
           runnable._fixSetDisplayedApp(appOrigin);
@@ -166,8 +166,8 @@ SimulatorActor.prototype = {
             wrappedJSObject: {
               appOrigin: appOrigin
             }
-          }, 
-          "simulator-set-displayed-app", 
+          },
+          "simulator-set-displayed-app",
           null);
       },
       findAppByOrigin: function(origin, cb) {

@@ -5,8 +5,8 @@
 {
   let DEBUG = false;
   let DEBUG_PREFIX = "prosthesis: window_manager.js - ";
-  let debug = DEBUG ? 
-    function debug() dump(DEBUG_PREFIX + Array.slice(arguments).join(" ") + "\n") : 
+  let debug = DEBUG ?
+    function debug() dump(DEBUG_PREFIX + Array.slice(arguments).join(" ") + "\n") :
     function() {};
 
   debug("loading window_manager tweaks.");
@@ -114,7 +114,7 @@
     if (iframe.appManifestURL === "app://homescreen.gaiamobile.org/manifest.webapp") {
         navigator.mozSettings
           .createLock().set({'homescreen.ready': true});
-        debug("HOMESCREEN READY");      
+        debug("HOMESCREEN READY");
       return true;
     }
 
@@ -136,7 +136,7 @@
     callback: function(summaries) {
       debug("appWindowObserver", JSON.stringify(summaries, null, 2));
       let appOrigin = FIXDisplayedApp.appOrigin;
-      summaries[0].added.forEach(function(iframe) {          
+      summaries[0].added.forEach(function(iframe) {
         try {
           if (detectHomescreen(iframe)) {
             FIXDisplayedApp.homescreenLoaded = true;
@@ -166,5 +166,5 @@
       Cu.reportError(e);
     }
   }, "simulator-set-displayed-app", false);
-} 
 
+}
