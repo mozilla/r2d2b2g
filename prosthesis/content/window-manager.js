@@ -4,7 +4,7 @@
 
 {
   let DEBUG = false;
-  let DEBUG_PREFIX = "prosthesis: window_manager.js - ";
+  let DEBUG_PREFIX = "prosthesis: window-manager.js - ";
   let debug = DEBUG ?
     function debug() dump(DEBUG_PREFIX + Array.slice(arguments).join(" ") + "\n") :
     function() {};
