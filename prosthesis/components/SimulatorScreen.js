@@ -19,10 +19,6 @@ let debug = DEBUG ? function debug(msg) dump(DEBUG_PREFIX+msg+"\n") : function()
 
 debug("loading component definition.");
 
-XPCOMUtils.defineLazyServiceGetter(this, "cpmm",
-                                   "@mozilla.org/childprocessmessagemanager;1",
-                                   "nsIMessageListenerManager");
-
 function SimulatorScreen() {}
 SimulatorScreen.prototype = {
   __proto__: DOMRequestIpcHelper.prototype,
@@ -55,12 +51,13 @@ SimulatorScreen.prototype = {
       }
       this.dispatchEvent(e);
     } catch(e) {
-      debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+      Cu.reportError(e);
     }
   },
 
+  _eventListenersByType: null,
   dispatchEvent: function(evt) {
-    if (!this._eventListenersByType) {
+    if (!this.initialized) {
       return;
     }
 
@@ -73,12 +70,11 @@ SimulatorScreen.prototype = {
         try {
           if (typeof listener == "function") {
             listener.call(this, evt);
-          } else if (listener && listener.handleEvent &&
-                     typeof listener.handleEvent == "function") {
+          } else {
             listener.handleEvent(evt);
           }
         } catch (e) {
-          debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+          Cu.reportError(e);
         }
       }
     }
@@ -92,14 +88,14 @@ SimulatorScreen.prototype = {
 
     switch (aMessage.name) {
     case "SimulatorScreen:orientationChange":
-      debug("fire orientation change event to: " +this.nodePrincipal.origin);
+      debug("fire orientation change event to:", this.nodePrincipal.origin);
       this._fireMozOrientationChangeEvent();
       break;
     }
   },
 
   uninit: function () {
-    debug("destroy window: " + this.nodePrincipal.origin);
+    debug("destroy window:", this.nodePrincipal.origin);
     this.nodePrincipal = null;
     this._chromeObject = null;
     this._eventListenersByType = null;
@@ -111,13 +107,15 @@ SimulatorScreen.prototype = {
   _updateVisibility: function(evt) {
     try {
       this._visibility = evt.target.visibilityState;
-      debug(["update visibility:", this.nodePrincipal.origin, this._visibility].join(' '));
+      debug("update visibility:", this.nodePrincipal.origin, this._visibility);
     } catch(e) {
-      debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+      Cu.reportError(e);
     }
   },
 
   _initChild: function(aWindow) {
+    this._eventListenersByType = {};
+
     if (this.initialized) {
       return this._chromeObject;
     }
@@ -165,10 +163,6 @@ SimulatorScreen.prototype = {
       // These are fake implementations, will be replaced by using
       // nsJSDOMEventTargetHelper, see bug 731746
       addEventListener: function(type, listener, useCapture) {
-        if (!self._eventListenersByType) {
-          self._eventListenersByType = {};
-        }
-
         if (!listener) {
           return;
         }
@@ -193,10 +187,6 @@ SimulatorScreen.prototype = {
       },
 
       removeEventListener: function(type, listener, useCapture) {
-        if (!self._eventListenersByType) {
-          return;
-        }
-
         useCapture = !!useCapture;
 
         var listeners = self._eventListenersByType[type];
@@ -215,12 +205,12 @@ SimulatorScreen.prototype = {
             !aWindow.document.mozFullScreen) {
           // NOTE: refused lock because app is not installed and
           // it's not in fullscreen mode
-          debug("deny mozLockOrientation: " + origin +
-                " is not installed or in fullscreen mode.");
+          Cu.reportError("deny mozLockOrientation:", origin,
+                "is not installed or in fullscreen mode.");
           return false;
         }
 
-        debug(["mozLockOrientation:", orientation, "from", origin].join(' '));
+        debug("mozLockOrientation:", orientation, "from", origin);
         let changed = orientation !== globalScreen.mozOrientation;
 
         if (orientation.match(/^portrait/)) {
@@ -245,13 +235,13 @@ SimulatorScreen.prototype = {
 
           return true;
         }
-        debug("invalid orientation: '" + orientation);
+        debug("invalid orientation:", orientation);
 
         return false;
       },
 
       mozUnlockOrientation: function() {
-        debug("mozOrientationUnlock from " + nodePrincipal.origin);
+        debug("mozOrientationUnlock from", nodePrincipal.origin);
         globalScreen.unlock();
         return true;
       },
@@ -280,11 +270,11 @@ SimulatorScreen.prototype = {
 
   init: function (aWindow) {
     let appOrigin = this._getOrigin(aWindow.location.href);
-    debug("init called from: " + aWindow.document.nodePrincipal.origin);
+    debug("init called from:", aWindow.document.nodePrincipal.origin);
 
     let chromeObject = this._initChild(aWindow);
 
-    debug("\tcurrent screen orientation: " + chromeObject.mozOrientation);
+    debug("\tcurrent screen orientation:", chromeObject.mozOrientation);
 
     return chromeObject;
   }
