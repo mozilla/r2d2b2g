@@ -99,7 +99,6 @@ try {
                      GlobalSimulatorScreen.height);
   };
 
-  Services.scriptloader.loadSubScript("chrome://prosthesis/content/mutation_summary.js");
   let FIXDisplayedApp = {
     appOrigin: null
   };
