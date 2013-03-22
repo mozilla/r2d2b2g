@@ -133,12 +133,13 @@
           if (detectHomescreen(iframe)) {
             FIXDisplayedApp.homescreenLoaded = true;
           }
-          if (detectApp(iframe, FIXDisplayedApp.appOrigin)) {
+          if (appOrigin && detectApp(iframe, appOrigin)) {
             FIXDisplayedApp.appLoaded = true;
           }
           if(FIXDisplayedApp.homescreenLoaded &&
              FIXDisplayedApp.appLoaded) {
             FIXDisplayedApp.appOrigin = null;
+            FIXDisplayedApp.appLoaded = false;
             fixAppOrientation(appOrigin);
             homescreen.WindowManager.setDisplayedApp(appOrigin);
           }
