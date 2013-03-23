@@ -591,7 +591,9 @@ figure {
     border: 2px darkred dashed;
     background-color: #E5CBCB;
 }
-
+#add-app-url {
+    width: 220px;
+}
 button, input[type="url"], input[type="text"] {
     font-size: 0.8em;
     color: #444;
