@@ -10,6 +10,7 @@
     DebuggerServer.addActors('chrome://prosthesis/content/dbg-simulator-actors.js');
     // NOTE: add temporary simulatorWebAppsActor
     DebuggerServer.addActors('chrome://prosthesis/content/dbg-webapps-actors.js');
+    DebuggerServer.addActors('chrome://prosthesis/content/dbg-scratchpad-actors.js');
     pingback();
   }
 
