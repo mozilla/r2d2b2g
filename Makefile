@@ -53,14 +53,14 @@ B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/
 # Platform-specific Defines
 ifeq (win32, $(B2G_PLATFORM))
   # The URL of the specific B2G build.
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-03-04.en-US.win32.zip
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-03-26.en-US.win32.zip
 
   ADB_PACKAGE = adb-1.0.31-windows.zip
   ADB_BINARIES = adb.exe AdbWinApi.dll AdbWinUsbApi.dll
   BIN_SUFFIX = .exe
 else
 ifeq (mac64, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-03-04.en-US.mac64.dmg
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-03-26.en-US.mac64.dmg
 
   ADB_PACKAGE = adb-1.0.31-mac.zip
   ADB_BINARIES = adb
@@ -68,10 +68,10 @@ ifeq (mac64, $(B2G_PLATFORM))
   DOWNLOAD_CMD = /usr/bin/curl -O
 else
 ifeq (linux64, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-03-04.en-US.linux-x86_64.tar.bz2
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-03-26.en-US.linux-x86_64.tar.bz2
 else
 ifeq (linux, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-03-04.en-US.linux-i686.tar.bz2
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-03-26.en-US.linux-i686.tar.bz2
 endif
 endif
 
