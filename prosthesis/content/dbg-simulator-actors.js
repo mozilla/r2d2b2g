@@ -17,6 +17,36 @@ let SimulatorActor = function SimulatorActor(aConnection) {
   this._connection = aConnection;
   this._listeners = {};
   this.clientReady = false;
+
+  // NOTE: avoid confusing the debugger connection
+  // with an unsolicited event in the middle of a request, which causes
+  // the connection to stop forwarding requests to this actor.
+  // XXX Report debugger connection bug and reference bug number here.
+  let send = aConnection.send.bind(aConnection);  
+  Object.defineProperties(aConnection, {
+    send: {
+      value: function(msg) {
+        send(msg);
+        this._drainQueue();
+      }
+    },
+    enqueue: {
+      value: function(msg) {
+        this._sendQueue.push(msg);
+      },
+    },
+    _sendQueue: {
+      value: []
+    },
+    _drainQueue: {
+      value: function () {
+        let qmsg;
+        while (qmsg = this._sendQueue.pop()) {
+          send(qmsg);
+        }
+      }
+    }
+  });
 }
 
 SimulatorActor.prototype = {
@@ -36,18 +66,10 @@ SimulatorActor.prototype = {
     dumpn("simulator actor received a 'geolocationReady' command");
     this.clientReady = true;
 
-    // After ping we know we can request geolocation coordinates from client.
-    // But we do this in a timeout to avoid confusing the debugger connection
-    // with an unsolicited event in the middle of a request, which causes
-    // the connection to stop forwarding requests to this actor.
-    // XXX Report debugger connection bug and reference bug number here.
-    let timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
-    timer.initWithCallback((function() {
-      this._connection.send({
+    this._connection.enqueue({
         from: this.actorID,
         type: "geolocationRequest"
-      });
-    }).bind(this), 0, Ci.nsITimer.TYPE_ONE_SHOT);
+    });
 
     return { "msg": "geolocationReady received" };
   },
