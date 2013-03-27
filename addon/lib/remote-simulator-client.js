@@ -26,7 +26,7 @@ const PingbackServer = require("pingback-server");
 const dbgClient = Cu.import("resource://gre/modules/devtools/dbg-client.jsm");
 
 // add an unsolicited notification for geolocation
-dbgClient.UnsolicitedNotifications.geolocationRequest = "geolocationRequest"; 
+dbgClient.UnsolicitedNotifications.geolocationRequest = "geolocationRequest";
 
 const RemoteSimulatorClient = Class({
   extends: EventTarget,
@@ -211,7 +211,7 @@ const RemoteSimulatorClient = Class({
     }).bind(this));
   },
 
-  _registerGeolocationRequest: function(client) {    
+  _registerGeolocationRequest: function(client) {
     client.addListener("geolocationRequest", (function() {
       console.debug("GEOLOCATION REQUEST");
       let remote = this._remote;

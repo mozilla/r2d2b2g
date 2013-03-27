@@ -22,7 +22,7 @@ let SimulatorActor = function SimulatorActor(aConnection) {
   // with an unsolicited event in the middle of a request, which causes
   // the connection to stop forwarding requests to this actor.
   // XXX Report debugger connection bug and reference bug number here.
-  let send = aConnection.send.bind(aConnection);  
+  let send = aConnection.send.bind(aConnection);
   Object.defineProperties(aConnection, {
     send: {
       value: function(msg) {

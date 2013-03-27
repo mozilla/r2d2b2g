@@ -5,7 +5,7 @@
 // NOTE: disable lockscreen by default on FirefoxOS Simulator
 SettingsListener.observe("lockscreen.enabled", false, function(value) {
   debug("LOCKSCREEN ENABLED: "+value);
-  
+
   if (!value) {
     return;
   }

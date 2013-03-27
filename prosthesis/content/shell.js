@@ -5,8 +5,8 @@
 const DISABLE_DEBUG = false;
 
 let debug = DISABLE_DEBUG ? function () {} : function debugSimulator() {
-  let tag = Components.stack.caller ? 
-    (Components.stack.caller.filename + " L" + Components.stack.caller.lineNumber) : 
+  let tag = Components.stack.caller ?
+    (Components.stack.caller.filename + " L" + Components.stack.caller.lineNumber) :
     "";
   dump(" -*- " + tag + ": " + Array.slice(arguments).join(" ") + "\n");
 };
