@@ -51,12 +51,12 @@ SimulatorActor.prototype = {
     // the connection to stop forwarding requests to this actor.
     // XXX Report debugger connection bug and reference bug number here.
     let timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
-    timer.initWithCallback(function() {
+    timer.initWithCallback((function() {
       this._connection.send({
         from: this.actorID,
         type: "geolocationRequest"
       });
-    }, 0, Ci.nsITimer.TYPE_ONE_SHOT);
+    }).bind(this), 0, Ci.nsITimer.TYPE_ONE_SHOT);
 
     return { "msg": "geolocationReady received" };
   },

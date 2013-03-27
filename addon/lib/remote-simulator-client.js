@@ -25,14 +25,14 @@ const PingbackServer = require("pingback-server");
 // import debuggerSocketConnect and DebuggerClient
 const dbgClient = Cu.import("resource://gre/modules/devtools/dbg-client.jsm");
 
-const RemoteGeolocationClient = require("remote-geolocation-client");
+// add an unsolicited notification for geolocation
+dbgClient.UnsolicitedNotifications.geolocationRequest = "geolocationRequest"; 
 
 const RemoteSimulatorClient = Class({
   extends: EventTarget,
   initialize: function initialize(options) {
     EventTarget.prototype.initialize.call(this, options);
     this._hookInternalEvents();
-    this._remoteGeolocationClient = new RemoteGeolocationClient();
   },
   // check if b2g is running and connected
   get isConnected() this._clientConnected,
@@ -89,7 +89,9 @@ const RemoteSimulatorClient = Class({
     this.on("clientReady", function (remote) {
       console.debug("rsc.onClientReady");
       this._remote = remote;
-      this._remoteGeolocationClient.connectDebuggerClient(this.remoteDebuggerPort);
+      this._sendGeolocationReady(function(packet) {
+        console.debug("GEOLOCATION READY REPLY:: "+JSON.stringify(packet, null, 2));
+      });
       emit(this, "ready", null);
     });
 
@@ -202,9 +204,39 @@ const RemoteSimulatorClient = Class({
       emit(this, "clientClosed", {client: client});
     }).bind(this));
 
+    this._registerGeolocationRequest(client);
+
     client.connect((function () {
       emit(this, "clientConnected", {client: client});
     }).bind(this));
+  },
+
+  _registerGeolocationRequest: function(client) {    
+    client.addListener("geolocationRequest", (function() {
+      console.debug("GEOLOCATION REQUEST");
+      let remote = this._remote;
+      let geolocation = Cc["@mozilla.org/geolocation;1"].
+                        getService(Ci.nsIDOMGeoGeolocation);
+      geolocation.getCurrentPosition(function success(position) {
+        console.debug("GEOLOCATION RESPONSE", remote.simulator);
+        remote.client.request({
+          to: remote.simulator,
+          message: {
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+          },
+          type: "geolocationResponse"
+        });
+      }, function error() {
+        console.error("error getting current position");
+      });
+    }).bind(this));
+  },
+
+  _sendGeolocationReady: function(onResponse) {
+    console.debug("GEOLOCATION READY");
+    this._remote.client.request({to: this._remote.simulator, type: "geolocationReady"},
+                                onResponse);
   },
 
   // send a getBuildID request to the remote simulator actor
