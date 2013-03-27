@@ -45,11 +45,19 @@ SimulatorActor.prototype = {
     debug("simulator actor received a 'geolocationReady' command");
     this.clientReady = true;
 
-    // After ping we know we can request geolocation coordinates from client
-    this._connection.send({
-      from: this.actorID,
-      type: "geolocationRequest"
-    });
+    // After ping we know we can request geolocation coordinates from client.
+    // But we do this in a timeout to avoid confusing the debugger connection
+    // with an unsolicited event in the middle of a request, which causes
+    // the connection to stop forwarding requests to this actor.
+    // XXX Report debugger connection bug and reference bug number here.
+    let timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
+    timer.initWithCallback(function() {
+      this._connection.send({
+        from: this.actorID,
+        type: "geolocationRequest"
+      });
+    }, 0, Ci.nsITimer.TYPE_ONE_SHOT);
+
     return { "msg": "geolocationReady received" };
   },
 
