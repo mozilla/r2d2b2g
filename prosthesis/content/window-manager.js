@@ -3,12 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 {
-  let DEBUG = false;
-  let DEBUG_PREFIX = "prosthesis: window-manager.js - ";
-  let debug = DEBUG ?
-    function debug() dump(DEBUG_PREFIX + Array.slice(arguments).join(" ") + "\n") :
-    function() {};
-
   debug("loading window_manager tweaks.");
 
   navigator.mozSettings

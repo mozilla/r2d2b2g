@@ -1,14 +1,7 @@
 // patch startDebugger to add simulator-actors and pingback simulator manager
 // on ready.
 {
-  let log = function log(msg) {
-    var DEBUG_LOG = true;
-
-    if (DEBUG_LOG)
-      dump("prosthesis:"+msg+"\n");
-  };
-
-  log("patch RemoteDebugger.start");
+  debug("patch RemoteDebugger.start");
 
   // add simulator actors
   let presimulator_RemoteDebugger_start = RemoteDebugger.start.bind(RemoteDebugger);
@@ -29,7 +22,7 @@
 
 
   let pingback = function pingback() {
-    log("sending pingback");
+    debug("sending pingback");
 
     let pprefs = Cc['@mozilla.org/preferences-service;1']
       .getService(Ci.nsIPrefService).getBranch("devtools.prosthesis.");
@@ -47,11 +40,11 @@
         let input = transport.openInputStream(0,0,0);
         let stream = input.QueryInterface(Ci.nsIAsyncInputStream);
         stream.asyncWait({
-          onInputStreamReady: function() { log("pingback received"); }
+          onInputStreamReady: function() { debug("pingback received"); }
         }, 0, 0, Services.tm.currentThread);
-        log("pingback sent");
+        debug("pingback sent");
       } catch(e) {
-        log("EXCEPTION sending pingback: "+e.toString());
+        debug("EXCEPTION sending pingback:", e.toString());
       }
     }
   }
