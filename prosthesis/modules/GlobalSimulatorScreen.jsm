@@ -77,7 +77,9 @@ this.GlobalSimulatorScreen = {
       GlobalSimulatorScreen.height = 320;
     }
 
-    debug("notify 'simulator-adjust-window-size'.");
+    debug("notify 'simulator-adjust-window-size': " +
+          GlobalSimulatorScreen.width + "x" +
+          GlobalSimulatorScreen.height);
     Services.obs.notifyObservers(null, "simulator-adjust-window-size", null);
   }
 }
