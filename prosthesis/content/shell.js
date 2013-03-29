@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-const DISABLE_DEBUG = false;
+const DISABLE_DEBUG = true;
 
 let debug = DISABLE_DEBUG ? function () {} : function debugSimulator() {
   let tag = Components.stack.caller ?
