@@ -26,29 +26,17 @@ this.GlobalSimulatorScreen = {
   mozOrientation: "portrait-primary",
   lock: function() {
     GlobalSimulatorScreen.mozOrientationLocked = true;
-    try {
-      Services.obs.notifyObservers(null, "simulator-orientation-lock-change", null);
-    } catch(e) {
-      debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
-    }
+    Services.obs.notifyObservers(null, "simulator-orientation-lock-change", null);
   },
 
   unlock: function() {
     GlobalSimulatorScreen.mozOrientationLocked = false;
-    try {
-      Services.obs.notifyObservers(null, "simulator-orientation-lock-change", null);
-    } catch(e) {
-      debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
-    }
+    Services.obs.notifyObservers(null, "simulator-orientation-lock-change", null);
   },
 
   broadcastOrientationChange: function() {
     debug("broadcast 'SimulatorScreen:orientationChange'.");
-    try {
-      ppmm.broadcastAsyncMessage("SimulatorScreen:orientationChange", { });
-    } catch(e) {
-      debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
-    }
+    ppmm.broadcastAsyncMessage("SimulatorScreen:orientationChange", { });
   },
 
   isSameOrientation: function(appOrigin) {
