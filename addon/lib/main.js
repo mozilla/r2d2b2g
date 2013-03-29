@@ -58,7 +58,7 @@ function ensureXkeysValid() {
 
 // Restore standard remote debugger port
 // (autosaved on submit by connect.xhtml on simulator < 3.0pre5)
-function restoreStardardRemoteDebuggerPort() {
+function restoreStandardRemoteDebuggerPort() {
   Services.prefs.setIntPref("devtools.debugger.remote-port", 6000);
 }
 
@@ -83,8 +83,9 @@ if (["install", "downgrade", "upgrade"].indexOf(Self.loadReason) >= 0) {
         ensureXkeysValid();
       }
       if (Services.vc.compare(lastVersion, "3.0pre5") < 0) {
-        SStorage.storage.needsUpdateAll = true;
+        restoreStandardRemoteDebuggerPort();
       }
+      SStorage.storage.needsUpdateAll = true;
     }
   }
 }
