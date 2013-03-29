@@ -132,8 +132,8 @@ SimulatorScreen.prototype = {
     let nodePrincipal = this.nodePrincipal = aWindow.document.nodePrincipal;
     let origin = nodePrincipal.origin;
 
-    let els = Cc["@mozilla.org/eventlistenerservice;1"]
-      .getService(Ci.nsIEventListenerService);
+    let els = Cc["@mozilla.org/eventlistenerservice;1"].
+              getService(Ci.nsIEventListenerService);
 
     els.addSystemEventListener(aWindow, "visibilitychange",
                                this._updateVisibility.bind(this),
