@@ -860,12 +860,16 @@ let simulator = module.exports = {
 
   openConnectDevtools: function() {
     let port = this.remoteSimulator.remoteDebuggerPort;
+    let originalPort = Services.prefs.getIntPref("devtools.debugger.remote-port");
     Tabs.open({
       url: "chrome://browser/content/devtools/connect.xhtml",
       onReady: function(tab) {
         // NOTE: inject the allocated remoteDebuggerPort on the opened tab
         tab.attach({
           contentScript: "window.addEventListener('load', function() { document.getElementById('port').value = '"+port+"'; }, true);"
+        }).on('detach', function restoreOriginalRemotePort() {
+          // restore previous value (autosaved on submit by connect.xhtml)
+          Services.prefs.setIntPref("devtools.debugger.remote-port", originalPort);
         });
       }
     });

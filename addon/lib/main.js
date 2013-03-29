@@ -56,6 +56,12 @@ function ensureXkeysValid() {
   }
 }
 
+// Restore standard remote debugger port
+// (autosaved on submit by connect.xhtml on simulator < 3.0pre5)
+function restoreStandardRemoteDebuggerPort() {
+  Services.prefs.setIntPref("devtools.debugger.remote-port", 6000);
+}
+
 // Retrieve the last addon version from storage, and update storage if it
 // has changed, so we can do work on addon upgrade/downgrade that depends on
 // the last version the user used.
@@ -75,6 +81,9 @@ if (["install", "downgrade", "upgrade"].indexOf(Self.loadReason) >= 0) {
     if (activeAppIds.length > 0) {
       if (Services.vc.compare(lastVersion, "3.0pre3") < 0) {
         ensureXkeysValid();
+      }
+      if (Services.vc.compare(lastVersion, "3.0pre5") < 0) {
+        restoreStandardRemoteDebuggerPort();
       }
       SStorage.storage.needsUpdateAll = true;
     }
