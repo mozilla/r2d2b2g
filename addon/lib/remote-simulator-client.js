@@ -214,20 +214,21 @@ const RemoteSimulatorClient = Class({
   _registerGeolocationRequest: function(client) {
     client.addListener("geolocationRequest", (function() {
       console.debug("GEOLOCATION REQUEST");
-      let remote = this._remote;
-      let geolocation = Cc["@mozilla.org/geolocation;1"].
-                        getService(Ci.nsIDOMGeoGeolocation);
-      geolocation.getCurrentPosition(function success(position) {
-        console.debug("GEOLOCATION RESPONSE", remote.simulator);
-        remote.client.request({
-          to: remote.simulator,
+      let onsuccess = (function success(position) {
+        console.debug("GEOLOCATION RESPONSE", this._remote.simulator);
+        this._remote.client.request({
+          to: this._remote.simulator,
           message: {
             lat: position.coords.latitude,
             lon: position.coords.longitude,
           },
           type: "geolocationResponse"
         });
-      }, function error() {
+      }).bind(this);
+
+      let geolocation = Cc["@mozilla.org/geolocation;1"].
+                        getService(Ci.nsIDOMGeoGeolocation);
+      geolocation.getCurrentPosition(onsuccess, function error() {
         console.error("error getting current position");
       });
     }).bind(this));
