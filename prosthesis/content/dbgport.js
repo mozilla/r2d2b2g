@@ -1,12 +1,5 @@
 window.addEventListener("ContentStart", function() {
-  function log(msg) {
-    var DEBUG_LOG = true;
-
-    if (DEBUG_LOG)
-      dump("prosthesis:"+msg+"\n");
-  }
-
-  log("processing -dbgport command line option");
+  debug("processing -dbgport command line option");
 
   // Get the command line arguments that were passed to the b2g client
   let args = window.arguments[0].QueryInterface(Ci.nsICommandLine);
@@ -33,7 +26,7 @@ window.addEventListener("ContentStart", function() {
     let dbgprefs = Cc['@mozilla.org/preferences-service;1']
          .getService(Ci.nsIPrefService).getBranch("devtools.debugger.");
      dbgprefs.setIntPref("remote-port", parseInt(dbgport));
-    log("remote debugger will start on port: "+dbgport);
+    debug("remote debugger will start on port: "+dbgport);
   } catch(e) {
     fail("EXCEPTION setting dbgport into preferences '"+e+"': "+e.stack);
   }
@@ -48,7 +41,7 @@ window.addEventListener("ContentStart", function() {
   }
 
   function fail(msg) {
-    log(msg);
+    dump(msg + "\n");
     Services.startup.quit(Ci.nsIAppStartup.eAttemptQuit);
   }
 }, false);
