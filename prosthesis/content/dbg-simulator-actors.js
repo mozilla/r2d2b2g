@@ -355,6 +355,11 @@ SimulatorActor.prototype = {
         lon: aRequest.message.lon,
       }
     }, "r2d2b2g-geolocation-setup", null);
+
+    return {
+      message: "geolocationRequest request received",
+      success: true
+    };
   },
 
   get homescreenWindow() {
