@@ -56,6 +56,18 @@ let worker, remoteSimulator;
 let deviceConnected, adbReady, debuggerReady;
 
 let simulator = module.exports = {
+  /**
+   * Unload the module.
+   */
+  unload: function unload() {
+    // Kill the Simulator and ADB processes, so they don't continue to run
+    // unnecessarily if the user is quitting Firefox or disabling the addon;
+    // and so they close their filehandles if the user is updating the addon,
+    // which we need to do on Windows to replace the files.
+    this.kill();
+    ADB.kill();
+  },
+
   get apps() {
     return SStorage.storage.apps || (SStorage.storage.apps = {});
   },
@@ -83,7 +95,13 @@ let simulator = module.exports = {
 
     if (worker) {
       worker.on("message", this.onMessage.bind(this));
-      worker.on("detach", (function(message) worker = null).bind(this));
+      worker.on("detach", (function(message) {
+        worker = null;
+      }).bind(this));
+
+      if (!ADB.ready) {
+        ADB.start();
+      }
     }
   },
 

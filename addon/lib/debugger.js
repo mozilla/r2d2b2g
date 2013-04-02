@@ -11,10 +11,8 @@ const COMMONJS = ("require" in this);
 
 let components;
 if (COMMONJS) {
-  // CommonJS Module
   components = require("chrome").components;
 } else {
-  // JavaScript Module (JSM)
   components = Components;
 }
 let Cc = components.classes;

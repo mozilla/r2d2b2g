@@ -9,10 +9,10 @@
 // Whether or not this script is being loaded as a CommonJS module
 // (from an addon built using the Add-on SDK).  If it isn't a CommonJS Module,
 // then it's a JavaScript Module.
-const COMMONJS_MODULE = ("require" in this);
+const COMMONJS = ("require" in this);
 
 let components;
-if (COMMONJS_MODULE) {
+if (COMMONJS) {
   components = require("chrome").components;
 } else {
   components = Components;
@@ -27,8 +27,8 @@ Cu.import("resource://gre/modules/Services.jsm");
 // since they aren't defined in a CommonJS module by default.
 let hiddenWindow = Cc['@mozilla.org/appshell/appShellService;1']
                      .getService(Ci.nsIAppShellService).hiddenDOMWindow;
-let TextEncoder = COMMONJS_MODULE ? hiddenWindow.TextEncoder : TextEncoder;
-let TextDecoder = COMMONJS_MODULE ? hiddenWindow.TextDecoder : TextDecoder;
+let TextEncoder = COMMONJS ? hiddenWindow.TextEncoder : TextEncoder;
+let TextDecoder = COMMONJS ? hiddenWindow.TextDecoder : TextDecoder;
 
 try {
   Cu.import("resource://gre/modules/commonjs/promise/core.js");
@@ -37,7 +37,7 @@ try {
 }
 Cu.import("resource://gre/modules/osfile.jsm");
 
-if (!COMMONJS_MODULE) {
+if (!COMMONJS) {
   this.EXPORTED_SYMBOLS = ["ADB"];
 }
 
@@ -51,14 +51,12 @@ this.ADB = {
   get ready() ready,
   set ready(newVal) { ready = newVal },
 
-  // We startup by launching adb in server mode, and setting
-  // the tcp socket preference to |true|
   init: function adb_init() {
     debug("init");
     let platform = Services.appinfo.OS;
 
     let uri;
-    if (COMMONJS_MODULE) {
+    if (COMMONJS) {
       uri = require("self").data.url("");
     } else {
       uri = "chrome://b2g-remote/content/binaries/";
@@ -67,21 +65,21 @@ this.ADB = {
     let bin;
     switch(platform) {
       case "Linux":
-        if (COMMONJS_MODULE) {
+        if (COMMONJS) {
           bin = uri + (require("runtime").XPCOMABI.indexOf("x86_64") == 0 ? "linux64" : "linux") + "/adb/adb";
         } else {
           bin = uri + "linux/adb";
         }
         break;
       case "Darwin":
-        if (COMMONJS_MODULE) {
+        if (COMMONJS) {
           bin = uri + "mac64/adb/adb";
         } else {
           bin = uri + "darwin/adb";
         }
         break;
       case "WINNT":
-        if (COMMONJS_MODULE) {
+        if (COMMONJS) {
           bin = uri + "win32/adb/adb.exe";
         } else {
           bin = uri + "win32/adb.exe";
@@ -92,7 +90,7 @@ this.ADB = {
         return;
     }
 
-    if (COMMONJS_MODULE) {
+    if (COMMONJS) {
       let url = Services.io.newURI(bin, null, null)
                         .QueryInterface(Ci.nsIFileURL);
       this._adb = url.file;
@@ -103,7 +101,11 @@ this.ADB = {
                          .QueryInterface(Ci.nsIFileURL);
       this._adb = url.file;
     }
+  },
 
+  // We startup by launching adb in server mode, and setting
+  // the tcp socket preference to |true|
+  start: function adb_start() {
     let process = Cc["@mozilla.org/process/util;1"]
                     .createInstance(Ci.nsIProcess);
     process.init(this._adb);
@@ -118,6 +120,33 @@ this.ADB = {
             self.ready = true;
             break;
           case "process-failed":
+            self.ready = false;
+            break;
+        }
+      }
+    }, false);
+  },
+
+  kill: function adb_kill() {
+    let process = Cc["@mozilla.org/process/util;1"]
+                    .createInstance(Ci.nsIProcess);
+    process.init(this._adb);
+    let params = ["kill-server"];
+    let self = this;
+    process.runAsync(params, params.length, {
+      observe: function(aSubject, aTopic, aData) {
+        switch(aTopic) {
+          case "process-finished":
+            debug("adb kill-server: " + process.exitValue);
+            Services.obs.notifyObservers(null, "adb-killed", null);
+            self.ready = false;
+            break;
+          case "process-failed":
+            debug("adb kill-server failure: " + process.exitValue);
+            // It's hard to say whether or not ADB is ready at this point,
+            // but it seems safer to assume that it isn't, so code that wants
+            // to use it later will try to restart it.
+            Services.obs.notifyObservers(null, "adb-killed", null);
             self.ready = false;
             break;
         }
@@ -588,6 +617,6 @@ this.ADB = {
 
 this.ADB.init();
 
-if (COMMONJS_MODULE) {
+if (COMMONJS) {
   module.exports = this.ADB;
 }
