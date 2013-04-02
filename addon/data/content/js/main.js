@@ -59,6 +59,7 @@ var Simulator = {
         name: "addAppByTab",
         url: input.val()
       }, "*");
+      $("#form-add-app").get(0).reset();
     });
 
     document.documentElement.addEventListener(
@@ -232,6 +233,8 @@ var Simulator = {
                 var errors = app.validation.errors;
                 var warnings = app.validation.warnings;
 
+                var validationResultText = app.validation.running ? "RUNNING": "";
+
                 if (errors.length > 0 || warnings.length > 0) {
                   var listContainerEl = $("<ul class='app-validation-list'>");
 
@@ -259,9 +262,13 @@ var Simulator = {
 
                   listContainerEl.hide();
 
+                  if (!app.validation.running) {
+                    validationResultText = warnings.length === 0 ? "WARNINGS" : "INVALID";
+                  }
+
                   validationEl.append(
                     $("<span>")
-                      .text("Validation Result: INVALID")
+                      .text("Validation Result: " + validationResultText)
                       .prop("class", "app-validation-result"),
                     $("<a href='#'>")
                       .text(" ("+errors.length+" errors and "+warnings.length+" warnings)")
@@ -272,9 +279,10 @@ var Simulator = {
                       }),
                     listContainerEl);
                 } else {
+                  validationResultText = !app.validation.running ? "OK" : validationResultText;
                   validationEl.append(
                     $("<span>")
-                      .text("Validation Result: OK")
+                      .text("Validation Result: " + validationResultText)
                       .prop("class", "app-validation-result"));
                 }
 

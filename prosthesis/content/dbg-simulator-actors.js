@@ -4,54 +4,78 @@
 
 "use strict";
 
+dumpn("loading simulator actor definition");
+
 Components.utils.import("resource://gre/modules/Services.jsm");
-
-this.EXPORTED_SYMBOLS = ["SimulatorActor"];
-
-function log(msg) {
-  var DEBUG_LOG = true;
-
-  if (DEBUG_LOG)
-    dump("prosthesis:"+msg+"\n");
-}
-
-log("loading simulator actor definition");
 
 /**
   * Creates a SimulatorActor. SimulatorActor provides remote access to the
   * FirefoxOS Simulator module.
   */
-function SimulatorActor(aConnection)
-{
-  log("simulator actor created for a new connection");
+let SimulatorActor = function SimulatorActor(aConnection) {
+  dumpn("simulator actor created for a new connection");
   this._connection = aConnection;
   this._listeners = {};
   this.clientReady = false;
+
+  // NOTE: avoid confusing the debugger connection
+  // with an unsolicited event in the middle of a request, which causes
+  // the connection to stop forwarding requests to this actor.
+  // XXX Report debugger connection bug and reference bug number here.
+  let send = aConnection.send.bind(aConnection);
+  Object.defineProperties(aConnection, {
+    send: {
+      value: function(msg) {
+        send(msg);
+        this._drainQueue();
+      }
+    },
+    enqueue: {
+      value: function(msg) {
+        this._sendQueue.push(msg);
+      },
+    },
+    _sendQueue: {
+      value: []
+    },
+    _drainQueue: {
+      value: function () {
+        let qmsg;
+        while (qmsg = this._sendQueue.pop()) {
+          send(qmsg);
+        }
+      }
+    }
+  });
 }
 
 SimulatorActor.prototype = {
   actorPrefix: "simulator",
 
   disconnect: function() {
-    log("simulator actor connection closed");
-    this._unsubscribeWindowManagerEvents();
+    dumpn("simulator actor connection closed");
   },
 
   onPing: function(aRequest) {
-    log("simulator actor received a 'ping' command");
-    this.clientReady = true;
-
-    // After ping we know we can request geolocation coordinates from client
-    this._connection.send({
-      from: this.actorID,
-      type: "geolocationRequest"
-    });
+    dumpn("simulator actor received a 'ping' command");
 
     return { "msg": "pong" };
   },
 
+  onGeolocationReady: function(aRequest) {
+    dumpn("simulator actor received a 'geolocationReady' command");
+    this.clientReady = true;
+
+    this._connection.enqueue({
+        from: this.actorID,
+        type: "geolocationRequest"
+    });
+
+    return { "msg": "geolocationReady received" };
+  },
+
   onGetBuildID: function(aRequest) {
-    log("simulator actor received a 'getBuildID'");
+    dumpn("simulator actor received a 'getBuildID'");
     var buildID = this.simulatorWindow.navigator.buildID;
 
     return {
@@ -60,7 +84,7 @@ SimulatorActor.prototype = {
   },
 
   onLogStdout: function(aRequest) {
-    log("simulator actor received a 'logStdout' command");
+    dumpn("simulator actor received a 'logStdout' command");
     // HACK: window.dump should dump on stdout
     // https://developer.mozilla.org/en/docs/DOM/window.dump#Notes
     let dumpStdout = this.simulatorWindow.dump;
@@ -72,7 +96,7 @@ SimulatorActor.prototype = {
   },
 
   onRunApp: function(aRequest) {
-    log("simulator actor received a 'runApp' command:" + aRequest.appId);
+    dumpn("simulator actor received a 'runApp' command:" + aRequest.appId);
     let window = this.simulatorWindow;
     let homescreen = XPCNativeWrapper.unwrap(this.homescreenWindow);
     let WindowManager = homescreen.WindowManager;
@@ -89,38 +113,38 @@ SimulatorActor.prototype = {
       run: function() {
         try {
           runnable.waitHomescreenReady(function () {
-            runnable.killAppByOrigin(appOrigin, function () {
+            runnable.tryAppReloadByOrigin(appOrigin, function () {
               runnable.findAppByOrigin(appOrigin, function (e, app) {
                 if (e) {
-                  log("RUNAPP ERROR: " + e);
+                  dumpn("RUNAPP ERROR: " + e);
                   return;
                 }
 
                 try {
-                  log("RUNAPP LAUNCHING:" + app.origin);
+                  dumpn("RUNAPP LAUNCHING:" + app.origin);
                   app.launch();
-                  log("RUNAPP SUCCESS:" + appOrigin);
+                  dumpn("RUNAPP SUCCESS:" + appOrigin);
                 } catch(e) {
-                  log("RUNAPP EXCEPTION: " + e);
+                  dumpn(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
                 }
               });
             });
           });
         } catch(e) {
-          log("RUNAPP EXCEPTION: " + e);
+          dumpn(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
         }
       },
       waitHomescreenReady: function(cb) {
-        log("RUNAPP - wait homescreen ready...");
+        dumpn("RUNAPP - wait homescreen ready...");
         let res = homescreen.navigator.mozSettings.createLock().get('homescreen.ready');
         res.onsuccess = function() {
           if (res.result["homescreen.ready"]) {
-            log("RUNAPP - homescreen ready");
+            dumpn("RUNAPP - homescreen ready");
             cb();
           } else {
-            log("RUNAPP - wait for homescreen ready");
+            dumpn("RUNAPP - wait for homescreen ready");
             let wait = function (notify) {
-              log("RUNAPP - homescreen ready: "+notify.settingValue);
+              dumpn("RUNAPP - homescreen ready: "+notify.settingValue);
               if(notify.settingValue) {
                 homescreen.navigator.mozSettings.removeObserver("homescreen.ready", wait);
                 cb();
@@ -131,41 +155,41 @@ SimulatorActor.prototype = {
           }
         }
         res.onerror = function() {
-          log("RUNAPP ERROR - waitHomescreenReady: "+res.error.name);
+          dumpn("RUNAPP ERROR - waitHomescreenReady: "+res.error.name);
         }
       },
-      killAppByOrigin: function(origin, cb) {
-        log("RUNAPP: killAppByOrigin - " + origin);
+      tryAppReloadByOrigin: function(origin, cb) {
+        dumpn("RUNAPP: tryAppReloadByOrigin - " + origin);
         try {
           if (WindowManager.getRunningApps()[origin] &&
               !WindowManager.getRunningApps()[origin].killed) {
-            // app running: kill and wait for appterminated
             let app = WindowManager.getRunningApps()[origin];
-            log("RUNAPP: killAppByOrigin - wait for appterminated");
-            let once = function (evt) {
-              // filtering out other appterminated with different origin
-              if (evt.detail.origin !== origin) {
-                return;
-              }
-              log("RUNAPP: killAppByOrigin - appterminated received");
-              homescreen.removeEventListener("appterminated", once);
-              // WORKAROUND: bug (probably related to disabled oop) restarted
-              // app keep to be flagged as killed and never restarted
-              delete WindowManager.getRunningApps()[origin];
-
-              cb();
-            }
-            homescreen.addEventListener("appterminated", once, false);
-            WindowManager.kill(origin);
+            WindowManager.setDisplayedApp(origin);
+            app.reload();
+            dumpn("RUNAPP: RELOADED:" + app.origin);
           } else {
             // app not running
-            log("RUNAPP: killAppByOrigin - app is not running");
+            runnable._fixSetDisplayedApp(appOrigin);
+            dumpn("RUNAPP: killAppByOrigin - app is not running");
             cb();
           }
         } catch(e) {
-          log("RUNAPP EXCEPTION: killAppByOrigin - " + e);
+          // go on and launch by mozApps API on exception
+          // (e.g. window manager is not ready)
+          dumpn(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+          runnable._fixSetDisplayedApp(appOrigin);
           cb();
         }
+      },
+      _fixSetDisplayedApp: function(appOrigin) {
+        Services.obs.notifyObservers(
+          {
+            wrappedJSObject: {
+              appOrigin: appOrigin
+            }
+          },
+          "simulator-set-displayed-app",
+          null);
       },
       findAppByOrigin: function(origin, cb) {
         let mgmt = window.navigator.mozApps.mgmt;
@@ -198,7 +222,7 @@ SimulatorActor.prototype = {
   },
 
   onValidateManifest: function(aRequest) {
-    log("simulator actor received 'validateManifest' command: " + JSON.stringify(aRequest));
+    dumpn("simulator actor received 'validateManifest' command: " + JSON.stringify(aRequest));
     let manifest = aRequest.manifest;
     let appType = manifest.type || "web";
 
@@ -264,7 +288,7 @@ SimulatorActor.prototype = {
               errors.push("Invalid access '" + access + "' in permission '" + pname + "'.");
             }
           } catch(e) {
-            log("VALIDATE MANIFEST EXCEPTION: " + e);
+            dumpn(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
             errors.push("Invalid access '" + paccess + "' in permission '" + pname + "'.");
           }
         }
@@ -275,7 +299,7 @@ SimulatorActor.prototype = {
   },
 
   onUninstallApp: function(aRequest) {
-    log("simulator actor received 'uninstallApp' command: " + aRequest.appId);
+    dumpn("simulator actor received 'uninstallApp' command: " + aRequest.appId);
     let window = this.simulatorWindow;
     let DOMApplicationRegistry = window.DOMApplicationRegistry;
     let appId = aRequest.appId;
@@ -286,7 +310,7 @@ SimulatorActor.prototype = {
 
     let appOrigin = DOMApplicationRegistry.webapps[appId].origin;
 
-    log("uninstalling app by origin:"+appOrigin);
+    dumpn("uninstalling app by origin:"+appOrigin);
 
     let runnable = {
       run: function() {
@@ -294,13 +318,13 @@ SimulatorActor.prototype = {
           let mgmt = window.navigator.mozApps.mgmt;
           let req = mgmt.uninstall({origin: appOrigin});
           req.onsuccess = function () {
-            log("uninstallApp success: " + req.result);
+            dumpn("uninstallApp success: " + req.result);
           }
           req.onerror = function () {
-            log("uninstallApp error: " + req.error.name);
+            dumpn("uninstallApp error: " + req.error.name);
           }
         } catch(e) {
-          log(e);
+          Cu.reportError(e);
         }
       }
     };
@@ -314,7 +338,7 @@ SimulatorActor.prototype = {
   },
 
   onShowNotification: function (aRequest) {
-    log("simulator actor received a 'showNotification' command");
+    dumpn("simulator actor received a 'showNotification' command");
     let window = this.simulatorWindow;
     window.AlertsHelper.showNotification(null, "Simulator", aRequest.userMessage);
 
@@ -324,33 +348,6 @@ SimulatorActor.prototype = {
     };
   },
 
-  onSubscribeWindowManagerEvents: function (aRequest) {
-    log("simulator actor received a 'subscribeWindowManagerEvents' command");
-    let ok = this._subscribeWindowManagerEvents();
-
-    if (ok) {
-      return {
-        success: true,
-        message: "WindowManager events subscribed"
-      }
-    }
-
-    return {
-      success: false,
-      message: "WindowManager events already subscribed"
-    }
-  },
-
-  onUnsubscribeWindowManagerEvents: function (aRequest) {
-    log("simulator actor received a 'unsubscribeWindowManagerEvents' command");
-    this._unsubscribeWindowManagerEvents();
-
-    return {
-      success: true,
-      message: "WindowManager events unsubscribed"
-    }
-  },
-
   onGeolocationResponse: function (aRequest) {
     Services.obs.notifyObservers({
       wrappedJSObject: {
@@ -358,60 +355,11 @@ SimulatorActor.prototype = {
         lon: aRequest.message.lon,
       }
     }, "r2d2b2g-geolocation-setup", null);
-  },
 
-  _unsubscribeWindowManagerEvents: function() {
-    let homescreenWindow = this.homescreenWindow.wrappedJSObject;
-
-    homescreenWindow.removeEventListener("appopen", this._listeners["appopen"]);
-    homescreenWindow.removeEventListener("appterminated", this._listeners["appterminated"]);
-  },
-
-  _subscribeWindowManagerEvents: function() {
-    let homescreenWindow = this.homescreenWindow.wrappedJSObject;
-    let WindowManager = homescreenWindow.WindowManager;
-    let _notify = this._notify.bind(this);
-
-    if (!!this._listeners["appopen"] ||
-        !!this._listeners["appterminated"]) {
-      // NOTE: already subscribed
-      return false;
-    }
-
-    homescreenWindow.addEventListener("appopen", onAppOpen);
-    this._listeners["appopen"] = onAppOpen;
-
-    homescreenWindow.addEventListener("appterminated", onAppTerminated);
-    this._listeners["appterminated"] = onAppTerminated;
-
-    return true;
-
-    function onAppOpen(e) {
-      let origin = e.detail.origin;
-      let app = WindowManager.getRunningApps()[origin];
-
-      _notify("windowManagerEvent",{
-        event: "appopen",
-        origin: origin,
-        name: app.name,
-        manifest: app.manifest
-      });
-    }
-
-    // NOTE: exception into this closures seems to be silently ignored :-(
-    function onAppTerminated(e) {
-      let origin = e.detail.origin;
-      _notify("windowManagerEvent",{
-        event: "appterminated",
-        origin: origin
-      });
-    }
-  },
-
-  _notify: function(type,data) {
-    data.type = type;
-    data.from = this.actorID;
-    this.conn.send(data);
+    return {
+      message: "geolocationRequest request received",
+      success: true
+    };
   },
 
   get homescreenWindow() {
@@ -438,8 +386,7 @@ SimulatorActor.prototype.requestTypes = {
   "uninstallApp": SimulatorActor.prototype.onUninstallApp,
   "validateManifest": SimulatorActor.prototype.onValidateManifest,
   "showNotification": SimulatorActor.prototype.onShowNotification,
-  "subscribeWindowManagerEvents": SimulatorActor.prototype.onSubscribeWindowManagerEvents,
-  "unsubscribeWindowManagerEvents": SimulatorActor.prototype.onUnsubscribeWindowManagerEvents,
+  "geolocationReady": SimulatorActor.prototype.onGeolocationReady,
   "geolocationResponse": SimulatorActor.prototype.onGeolocationResponse,
 };
 
