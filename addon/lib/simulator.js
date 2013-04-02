@@ -22,6 +22,7 @@ const xulapp = require("sdk/system/xul-app");
 const JsonLint = require("jsonlint/jsonlint");
 const ADB = require("adb");
 const Promise = require("sdk/core/promise");
+const Runtime = require("runtime");
 
 // The b2gremote debugger module that installs apps to devices.
 const Debugger = require("debugger");
@@ -65,7 +66,7 @@ let simulator = module.exports = {
     // and so they close their filehandles if the user is updating the addon,
     // which we need to do on Windows to replace the files.
     this.kill();
-    ADB.kill();
+    ADB.kill(Runtime.OS == "WINNT" ? true : false /* sync */);
   },
 
   get apps() {
