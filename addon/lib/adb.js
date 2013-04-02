@@ -127,31 +127,51 @@ this.ADB = {
     }, false);
   },
 
-  kill: function adb_kill() {
+  /**
+   * Kill the ADB server.  We do this by running ADB again, passing it
+   * the "kill-server" argument.
+   *
+   * @param {Boolean} aSync
+   *        Whether or not to kill the server synchronously.  In general,
+   *        this should be false.  But on Windows, an addon may fail to update
+   *        if its copy of ADB is running when Firefox tries to update it.
+   *        So addons who observe their own updates and kill the ADB server
+   *        beforehand should do so synchronously on Windows to make sure
+   *        the update doesn't race the killing.
+   */
+  kill: function adb_kill(aSync) {
     let process = Cc["@mozilla.org/process/util;1"]
                     .createInstance(Ci.nsIProcess);
     process.init(this._adb);
     let params = ["kill-server"];
-    let self = this;
-    process.runAsync(params, params.length, {
-      observe: function(aSubject, aTopic, aData) {
-        switch(aTopic) {
-          case "process-finished":
-            debug("adb kill-server: " + process.exitValue);
-            Services.obs.notifyObservers(null, "adb-killed", null);
-            self.ready = false;
-            break;
-          case "process-failed":
-            debug("adb kill-server failure: " + process.exitValue);
-            // It's hard to say whether or not ADB is ready at this point,
-            // but it seems safer to assume that it isn't, so code that wants
-            // to use it later will try to restart it.
-            Services.obs.notifyObservers(null, "adb-killed", null);
-            self.ready = false;
-            break;
+
+    if (aSync) {
+      process.run(true, params, params.length);
+      debug("adb kill-server: " + process.exitValue);
+      this.ready = false;
+    }
+    else {
+      let self = this;
+      process.runAsync(params, params.length, {
+        observe: function(aSubject, aTopic, aData) {
+          switch(aTopic) {
+            case "process-finished":
+              debug("adb kill-server: " + process.exitValue);
+              Services.obs.notifyObservers(null, "adb-killed", null);
+              self.ready = false;
+              break;
+            case "process-failed":
+              debug("adb kill-server failure: " + process.exitValue);
+              // It's hard to say whether or not ADB is ready at this point,
+              // but it seems safer to assume that it isn't, so code that wants
+              // to use it later will try to restart it.
+              Services.obs.notifyObservers(null, "adb-killed", null);
+              self.ready = false;
+              break;
+          }
         }
-      }
-    }, false);
+      }, false);
+    }
   },
 
   // Creates a socket connected to the adb instance.
