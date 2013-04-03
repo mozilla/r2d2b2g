@@ -31,6 +31,7 @@
   <script type="application/javascript" src="chrome://prosthesis/content/pbport.js"/>
   <script type="application/javascript" src="chrome://browser/content/settings.js"/>
   <script type="application/javascript" src="chrome://browser/content/shell.js"/>
+  <script type="application/javascript" src="chrome://prosthesis/content/inject-b2g-agentsheet.js"/>
   <script type="application/javascript" src="chrome://prosthesis/content/patch-start-debugger.js"/>
 
   <!-- this script handles the screen argument for desktop builds -->

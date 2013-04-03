@@ -53,6 +53,11 @@ let SimulatorWindowManager = {
       }
     }).bind(this), "simulator-orientation-lock-change", false);
   },
+  _injectStylesheet: function(win) {
+    let winUtils = win.QueryInterface(Ci.nsIInterfaceRequestor).
+                   getInterface(Ci.nsIDOMWindowUtils);
+    winUtils.loadSheet(B2G_AGENTSHEET_URL, winUtils.AGENT_SHEET);
+  },
   _initKeepWindowSize: function() {
     // WORKAROUND: keep the simulator window size
     let TOOLBOX_H = this._toolboxHeight;
