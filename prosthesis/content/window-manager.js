@@ -9,6 +9,9 @@ Cu.import("resource://prosthesis/modules/GlobalSimulatorScreen.jsm");
 navigator.mozSettings
   .createLock().set({'homescreen.ready': false});
 
+const B2G_AGENTSHEET_URL = Services.io.newURI("chrome://prosthesis/content/b2g.css",
+                                              null, null);
+
 let SimulatorWindowManager = {
   init: function() {
     // inject the b2g agent stylesheet into the firefoxos iframe container
@@ -68,11 +71,9 @@ let SimulatorWindowManager = {
     );
   },
   _injectStylesheet: function(win) {
-    let URL = Services.io.newURI("chrome://prosthesis/content/b2g.css",
-                                 null, null);
     let winUtils = win.QueryInterface(Ci.nsIInterfaceRequestor).
-      getInterface(Ci.nsIDOMWindowUtils);
-    winUtils.loadSheet(URL, winUtils.AGENT_SHEET);
+                   getInterface(Ci.nsIDOMWindowUtils);
+    winUtils.loadSheet(B2G_AGENTSHEET_URL, winUtils.AGENT_SHEET);
   },
   _initKeepWindowSize: function() {
     // WORKAROUND: keep the simulator window size
