@@ -27,7 +27,7 @@ let subprocess;
 if (COMMONJS) {
   subprocess = require("subprocess");
 } else {
-  Cu.import("resource://b2g-remote/modules/subprocess.jsm");
+  Cu.import("chrome://b2g-remote/content/subprocess.jsm");
 }
 
 // Get the TextEncoder and TextDecoder interfaces from the hidden window,
