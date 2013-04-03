@@ -11,6 +11,9 @@ navigator.mozSettings
 
 let SimulatorWindowManager = {
   init: function() {
+    // inject the b2g agent stylesheet into the firefoxos iframe container
+    this._injectStylesheet(this._homescreen);
+
     this._initObservers();
     this._initKeepWindowSize();
     this._initMutationObservers();
@@ -53,19 +56,23 @@ let SimulatorWindowManager = {
       }
     }).bind(this), "simulator-orientation-lock-change", false);
 
-    // inject b2g mobile agent stylesheet
+    // inject b2g mobile agent stylesheet into
+    // all next content DOM windows created
     Services.obs.addObserver(
-      function injectStylesheet(subject, topic, data) {
+      (function injectStylesheet(subject, topic, data) {
         debug("injectStylesheet: " + data);
-        let URL = Services.io.newURI("chrome://prosthesis/content/b2g.css",
-                                     null, null);
-        let winUtils = subject.QueryInterface(Ci.nsIInterfaceRequestor).
-          getInterface(Ci.nsIDOMWindowUtils);
-        winUtils.loadSheet(URL, winUtils.AGENT_SHEET);
-      },
+        this._injectStylesheet(subject);
+      }).bind(this),
       "content-document-global-created",
       false
     );
+  },
+  _injectStylesheet: function(win) {
+    let URL = Services.io.newURI("chrome://prosthesis/content/b2g.css",
+                                 null, null);
+    let winUtils = win.QueryInterface(Ci.nsIInterfaceRequestor).
+      getInterface(Ci.nsIDOMWindowUtils);
+    winUtils.loadSheet(URL, winUtils.AGENT_SHEET);
   },
   _initKeepWindowSize: function() {
     // WORKAROUND: keep the simulator window size
