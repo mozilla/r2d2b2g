@@ -9,14 +9,8 @@ Cu.import("resource://prosthesis/modules/GlobalSimulatorScreen.jsm");
 navigator.mozSettings
   .createLock().set({'homescreen.ready': false});
 
-const B2G_AGENTSHEET_URL = Services.io.newURI("chrome://prosthesis/content/b2g.css",
-                                              null, null);
-
 let SimulatorWindowManager = {
   init: function() {
-    // inject the b2g agent stylesheet into the firefoxos iframe container
-    this._injectStylesheet(this._homescreen);
-
     this._initObservers();
     this._initKeepWindowSize();
     this._initMutationObservers();
@@ -58,17 +52,6 @@ let SimulatorWindowManager = {
         this._rotateButtonElement.classList.add("active");
       }
     }).bind(this), "simulator-orientation-lock-change", false);
-
-    // inject b2g mobile agent stylesheet into
-    // all next content DOM windows created
-    Services.obs.addObserver(
-      (function injectStylesheet(subject, topic, data) {
-        debug("injectStylesheet: " + data);
-        this._injectStylesheet(subject);
-      }).bind(this),
-      "content-document-global-created",
-      false
-    );
   },
   _injectStylesheet: function(win) {
     let winUtils = win.QueryInterface(Ci.nsIInterfaceRequestor).
