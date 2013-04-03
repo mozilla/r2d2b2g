@@ -23,7 +23,12 @@ let Cu = components.utils;
 
 Cu.import("resource://gre/modules/Services.jsm");
 
-const Subprocess = require("subprocess");
+let subprocess;
+if (COMMONJS) {
+  subprocess = require("subprocess");
+} else {
+  Cu.import("resource://b2g-remote/modules/subprocess.jsm");
+}
 
 // Get the TextEncoder and TextDecoder interfaces from the hidden window,
 // since they aren't defined in a CommonJS module by default.
@@ -110,7 +115,7 @@ this.ADB = {
   start: function adb_start() {
     let self = this;
 
-    Subprocess.call({
+    subprocess.call({
       command: this._adb.path,
 
       arguments: ["start-server"],
@@ -149,7 +154,7 @@ this.ADB = {
    *        the update doesn't race the killing.
    */
   kill: function adb_kill(aSync) {
-    let process = Subprocess.call({
+    let process = subprocess.call({
       command: this._adb.path,
 
       arguments: ["kill-server"],
