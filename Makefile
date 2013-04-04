@@ -111,8 +111,17 @@ ifdef TEST
   TEST_ARG = -f $(TEST)
 endif
 
+unix_to_windows_path = \
+  $(shell echo '$(1)' | sed 's/^\///' | sed 's/\//\\/g' | sed 's/^./\0:/')
+
 ifneq ($(strip $(LOCALES_FILE)),)
   export LOCALE_BASEDIR ?= $(PWD)/gaia-l10n
+
+  # Gaia expects these to be Windows-style paths on Windows.
+  ifeq (win32, $(B2G_PLATFORM))
+    LOCALES_FILE := $(call unix_to_windows_path,$(LOCALES_FILE))
+    LOCALE_BASEDIR := $(call unix_to_windows_path,$(LOCALE_BASEDIR))
+  endif
 endif
 
 build: profile prosthesis b2g adb
