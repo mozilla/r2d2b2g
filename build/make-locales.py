@@ -4,6 +4,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import os
+import sys
 import json
 import subprocess
 
@@ -20,4 +21,5 @@ for key in locales.keys():
     args = ["hg", "clone", "http://hg.mozilla.org/gaia-l10n/" + key, path]
 
   print ">", " ".join(args)
+  sys.stdout.flush()
   subprocess.call(args)
