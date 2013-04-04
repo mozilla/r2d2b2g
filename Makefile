@@ -1,4 +1,4 @@
-.PHONY: build profile prosthesis b2g adb run package help
+.PHONY: build profile prosthesis b2g adb locales run package help
 
 -include local.mk
 
@@ -111,6 +111,10 @@ ifdef TEST
   TEST_ARG = -f $(TEST)
 endif
 
+ifneq ($(strip $(LOCALES_FILE)),)
+  export LOCALE_BASEDIR ?= $(PWD)/gaia-l10n
+endif
+
 build: profile prosthesis b2g adb
 
 profile:
@@ -142,6 +146,9 @@ adb:
 	mkdir addon/data/$(B2G_PLATFORM)/adb
 	$(DOWNLOAD_CMD) $(ADB_URL)
 	unzip $(ADB_PACKAGE) -d addon/data/$(B2G_PLATFORM)/adb
+
+locales:
+	python build/make-locales.py
 
 run:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx run --templatedir template/ $(BIN_ARG) $(PROFILE_ARG)
