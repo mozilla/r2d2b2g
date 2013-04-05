@@ -12,3 +12,6 @@ addon/data/mac64/adb
 addon/data/linux/adb
 addon/data/linux64/adb
 addon/data/win32/adb
+
+# locale repositories cloned by build/make-locales.py
+gaia-l10n

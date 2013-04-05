@@ -1,4 +1,4 @@
-.PHONY: build profile prosthesis b2g adb run package help
+.PHONY: build profile prosthesis b2g adb locales run package help
 
 -include local.mk
 
@@ -111,6 +111,19 @@ ifdef TEST
   TEST_ARG = -f $(TEST)
 endif
 
+unix_to_windows_path = \
+  $(shell echo '$(1)' | sed 's/^\///' | sed 's/\//\\/g' | sed 's/^./\0:/')
+
+ifneq ($(strip $(LOCALES_FILE)),)
+  export LOCALE_BASEDIR ?= $(PWD)/gaia-l10n
+
+  # Gaia expects these to be Windows-style paths on Windows.
+  ifeq (win32, $(B2G_PLATFORM))
+    LOCALES_FILE := $(call unix_to_windows_path,$(LOCALES_FILE))
+    LOCALE_BASEDIR := $(call unix_to_windows_path,$(LOCALE_BASEDIR))
+  endif
+endif
+
 build: profile prosthesis b2g adb
 
 profile:
@@ -142,6 +155,9 @@ adb:
 	mkdir addon/data/$(B2G_PLATFORM)/adb
 	$(DOWNLOAD_CMD) $(ADB_URL)
 	unzip $(ADB_PACKAGE) -d addon/data/$(B2G_PLATFORM)/adb
+
+locales:
+	python build/make-locales.py
 
 run:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx run --templatedir template/ $(BIN_ARG) $(PROFILE_ARG)
