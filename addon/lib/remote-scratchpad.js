@@ -7,8 +7,8 @@
 
 const { Cc, Ci, Cu, ChromeWorker } = require("chrome");
 
-let SCRATCHKIT_URI = 'resource:///modules/devtools/scratchpad-manager.jsm'
-let { ScratchpadManager } = Cu.import(SCRATCHKIT_URI)
+let SCRATCHKIT_URI = 'resource:///modules/devtools/scratchpad-manager.jsm';
+let { ScratchpadManager } = Cu.import(SCRATCHKIT_URI);
 
 const APP_CONTEXT = 1;
 const CHROME_CONTEXT = 2;
@@ -21,25 +21,25 @@ function Scratchpad(options) {
 
   let window = ScratchpadManager.openScratchpad({
     text: text || '// FirefoxOS Simulator Scratchpad\n// '+statusText+'\n'
-  })
+  });
 
   window.addEventListener('DOMContentLoaded', function onready() {
     window.addEventListener('unload', function onunload() {
-      window.removeEventListener('unload', onunload)
-      unload && unload()
-    })
+      window.removeEventListener('unload', onunload);
+      unload && unload();
+    });
 
-    window.removeEventListener('DOMContentLoaded', onready)
+    window.removeEventListener('DOMContentLoaded', onready);
 
-    let scratchpad = window.Scratchpad
+    let scratchpad = window.Scratchpad;
 
     let parent = window.document.querySelector("#sp-menu-environment");
     parent.querySelector("#sp-menu-content").
            setAttribute("label", "FirefoxOS App");
     parent.querySelector("#sp-menu-browser").
-           setAttribute("label", "FirefoxOS Shell")
+           setAttribute("label", "FirefoxOS Shell");
     let menuitem = window.document.createElement("menuitem");
-    menuitem.id = "sp-menu-browser-tab"
+    menuitem.id = "sp-menu-browser-tab";
     menuitem.setAttribute("type", "radio");
     menuitem.setAttribute("label", "FirefoxOS Browser Tab");
     menuitem.addEventListener("click", (function () {
@@ -49,8 +49,8 @@ function Scratchpad(options) {
 
     parent.appendChild(menuitem);
 
-    let { writeAsComment, openScratchpad } = scratchpad
-    open = open || openScratchpad
+    let { writeAsComment, openScratchpad } = scratchpad;
+    open = open || openScratchpad;
 
     Object.defineProperties(scratchpad, {
       _evalInSandbox: {
@@ -139,7 +139,7 @@ function Scratchpad(options) {
       },
       openPropertyPanel: {
         configurable: true,
-        value: function () { },
+        value: function () { }
       },
       chromeSandbox: {
         configurable: true,
@@ -152,7 +152,7 @@ function Scratchpad(options) {
       openScratchpad: {
         configurable: true,
         value: function() {
-          return open.call(this)
+          return open.call(this);
         }
       }
     });
