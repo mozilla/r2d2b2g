@@ -4,8 +4,6 @@
 
 "use strict";
 
-dumpn("loading simulator actor definition");
-
 Components.utils.import("resource://gre/modules/Services.jsm");
 
 /**
@@ -13,7 +11,8 @@ Components.utils.import("resource://gre/modules/Services.jsm");
   * FirefoxOS Simulator module.
   */
 let SimulatorActor = function SimulatorActor(aConnection) {
-  dumpn("simulator actor created for a new connection");
+  this.debug("simulator actor created for a new connection");
+
   this._connection = aConnection;
   this._listeners = {};
   this.clientReady = false;
@@ -53,17 +52,26 @@ SimulatorActor.prototype = {
   actorPrefix: "simulator",
 
   disconnect: function() {
-    dumpn("simulator actor connection closed");
+    this.debug("simulator actor connection closed");
+  },
+
+  /**
+   * Dump a debug message to stdout.  This is defined as a method to avoid
+   * polluting the global namespace of the debugger server, and it always dumps
+   * because the Add-on SDK automatically determines whether to log the message.
+   */
+  debug: function debug() {
+    dump(Array.slice(arguments).join(" ") + "\n");
   },
 
   onPing: function(aRequest) {
-    dumpn("simulator actor received a 'ping' command");
+    this.debug("simulator actor received a 'ping' command");
 
     return { "msg": "pong" };
   },
 
   onGeolocationReady: function(aRequest) {
-    dumpn("simulator actor received a 'geolocationReady' command");
+    this.debug("simulator actor received a 'geolocationReady' command");
     this.clientReady = true;
 
     this._connection.enqueue({
@@ -75,7 +83,7 @@ SimulatorActor.prototype = {
   },
 
   onGetBuildID: function(aRequest) {
-    dumpn("simulator actor received a 'getBuildID'");
+    this.debug("simulator actor received a 'getBuildID'");
     var buildID = this.simulatorWindow.navigator.buildID;
 
     return {
@@ -84,7 +92,7 @@ SimulatorActor.prototype = {
   },
 
   onRunApp: function(aRequest) {
-    dumpn("simulator actor received a 'runApp' command:" + aRequest.appId);
+    this.debug("simulator actor received a 'runApp' command:" + aRequest.appId);
     let window = this.simulatorWindow;
     let homescreen = XPCNativeWrapper.unwrap(this.homescreenWindow);
     let WindowManager = homescreen.WindowManager;
@@ -104,35 +112,35 @@ SimulatorActor.prototype = {
             runnable.tryAppReloadByOrigin(appOrigin, function () {
               runnable.findAppByOrigin(appOrigin, function (e, app) {
                 if (e) {
-                  dumpn("RUNAPP ERROR: " + e);
+                  this.debug("RUNAPP ERROR: " + e);
                   return;
                 }
 
                 try {
-                  dumpn("RUNAPP LAUNCHING:" + app.origin);
+                  this.debug("RUNAPP LAUNCHING:" + app.origin);
                   app.launch();
-                  dumpn("RUNAPP SUCCESS:" + appOrigin);
+                  this.debug("RUNAPP SUCCESS:" + appOrigin);
                 } catch(e) {
-                  dumpn(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+                  this.debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
                 }
               });
             });
           });
         } catch(e) {
-          dumpn(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+          this.debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
         }
       },
       waitHomescreenReady: function(cb) {
-        dumpn("RUNAPP - wait homescreen ready...");
+        this.debug("RUNAPP - wait homescreen ready...");
         let res = homescreen.navigator.mozSettings.createLock().get('homescreen.ready');
         res.onsuccess = function() {
           if (res.result["homescreen.ready"]) {
-            dumpn("RUNAPP - homescreen ready");
+            this.debug("RUNAPP - homescreen ready");
             cb();
           } else {
-            dumpn("RUNAPP - wait for homescreen ready");
+            this.debug("RUNAPP - wait for homescreen ready");
             let wait = function (notify) {
-              dumpn("RUNAPP - homescreen ready: "+notify.settingValue);
+              this.debug("RUNAPP - homescreen ready: "+notify.settingValue);
               if(notify.settingValue) {
                 homescreen.navigator.mozSettings.removeObserver("homescreen.ready", wait);
                 cb();
@@ -143,28 +151,28 @@ SimulatorActor.prototype = {
           }
         }
         res.onerror = function() {
-          dumpn("RUNAPP ERROR - waitHomescreenReady: "+res.error.name);
+          this.debug("RUNAPP ERROR - waitHomescreenReady: "+res.error.name);
         }
       },
       tryAppReloadByOrigin: function(origin, cb) {
-        dumpn("RUNAPP: tryAppReloadByOrigin - " + origin);
+        this.debug("RUNAPP: tryAppReloadByOrigin - " + origin);
         try {
           if (WindowManager.getRunningApps()[origin] &&
               !WindowManager.getRunningApps()[origin].killed) {
             let app = WindowManager.getRunningApps()[origin];
             WindowManager.setDisplayedApp(origin);
             app.reload();
-            dumpn("RUNAPP: RELOADED:" + app.origin);
+            this.debug("RUNAPP: RELOADED:" + app.origin);
           } else {
             // app not running
             runnable._fixSetDisplayedApp(appOrigin);
-            dumpn("RUNAPP: killAppByOrigin - app is not running");
+            this.debug("RUNAPP: killAppByOrigin - app is not running");
             cb();
           }
         } catch(e) {
           // go on and launch by mozApps API on exception
           // (e.g. window manager is not ready)
-          dumpn(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+          this.debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
           runnable._fixSetDisplayedApp(appOrigin);
           cb();
         }
@@ -210,7 +218,7 @@ SimulatorActor.prototype = {
   },
 
   onValidateManifest: function(aRequest) {
-    dumpn("simulator actor received 'validateManifest' command: " + JSON.stringify(aRequest));
+    this.debug("simulator actor received 'validateManifest' command: " + JSON.stringify(aRequest));
     let manifest = aRequest.manifest;
     let appType = manifest.type || "web";
 
@@ -276,7 +284,7 @@ SimulatorActor.prototype = {
               errors.push("Invalid access '" + access + "' in permission '" + pname + "'.");
             }
           } catch(e) {
-            dumpn(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+            this.debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
             errors.push("Invalid access '" + paccess + "' in permission '" + pname + "'.");
           }
         }
@@ -287,7 +295,7 @@ SimulatorActor.prototype = {
   },
 
   onUninstallApp: function(aRequest) {
-    dumpn("simulator actor received 'uninstallApp' command: " + aRequest.appId);
+    this.debug("simulator actor received 'uninstallApp' command: " + aRequest.appId);
     let window = this.simulatorWindow;
     let DOMApplicationRegistry = window.DOMApplicationRegistry;
     let appId = aRequest.appId;
@@ -298,7 +306,7 @@ SimulatorActor.prototype = {
 
     let appOrigin = DOMApplicationRegistry.webapps[appId].origin;
 
-    dumpn("uninstalling app by origin:"+appOrigin);
+    this.debug("uninstalling app by origin:"+appOrigin);
 
     let runnable = {
       run: function() {
@@ -306,10 +314,10 @@ SimulatorActor.prototype = {
           let mgmt = window.navigator.mozApps.mgmt;
           let req = mgmt.uninstall({origin: appOrigin});
           req.onsuccess = function () {
-            dumpn("uninstallApp success: " + req.result);
+            this.debug("uninstallApp success: " + req.result);
           }
           req.onerror = function () {
-            dumpn("uninstallApp error: " + req.error.name);
+            this.debug("uninstallApp error: " + req.error.name);
           }
         } catch(e) {
           Cu.reportError(e);
@@ -326,7 +334,7 @@ SimulatorActor.prototype = {
   },
 
   onShowNotification: function (aRequest) {
-    dumpn("simulator actor received a 'showNotification' command");
+    this.debug("simulator actor received a 'showNotification' command");
     let window = this.simulatorWindow;
     window.AlertsHelper.showNotification(null, "Simulator", aRequest.userMessage);
 
