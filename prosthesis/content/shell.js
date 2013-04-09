@@ -2,13 +2,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-const DISABLE_DEBUG = true;
-
-let debug = DISABLE_DEBUG ? function () {} : function debugSimulator() {
-  let tag = Components.stack.caller ?
-    (Components.stack.caller.filename + " L" + Components.stack.caller.lineNumber) :
-    "";
-  dump(" -*- " + tag + ": " + Array.slice(arguments).join(" ") + "\n");
+// Override the B2G shell's debug function with a version that concatenates
+// arguments (to simplify outputting certain kinds of messages) and always dumps
+// messages (which the Add-on SDK automatically determines whether to log).
+let debug = function debugSimulator() {
+  dump(Array.slice(arguments).join(" ") + "\n");
 };
 
 document.getElementById("homeButton").addEventListener("mousedown", function() {
