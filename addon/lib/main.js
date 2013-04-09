@@ -97,7 +97,7 @@ switch (Self.loadReason) {
 }
 
 exports.onUnload = function(reason) {
-  Simulator.unload();
+  Simulator.unload(reason);
 };
 
 Tabs.on('ready', function() {
