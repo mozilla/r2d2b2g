@@ -132,8 +132,8 @@ this.ADB = {
         debug("start-server exit code: " + result.exitCode);
         if (result.exitCode == 0) {
           Services.prefs.setBoolPref("dom.mozTCPSocket.enabled", true);
-          Services.obs.notifyObservers(null, "adb-ready", null);
           self.ready = true;
+          Services.obs.notifyObservers(null, "adb-ready", null);
         } else {
           self.ready = false;
         }
@@ -170,20 +170,20 @@ this.ADB = {
       done: function adb_start_done(result) {
         debug("kill-server exit code: " + result.exitCode);
         if (result.exitCode == 0) {
-          Services.obs.notifyObservers(null, "adb-killed", null);
           self.ready = false;
+          Services.obs.notifyObservers(null, "adb-killed", null);
         } else if (result.exitCode == 1) {
           // This is a known problem.  For some reason, adb kill-server
           // frequently writes "* server not running *" and exits with code 1
           // even though the server process was running, and it killed it.
-          Services.obs.notifyObservers(null, "adb-killed", null);
           self.ready = false;
+          Services.obs.notifyObservers(null, "adb-killed", null);
         } else {
           // It's hard to say whether or not ADB is ready at this point,
           // but it seems safer to assume that it isn't, so code that wants
           // to use it later will try to restart it.
-          Services.obs.notifyObservers(null, "adb-killed", null);
           self.ready = false;
+          Services.obs.notifyObservers(null, "adb-killed", null);
         }
       }
     });
