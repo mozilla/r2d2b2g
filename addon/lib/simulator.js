@@ -147,12 +147,11 @@ let simulator = module.exports = {
       console.log("Registered App " + JSON.stringify(apps[manifestFile]));
 
       this.updateApp(manifestFile, function next(error, app) {
-        // app reinstall completed
-        // success/error detection and report to the user
+        // Update the Dashboard to reflect changes to the record and run the app
+        // if the update succeeded.  Otherwise, it isn't necessary to notify
+        // the user about the error, as it'll show up in the validation results.
         simulator.sendListApps();
-        if (error) {
-          simulator.error(error);
-        } else {
+        if (!error) {
           simulator.runApp(app);
         }
       });
@@ -664,11 +663,11 @@ let simulator = module.exports = {
     console.log("Registered App " + JSON.stringify(apps[id], null, 2));
 
     this.updateApp(id, function next(error, app) {
-      // success/error detection and report to the user
+      // Update the Dashboard to reflect changes to the record and run the app
+      // if the update succeeded.  Otherwise, it isn't necessary to notify
+      // the user about the error, as it'll show up in the validation results.
       simulator.sendListApps();
-      if (error) {
-        simulator.error(error);
-      } else {
+      if (!error) {
         simulator.runApp(app);
       }
     });
