@@ -46,7 +46,7 @@ const RemoteSimulatorClient = Class({
     //       will be called only once)
     //off(this);
 
-    // on pinbackTimeout, emit an high level "timeout" event
+    // on pingbackTimeout, emit a high level "timeout" event
     // and kill the stalled instance
     this.once("pingbackTimeout", function() {
       this._pingbackCompleted = false;
@@ -104,7 +104,11 @@ const RemoteSimulatorClient = Class({
       this._remote = null;
       emit(this, "disconnected", null);
     });
+
+    this.on("stdout", function onStdout(data) console.log(data.trim()));
+    this.on("stderr", function onStderr(data) console.error(data.trim()));
   },
+
   // run({defaultApp: "Appname", pingbackTimeout: 15000})
   // will spawn a b2g instance, optionally run an application
   // and change pingback timeout interval
@@ -152,16 +156,16 @@ const RemoteSimulatorClient = Class({
       command: b2gExecutable,
       arguments: this.b2gArguments,
 
-      // emit stdout messages
+      // emit stdout event
       stdout: (function(data) {
         emit(this, "stdout", data);
       }).bind(this),
-      
-      // emit stdout messages
+
+      // emit stderr event
       stderr: (function(data) {
         emit(this, "stderr", data);
       }).bind(this),
-      
+
       // on b2g instance exit, reset tracked process, remoteDebuggerPort and
       // shuttingDown flag, then finally emit an exit event
       done: (function(result) {       
@@ -244,14 +248,6 @@ const RemoteSimulatorClient = Class({
   getBuildID: function(onResponse) {
     let remote = this._remote;
     remote.client.request({to: remote.simulator, type: "getBuildID"}, onResponse);
-  },
-
-  // send a logStdout request to the remote simulator actor
-  logStdout: function(message, onResponse) {
-    let remote = this._remote;
-    remote.client.request({to: remote.simulator, 
-                           message: message,
-                           type: "logStdout"}, onResponse);
   },
 
   // send a runApp request to the remote simulator actor

@@ -83,18 +83,6 @@ SimulatorActor.prototype = {
     };
   },
 
-  onLogStdout: function(aRequest) {
-    dumpn("simulator actor received a 'logStdout' command");
-    // HACK: window.dump should dump on stdout
-    // https://developer.mozilla.org/en/docs/DOM/window.dump#Notes
-    let dumpStdout = this.simulatorWindow.dump;
-    dumpStdout(aRequest.message);
-
-    return {
-      success: true
-    };
-  },
-
   onRunApp: function(aRequest) {
     dumpn("simulator actor received a 'runApp' command:" + aRequest.appId);
     let window = this.simulatorWindow;
@@ -381,7 +369,6 @@ SimulatorActor.prototype = {
 SimulatorActor.prototype.requestTypes = {
   "ping": SimulatorActor.prototype.onPing,
   "getBuildID": SimulatorActor.prototype.onGetBuildID,
-  "logStdout": SimulatorActor.prototype.onLogStdout,
   "runApp": SimulatorActor.prototype.onRunApp,
   "uninstallApp": SimulatorActor.prototype.onUninstallApp,
   "validateManifest": SimulatorActor.prototype.onValidateManifest,
