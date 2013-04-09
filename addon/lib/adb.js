@@ -49,7 +49,11 @@ if (!COMMONJS) {
 }
 
 function debug(aStr) {
-  dump("--*-- ADB.jsm: " + aStr + "\n");
+  if (COMMONJS) {
+    console.log("adb: " + aStr);
+  } else {
+    dump("--*-- ADB.jsm: " + aStr + "\n");
+  }
 }
 
 let ready = false;
@@ -273,7 +277,7 @@ this.ADB = {
       let data = aEvent.data;
       debug("length=" + data.length);
       let dec = new TextDecoder();
-      debug(dec.decode(data));
+      debug(dec.decode(data).trim());
 
       // check the OKAY or FAIL on first packet.
       if (waitForFirst) {
