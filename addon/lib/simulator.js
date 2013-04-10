@@ -1041,8 +1041,6 @@ let simulator = module.exports = {
 
     let simulator = this;
     remoteSimulator = new RemoteSimulatorClient({
-      onStdout: function (data) dump(data),
-      onStderr: function (data) dump(data),
       onReady: function () {
         simulator.postIsRunning();
       },
