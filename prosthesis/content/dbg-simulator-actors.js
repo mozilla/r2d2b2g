@@ -105,6 +105,8 @@ SimulatorActor.prototype = {
 
     let appOrigin = DOMApplicationRegistry.webapps[appId].origin;
 
+    let debug = this.debug.bind(this);
+
     let runnable = {
       run: function() {
         try {
@@ -112,35 +114,35 @@ SimulatorActor.prototype = {
             runnable.tryAppReloadByOrigin(appOrigin, function () {
               runnable.findAppByOrigin(appOrigin, function (e, app) {
                 if (e) {
-                  this.debug("RUNAPP ERROR: " + e);
+                  debug("RUNAPP ERROR: " + e);
                   return;
                 }
 
                 try {
-                  this.debug("RUNAPP LAUNCHING:" + app.origin);
+                  debug("RUNAPP LAUNCHING:" + app.origin);
                   app.launch();
-                  this.debug("RUNAPP SUCCESS:" + appOrigin);
+                  debug("RUNAPP SUCCESS:" + appOrigin);
                 } catch(e) {
-                  this.debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+                  debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
                 }
               });
             });
           });
         } catch(e) {
-          this.debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+          debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
         }
       },
       waitHomescreenReady: function(cb) {
-        this.debug("RUNAPP - wait homescreen ready...");
+        debug("RUNAPP - wait homescreen ready...");
         let res = homescreen.navigator.mozSettings.createLock().get('homescreen.ready');
         res.onsuccess = function() {
           if (res.result["homescreen.ready"]) {
-            this.debug("RUNAPP - homescreen ready");
+            debug("RUNAPP - homescreen ready");
             cb();
           } else {
-            this.debug("RUNAPP - wait for homescreen ready");
+            debug("RUNAPP - wait for homescreen ready");
             let wait = function (notify) {
-              this.debug("RUNAPP - homescreen ready: "+notify.settingValue);
+              debug("RUNAPP - homescreen ready: "+notify.settingValue);
               if(notify.settingValue) {
                 homescreen.navigator.mozSettings.removeObserver("homescreen.ready", wait);
                 cb();
@@ -151,28 +153,28 @@ SimulatorActor.prototype = {
           }
         }
         res.onerror = function() {
-          this.debug("RUNAPP ERROR - waitHomescreenReady: "+res.error.name);
+          debug("RUNAPP ERROR - waitHomescreenReady: "+res.error.name);
         }
       },
       tryAppReloadByOrigin: function(origin, cb) {
-        this.debug("RUNAPP: tryAppReloadByOrigin - " + origin);
+        debug("RUNAPP: tryAppReloadByOrigin - " + origin);
         try {
           if (WindowManager.getRunningApps()[origin] &&
               !WindowManager.getRunningApps()[origin].killed) {
             let app = WindowManager.getRunningApps()[origin];
             WindowManager.setDisplayedApp(origin);
             app.reload();
-            this.debug("RUNAPP: RELOADED:" + app.origin);
+            debug("RUNAPP: RELOADED:" + app.origin);
           } else {
             // app not running
             runnable._fixSetDisplayedApp(appOrigin);
-            this.debug("RUNAPP: killAppByOrigin - app is not running");
+            debug("RUNAPP: killAppByOrigin - app is not running");
             cb();
           }
         } catch(e) {
           // go on and launch by mozApps API on exception
           // (e.g. window manager is not ready)
-          this.debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
+          debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
           runnable._fixSetDisplayedApp(appOrigin);
           cb();
         }
