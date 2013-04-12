@@ -1041,6 +1041,24 @@ let simulator = module.exports = {
 
     let simulator = this;
     remoteSimulator = new RemoteSimulatorClient({
+      appUpdateHandler: function(appId) {
+        console.log("DO UPDATE", appId);
+        let foundAppKey = null;
+        Object.keys(simulator.apps).forEach(function (key) {
+          if (simulator.apps[key].xkey === appId) {
+            foundAppKey = key;
+          }
+        });
+        simulator.updateApp(foundAppKey, function next(error, app) {
+          simulator.sendListApps();
+          // success/error detection and report to the user
+          if (error) {
+            simulator.error(error);
+          } else {
+            simulator.runApp(app);
+          }
+        });
+      },
       onReady: function () {
         simulator.postIsRunning();
       },
