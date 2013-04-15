@@ -127,6 +127,7 @@ endif
 build: profile prosthesis b2g adb
 
 profile:
+	cp build/override-prefs.js gaia/build/custom-prefs.js
 	make -C gaia
 	python build/override-settings.py
 	python build/override-webapps.py
