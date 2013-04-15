@@ -60,13 +60,26 @@ let simulator = module.exports = {
   /**
    * Unload the module.
    */
-  unload: function unload() {
+  unload: function unload(reason) {
     // Kill the Simulator and ADB processes, so they don't continue to run
     // unnecessarily if the user is quitting Firefox or disabling the addon;
     // and so they close their filehandles if the user is updating the addon,
     // which we need to do on Windows to replace the files.
     this.kill();
     ADB.kill(Runtime.OS == "WINNT" ? true : false /* sync */);
+
+    // Close the Dashboard if the user is disabling or updating the addon.
+    // We don't close it if the user is quitting Firefox because we want it
+    // to reopen when the user restarts the browser.
+    if (["disable", "upgrade", "downgrade"].indexOf(reason) != -1) {
+      this.closeHelperTab();
+
+      // The worker detach handler will do this for us, but Tabs.close fires
+      // before worker.detach, after which the main module calls sendListTabs(),
+      // which tries to message the worker, by which time it's already frozen
+      // and throws an exception.
+      worker = null;
+    }
   },
 
   get apps() {
@@ -134,12 +147,11 @@ let simulator = module.exports = {
       console.log("Registered App " + JSON.stringify(apps[manifestFile]));
 
       this.updateApp(manifestFile, function next(error, app) {
-        // app reinstall completed
-        // success/error detection and report to the user
+        // Update the Dashboard to reflect changes to the record and run the app
+        // if the update succeeded.  Otherwise, it isn't necessary to notify
+        // the user about the error, as it'll show up in the validation results.
         simulator.sendListApps();
-        if (error) {
-          simulator.error(error);
-        } else {
+        if (!error) {
           simulator.runApp(app);
         }
       });
@@ -651,11 +663,11 @@ let simulator = module.exports = {
     console.log("Registered App " + JSON.stringify(apps[id], null, 2));
 
     this.updateApp(id, function next(error, app) {
-      // success/error detection and report to the user
+      // Update the Dashboard to reflect changes to the record and run the app
+      // if the update succeeded.  Otherwise, it isn't necessary to notify
+      // the user about the error, as it'll show up in the validation results.
       simulator.sendListApps();
-      if (error) {
-        simulator.error(error);
-      } else {
+      if (!error) {
         simulator.runApp(app);
       }
     });
@@ -877,6 +889,12 @@ let simulator = module.exports = {
     this.openTab(simulator.contentPage, true);
   },
 
+  closeHelperTab: function closeHelperTab() {
+    if (this.worker) {
+      this.worker.tab.close();
+    }
+  },
+
   openConnectDevtools: function() {
     let port = this.remoteSimulator.remoteDebuggerPort;
     let originalPort = Services.prefs.getIntPref("devtools.debugger.remote-port");
@@ -1023,8 +1041,6 @@ let simulator = module.exports = {
 
     let simulator = this;
     remoteSimulator = new RemoteSimulatorClient({
-      onStdout: function (data) dump(data),
-      onStderr: function (data) dump(data),
       onReady: function () {
         simulator.postIsRunning();
       },
