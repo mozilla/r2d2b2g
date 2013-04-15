@@ -75,7 +75,6 @@ document.getElementById("rotateButton").addEventListener("click", function() {
 }
 
 function simulatorAppUpdate() {
-  debug("REQUEST APP UPDATE");
   let wm = shell.contentBrowser.contentWindow.wrappedJSObject.
            WindowManager;
 
@@ -86,5 +85,5 @@ function simulatorAppUpdate() {
       origin: origin,
       appId: DOMApplicationRegistry._appId(origin)
     }
-  }, "r2d2b2g-app-update", null);
+  }, "r2d2b2g:app-update", null);
 }

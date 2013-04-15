@@ -17,11 +17,7 @@ let SimulatorActor = function SimulatorActor(aConnection) {
   this._listeners = {};
   this.clientReady = false;
 
-  this._observers = {};
-
-  let obs = Services.obs.addObserver(this.appUpdateObserver.bind(this),
-                                     "r2d2b2g-app-update", false);
-  this._observers["r2d2b2g-app-update"] = obs;
+  let obs = Services.obs.addObserver(this, "r2d2b2g:app-update", false);
 
   // NOTE: avoid confusing the debugger connection
   // with an unsolicited event in the middle of a request, which causes
@@ -57,8 +53,16 @@ let SimulatorActor = function SimulatorActor(aConnection) {
 SimulatorActor.prototype = {
   actorPrefix: "simulator",
 
+  observe: function(aSubject, aTopic, aData) {
+    switch(aTopic) {
+    case "r2d2b2g:app-update":
+      this.appUpdateObserver(aSubject);
+      break;
+    }
+  },
+
   appUpdateObserver: function(message) {
-    this.debug("SEND APP UPDATE UNSOLICITED REQUEST");
+    this.debug("send appUpdateRequest unsolicited request");
     this._connection.send({
       from: this.actorID,
       type: "appUpdateRequest",
