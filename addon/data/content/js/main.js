@@ -263,7 +263,7 @@ var Simulator = {
                   listContainerEl.hide();
 
                   if (!app.validation.running) {
-                    validationResultText = warnings.length === 0 ? "WARNINGS" : "INVALID";
+                    validationResultText = errors.length === 0 ? "WARNINGS" : "INVALID";
                   }
 
                   validationEl.append(
@@ -350,4 +350,3 @@ var Simulator = {
 $(window).load(function() {
   Simulator.init();
 });
-
