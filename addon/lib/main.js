@@ -18,7 +18,6 @@ const Request = require('request').Request;
 const SStorage = require("simple-storage");
 const Gcli = require('gcli');
 const Simulator = require("simulator.js");
-require("addon-page");
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
