@@ -52,7 +52,7 @@
   </toolbox>
 
   <keyset>
-    <key id="app-update" modifiers="control" key="R"
+    <key id="app-update" modifiers="accel" key="R"
          oncommand="simulatorAppUpdate();"/>
   </keyset>
 </window>
