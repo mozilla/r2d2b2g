@@ -27,20 +27,22 @@ const dbgClient = Cu.import("resource://gre/modules/devtools/dbg-client.jsm");
 
 // add an unsolicited notification for geolocation
 dbgClient.UnsolicitedNotifications.geolocationRequest = "geolocationRequest";
+dbgClient.UnsolicitedNotifications.appUpdateRequest = "appUpdateRequest";
 
 const RemoteSimulatorClient = Class({
   extends: EventTarget,
   initialize: function initialize(options) {
+    this._appUpdateHandler = options.appUpdateHandler;
     EventTarget.prototype.initialize.call(this, options);
     this._hookInternalEvents();
   },
   // check if b2g is running and connected
   get isConnected() this._clientConnected,
   // check if b2g is running
-  get isRunning() !!this.process, 
+  get isRunning() !!this.process,
   // check if b2g exited without reach a ready state
   get isExitedWithoutReady() { return !this.process && !this._pingbackCompleted; },
-  
+
   _hookInternalEvents: function () {
     // NOTE: remote all listeners (currently disabled cause this function
     //       will be called only once)
@@ -208,10 +210,18 @@ const RemoteSimulatorClient = Class({
       emit(this, "clientClosed", {client: client});
     }).bind(this));
 
+    this._registerAppUpdateRequest(client);
     this._registerGeolocationRequest(client);
 
     client.connect((function () {
       emit(this, "clientConnected", {client: client});
+    }).bind(this));
+  },
+
+  _registerAppUpdateRequest: function(client) {
+    client.addListener("appUpdateRequest", (function(type, pkt) {
+      console.log("APP UPDATE REQUEST RECEIVED", JSON.stringify(arguments, null, 2));
+      this._appUpdateHandler(pkt.appId);
     }).bind(this));
   },
 

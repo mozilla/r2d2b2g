@@ -1041,6 +1041,30 @@ let simulator = module.exports = {
 
     let simulator = this;
     remoteSimulator = new RemoteSimulatorClient({
+      appUpdateHandler: function(appId) {
+        console.log("handle requested appUpdateRequest", appId);
+        let foundAppKey = null;
+        Object.keys(simulator.apps).forEach(function (key) {
+          if (simulator.apps[key].xkey === appId) {
+            foundAppKey = key;
+          }
+        });
+
+        if (!foundAppKey) {
+          simulator.remoteSimulator.showNotification("App not updated (not found)");
+        }
+
+        simulator.updateApp(foundAppKey, function next(error, app) {
+          simulator.sendListApps();
+          // success/error detection and report to the user
+          if (error) {
+            simulator.remoteSimulator.showNotification(error);
+          } else {
+            // TODO: find a less obtrusive way to display warnings
+            simulator.runApp(app);
+          }
+        });
+      },
       onReady: function () {
         simulator.postIsRunning();
       },

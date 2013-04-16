@@ -74,3 +74,16 @@ document.getElementById("rotateButton").addEventListener("click", function() {
   Services.obs.addObserver(sendCoords, "r2d2b2g-geolocation-request", false);
 }
 
+function simulatorAppUpdate() {
+  let wm = shell.contentBrowser.contentWindow.wrappedJSObject.
+           WindowManager;
+
+  let origin = wm.getCurrentDisplayedApp().origin;
+
+  Services.obs.notifyObservers({
+    wrappedJSObject: {
+      origin: origin,
+      appId: DOMApplicationRegistry._appId(origin)
+    }
+  }, "r2d2b2g:app-update", null);
+}

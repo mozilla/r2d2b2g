@@ -17,6 +17,8 @@ let SimulatorActor = function SimulatorActor(aConnection) {
   this._listeners = {};
   this.clientReady = false;
 
+  let obs = Services.obs.addObserver(this, "r2d2b2g:app-update", false);
+
   // NOTE: avoid confusing the debugger connection
   // with an unsolicited event in the middle of a request, which causes
   // the connection to stop forwarding requests to this actor.
@@ -51,8 +53,30 @@ let SimulatorActor = function SimulatorActor(aConnection) {
 SimulatorActor.prototype = {
   actorPrefix: "simulator",
 
+  observe: function(aSubject, aTopic, aData) {
+    switch(aTopic) {
+    case "r2d2b2g:app-update":
+      this.appUpdateObserver(aSubject);
+      break;
+    }
+  },
+
+  appUpdateObserver: function(message) {
+    this.debug("send appUpdateRequest unsolicited request");
+    this._connection.send({
+      from: this.actorID,
+      type: "appUpdateRequest",
+      origin: message.wrappedJSObject.origin,
+      appId: message.wrappedJSObject.appId
+    });
+  },
+
   disconnect: function() {
     this.debug("simulator actor connection closed");
+    Object.keys(this._observers).forEach(function(topic) {
+      let obs = this._observers[topic];
+      Services.obs.removeObserver(obs, topic);
+    });
   },
 
   /**
