@@ -1060,16 +1060,7 @@ let simulator = module.exports = {
           if (error) {
             simulator.remoteSimulator.showNotification(error);
           } else {
-            simulator.remoteSimulator.showNotification("App updated: " + app.name);
-            let validationMessage = "validation result: ";
-            if (app.validation.errors.length > 0) {
-              validationMessage += "INVALID";
-            } else if (app.validation.warnings.length > 0) {
-              validationMessage += "WARNINGS";
-            } else {
-                validationMessage += "OK";
-            }
-            simulator.remoteSimulator.showNotification(validationMessage);
+            // TODO: find a less obtrusive way to display warnings
             simulator.runApp(app);
           }
         });
