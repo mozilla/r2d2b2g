@@ -128,7 +128,7 @@ build: profile prosthesis b2g adb
 
 profile:
 	cp build/override-prefs.js gaia/build/custom-prefs.js
-	make -C gaia
+	GAIA_APP_SRCDIRS=apps make -C gaia
 	python build/override-settings.py
 	python build/override-webapps.py
 	rm -rf gaia/profile/startupCache
