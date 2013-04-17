@@ -48,7 +48,7 @@
     <command id="cmd_updateApp" oncommand="simulatorAppUpdate()"/>
   </commandset>
   <keyset id="mainKeyset">
-    <key id="app-update" modifiers="accel" key="&updateAppCmd.key;"
+    <key id="key_updateApp" modifiers="accel" key="&updateAppCmd.key;"
          command="cmd_updateApp"/>
   </keyset>
   <menubar id="main-menubar">
@@ -57,6 +57,7 @@
       <menupopup id="menu_viewPopup">
         <menuitem id="menu_ReloadItem"
                   label="&reloadItem.label;"
+                  key="key_updateApp"
                   accesskey="&reloadItem.accesskey;"
                   command="cmd_updateApp"/>
       </menupopup>
