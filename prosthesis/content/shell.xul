@@ -43,22 +43,23 @@
   <script type="application/javascript" src="chrome://global/content/globalOverlay.js"/>
 
   <commandset id="mainCommandSet">
-    <command id="cmd_quitApplication" oncommand="goQuitApplication()"/>
-    <command id="cmd_updateApp" oncommand="simulatorAppUpdate()"/>
+    <command id="quitSimulatorCmd" oncommand="goQuitApplication()"/>
+    <command id="refreshAppCmd" oncommand="simulatorAppUpdate()"/>
   </commandset>
   <keyset id="mainKeyset">
-    <key id="key_updateApp" modifiers="accel" key="&updateAppCmd.key;"
-         command="cmd_updateApp"/>
+    <key id="refreshAppKey"
+         modifiers="accel"
+         key="&refreshAppKey.key;"
+         command="refreshAppCmd"/>
   </keyset>
-  <menubar id="main-menubar">
-    <menu id="view-menu" label="&viewMenu.label;"
-          accesskey="&viewMenu.accesskey;">
-      <menupopup id="menu_viewPopup">
-        <menuitem id="menu_ReloadItem"
-                  label="&reloadItem.label;"
-                  key="key_updateApp"
-                  accesskey="&reloadItem.accesskey;"
-                  command="cmd_updateApp"/>
+  <menubar id="mainMenubar">
+    <menu id="appMenu" label="&appMenu.label;" accesskey="&appMenu.accesskey;">
+      <menupopup id="appPopup">
+        <menuitem id="refreshAppItem"
+                  label="&refreshAppItem.label;"
+                  key="refreshAppKey"
+                  accesskey="&refreshAppItem.accesskey;"
+                  command="refreshAppCmd"/>
       </menupopup>
     </menu>
   </menubar>

@@ -10,21 +10,23 @@
          id="linuxShell">
 
   <keyset id="mainKeyset">
-    <key id="key_quitApplication"
-         key="&quitApplicationCmd.key;"
-         command="cmd_quitApplication"
-         modifiers="accel"/>
+    <key id="quitSimulatorKey"
+         modifiers="accel"
+         key="&quitSimulatorKey.key;"
+         command="quitSimulatorCmd"/>
   </keyset>
 
-  <menubar id="main-menubar">
-    <menu id="file-menu" label="&fileMenu.label;"
-          accesskey="&fileMenu.accesskey;" insertbefore="view-menu">
-      <menupopup id="menu_FilePopup">
+  <menubar id="mainMenubar">
+    <menu id="fileMenu"
+          label="&fileMenu.label;"
+          accesskey="&fileMenu.accesskey;"
+          insertbefore="appMenu">
+      <menupopup id="filePopup">
         <menuitem id="menu_FileQuitItem"
-                  label="&quitApplicationCmd.label;"
-                  accesskey="&quitApplicationCmd.accesskey;"
-                  key="key_quitApplication"
-                  command="cmd_quitApplication"/>
+                  label="&quitSimulatorItem.label;"
+                  accesskey="&quitSimulatorItem.accesskey;"
+                  key="quitSimulatorKey"
+                  command="quitSimulatorCmd"/>
       </menupopup>
     </menu>
   </menubar>
