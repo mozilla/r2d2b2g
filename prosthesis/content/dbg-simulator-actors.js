@@ -18,36 +18,7 @@ let SimulatorActor = function SimulatorActor(aConnection) {
   this.clientReady = false;
 
   Services.obs.addObserver(this, "r2d2b2g:app-update", false);
-
-  // NOTE: avoid confusing the debugger connection
-  // with an unsolicited event in the middle of a request, which causes
-  // the connection to stop forwarding requests to this actor.
-  // XXX Report debugger connection bug and reference bug number here.
-  let send = aConnection.send.bind(aConnection);
-  Object.defineProperties(aConnection, {
-    send: {
-      value: function(msg) {
-        send(msg);
-        this._drainQueue();
-      }
-    },
-    enqueue: {
-      value: function(msg) {
-        this._sendQueue.push(msg);
-      },
-    },
-    _sendQueue: {
-      value: []
-    },
-    _drainQueue: {
-      value: function () {
-        let qmsg;
-        while (qmsg = this._sendQueue.pop()) {
-          send(qmsg);
-        }
-      }
-    }
-  });
+  Services.obs.addObserver(this, "r2d2b2g:geolocation-update", false);
 }
 
 SimulatorActor.prototype = {
@@ -57,6 +28,9 @@ SimulatorActor.prototype = {
     switch(aTopic) {
       case "r2d2b2g:app-update":
         this.appUpdateObserver(aSubject);
+        break;
+      case "r2d2b2g:geolocation-update":
+        this.geolocationUpdateObserver(aSubject);
         break;
     }
   },
@@ -71,8 +45,17 @@ SimulatorActor.prototype = {
     });
   },
 
+  geolocationUpdateObserver: function(message) {
+    this.debug("send geolocationRequest unsolicited request");
+    this._connection.send({
+      from: this.actorID,
+      type: "geolocationRequest"
+    });
+  },
+
   disconnect: function() {
     this.debug("simulator actor connection closed");
+    Services.obs.removeObserver(this, "r2d2b2g:app-update");
   },
 
   /**
@@ -94,11 +77,7 @@ SimulatorActor.prototype = {
     this.debug("simulator actor received a 'geolocationReady' command");
     this.clientReady = true;
 
-    this._connection.enqueue({
-        from: this.actorID,
-        type: "geolocationRequest"
-    });
-
+    Services.obs.notifyObservers(null, "r2d2b2g:geolocation-ready", null);
     return { "msg": "geolocationReady received" };
   },
 
@@ -372,7 +351,7 @@ SimulatorActor.prototype = {
         lat: aRequest.message.lat,
         lon: aRequest.message.lon,
       }
-    }, "r2d2b2g-geolocation-setup", null);
+    }, "r2d2b2g:geolocation-setup", null);
 
     return {
       message: "geolocationRequest request received",

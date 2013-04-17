@@ -50,7 +50,7 @@ function FakeGeoPositionProvider() {
       this.callback.update(new FakeGeoPositionObject(
         message.wrappedJSObject.lat, message.wrappedJSObject.lon));
     }
-  }).bind(this), "r2d2b2g-geolocation-response", false);
+  }).bind(this), "r2d2b2g:geolocation-response", false);
 }
 
 FakeGeoPositionProvider.prototype = {
@@ -86,7 +86,7 @@ FakeGeoPositionProvider.prototype = {
   setHighAccuracy: function(enable) {},
 
   walk: function() {
-    Services.obs.notifyObservers(null, "r2d2b2g-geolocation-request", null);
+    Services.obs.notifyObservers(null, "r2d2b2g:geolocation-request", null);
   },
 
   notify: function(timer) {

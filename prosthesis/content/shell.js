@@ -58,8 +58,9 @@ document.getElementById("rotateButton").addEventListener("click", function() {
       gotCoords = function gotCoords(message) {
         latitude = initialLatitude = message.wrappedJSObject.lat;
         longitude = initialLongitude = message.wrappedJSObject.lon;
-        document.getElementById("geolocationButton")
-                .addEventListener("click", openWin);
+      },
+      gotReady = function requestCoords() {
+        Services.obs.notifyObservers(null, "r2d2b2g:geolocation-update", null);
       },
       sendCoords = function sendCoords() {
         Services.obs.notifyObservers({
@@ -67,11 +68,16 @@ document.getElementById("rotateButton").addEventListener("click", function() {
             lat: latitude,
             lon: longitude,
           }
-        }, "r2d2b2g-geolocation-response", null);
+        }, "r2d2b2g:geolocation-response", null);
       };
 
-  Services.obs.addObserver(gotCoords, "r2d2b2g-geolocation-setup", false);
-  Services.obs.addObserver(sendCoords, "r2d2b2g-geolocation-request", false);
+  Services.obs.addObserver(gotReady, "r2d2b2g:geolocation-ready", false);
+  Services.obs.addObserver(gotCoords, "r2d2b2g:geolocation-setup", false);
+  Services.obs.addObserver(sendCoords, "r2d2b2g:geolocation-request", false);
+
+  document.getElementById("geolocationButton")
+          .addEventListener("click", openWin);
+
 }
 
 function simulatorAppUpdate() {
