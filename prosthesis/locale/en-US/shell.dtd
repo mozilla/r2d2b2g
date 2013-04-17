@@ -8,6 +8,7 @@
 <!ENTITY quitApplicationCmdWin.accesskey     "x">
 <!ENTITY quitApplicationCmd.label            "Quit">
 <!ENTITY quitApplicationCmd.accesskey        "Q">
+<!ENTITY quitApplicationCmd.key              "Q">
 
 <!ENTITY quitApplicationCmdMac.label         "Quit Simulator">
 <!ENTITY quitApplicationCmdMac.key           "Q">
