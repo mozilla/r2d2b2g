@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!DOCTYPE window SYSTEM "chrome://prosthesis/locale/shell.dtd">
+
+<overlay xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+         id="macShell">
+
+  <keyset id="mainKeyset">
+    <key id="quitSimulatorKey"
+         modifiers="accel"
+         key="&quitSimulatorKeyMac.key;"
+         command="quitSimulatorCmd"/>
+    <key id="hideSimulatorKeyMac"
+         modifiers="accel"
+         key="&hideSimulatorKeyMac.key;"/>
+    <key id="hideOthersKeyMac"
+         modifiers="accel,alt"
+         key="&hideOthersKeyMac.key;"/>
+  </keyset>
+
+  <menubar id="mainMenubar">
+    <menu id="appMenu">
+      <menupopup id="appPopup">
+        <!-- These items get moved to the Application menu by nsMenuBarX,
+           - so they can live in any menu.  They just need to be somewhere,
+           - and their IDs must be these specific ones. -->
+        <menuitem id="menu_FileQuitItem"
+                  label="&quitSimulatorItemMac.label;"
+                  key="quitSimulatorKey"
+                  command="quitSimulatorCmd"/>
+        <menuitem id="menu_mac_hide_app"
+                  label="&hideSimulatorItemMac.label;"
+                  key="hideSimulatorKeyMac"/>
+        <menuitem id="menu_mac_hide_others"
+                  label="&hideOthersItemMac.label;"
+                  key="hideOthersKeyMac"/>
+        <menuitem id="menu_mac_show_all" label="&showAllItemMac.label;"/>
+      </menupopup>
+    </menu>
+  </menubar>
+
+</overlay>

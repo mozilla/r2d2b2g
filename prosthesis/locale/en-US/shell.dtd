@@ -1,3 +1,25 @@
 <!-- This Source Code Form is subject to the terms of the Mozilla Public
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!ENTITY fileMenu.label                            "File">
+<!ENTITY fileMenu.accesskey                        "F">
+<!ENTITY quitSimulatorItemWin.label                "Exit">
+<!ENTITY quitSimulatorItemWin.accesskey            "x">
+<!ENTITY quitSimulatorItem.label                   "Quit">
+<!ENTITY quitSimulatorItem.accesskey               "Q">
+<!ENTITY quitSimulatorKey.key                      "Q">
+
+<!ENTITY quitSimulatorItemMac.label                "Quit Simulator">
+<!ENTITY quitSimulatorKeyMac.key                   "Q">
+<!ENTITY hideSimulatorItemMac.label                "Hide Simulator">
+<!ENTITY hideSimulatorKeyMac.key                   "H">
+<!ENTITY hideOthersItemMac.label                   "Hide Others">
+<!ENTITY hideOthersKeyMac.key                      "H">
+<!ENTITY showAllItemMac.label                      "Show All">
+
+<!ENTITY appMenu.label                             "App">
+<!ENTITY appMenu.accesskey                         "A">
+<!ENTITY refreshAppItem.label                      "Refresh">
+<!ENTITY refreshAppItem.accesskey                  "R">
+<!ENTITY refreshAppKey.key                         "R">

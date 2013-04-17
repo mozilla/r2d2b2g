@@ -3,9 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 toolbarbutton {
-  margin: 4px 4px 5px;
-  padding: 0;
-  height: 22px;
   -moz-appearance: toolbarbutton;
 }
 
