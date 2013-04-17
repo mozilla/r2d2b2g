@@ -12,5 +12,9 @@ skin prosthesis skin skin/
 # our own style (including style from the B2G sheet that we end up wanting).
 override chrome://browser/content/content.css chrome://prosthesis/content/global.css
 
+overlay chrome://prosthesis/content/shell.xul chrome://prosthesis/content/shell-mac.xul os=Darwin
+overlay chrome://prosthesis/content/shell.xul chrome://prosthesis/content/shell-windows.xul os=WINNT
+overlay chrome://prosthesis/content/shell.xul chrome://prosthesis/content/shell-linux.xul os=Linux
+
 manifest components/FakeGeolocationProvider.manifest
 manifest components/SimulatorScreen.manifest

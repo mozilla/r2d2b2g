@@ -1,14 +1,16 @@
 <?xml version="1.0"?>
 
 <!-- This Source Code Form is subject to the terms of the Mozilla Public
-   - License, v. 2.0. If a copy of the MPL was not distributed with this file,
-   - You can obtain one at http://mozilla.org/MPL/2.0/.  -->
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
 <?xml-stylesheet href="chrome://prosthesis/skin/shell.css"?>
 
 <!DOCTYPE window SYSTEM "chrome://prosthesis/locale/shell.dtd">
 
 <window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        id="prosthesis"
         windowtype="navigator:browser"
         style="background: black;"
         onload="shell.start();"
@@ -38,6 +40,14 @@
   <script type="application/javascript" src="chrome://browser/content/screen.js"/>
   <!-- this script handles the "runapp" argument for desktop builds -->
   <script type="application/javascript" src="chrome://browser/content/runapp.js"/>
+  <!-- this script handles the "quit application" command -->
+  <script type="application/javascript" src="chrome://global/content/globalOverlay.js"/>
+
+  <commandset id="mainCommandSet">
+    <command id="cmd_quitApplication" oncommand="goQuitApplication()"/>
+  </commandset>
+  <keyset id="mainKeyset"/>
+  <menubar id="main-menubar"/>
 
   <!-- The html:iframe containing the UI is created here. -->
   <box id="shell"

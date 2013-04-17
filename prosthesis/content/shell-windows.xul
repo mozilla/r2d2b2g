@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!DOCTYPE window SYSTEM "chrome://prosthesis/locale/shell.dtd">
+
+<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        id="prosthesis">
+
+  <menubar id="main-menubar">
+    <menu id="file-menu" label="&fileMenu.label;"
+          accesskey="&fileMenu.accesskey;">
+      <menupopup id="menu_FilePopup">
+        <menuitem id="menu_FileQuitItem"
+                  label="&quitApplicationCmdWin.label;"
+                  accesskey="&quitApplicationCmdWin.accesskey;"
+                  command="cmd_quitApplication"/>
+      </menupopup>
+    </menu>
+
+    <menu id="view-menu" label="&viewMenu.label;"
+          accesskey="&viewMenu.accesskey;">
+      <menupopup id="menu_viewPopup">
+      </menupopup>
+    </menu>
+  </menubar>
+
+</window>
