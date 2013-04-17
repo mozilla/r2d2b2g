@@ -11,7 +11,7 @@
 
   <menubar id="main-menubar">
     <menu id="file-menu" label="&fileMenu.label;"
-          accesskey="&fileMenu.accesskey;">
+          accesskey="&fileMenu.accesskey;" insertbefore="view-menu">
       <menupopup id="menu_FilePopup">
         <menuitem id="menu_FileQuitItem"
                   label="&quitApplicationCmdWin.label;"
