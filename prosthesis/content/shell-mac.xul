@@ -6,8 +6,8 @@
 
 <!DOCTYPE window SYSTEM "chrome://prosthesis/locale/shell.dtd">
 
-<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-        id="prosthesis">
+<overlay xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+         id="macShell">
 
   <keyset id="mainKeyset">
     <key id="key_quitApplication"
@@ -42,4 +42,4 @@
     </menu>
   </menubar>
 
-</window>
+</overlay>

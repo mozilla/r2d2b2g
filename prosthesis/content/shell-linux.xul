@@ -6,19 +6,19 @@
 
 <!DOCTYPE window SYSTEM "chrome://prosthesis/locale/shell.dtd">
 
-<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-        id="prosthesis">
+<overlay xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+         id="linuxShell">
 
   <keyset id="mainKeyset">
     <key id="key_quitApplication"
-         key="&quitApplicationCmdMac.key;"
+         key="&quitApplicationCmd.key;"
          command="cmd_quitApplication"
          modifiers="accel"/>
   </keyset>
 
   <menubar id="main-menubar">
     <menu id="file-menu" label="&fileMenu.label;"
-          accesskey="&fileMenu.accesskey;">
+          accesskey="&fileMenu.accesskey;" insertbefore="view-menu">
       <menupopup id="menu_FilePopup">
         <menuitem id="menu_FileQuitItem"
                   label="&quitApplicationCmd.label;"
@@ -29,4 +29,4 @@
     </menu>
   </menubar>
 
-</window>
+</overlay>

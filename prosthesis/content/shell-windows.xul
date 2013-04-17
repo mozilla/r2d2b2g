@@ -6,8 +6,8 @@
 
 <!DOCTYPE window SYSTEM "chrome://prosthesis/locale/shell.dtd">
 
-<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-        id="prosthesis">
+<overlay xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+         id="windowsShell">
 
   <menubar id="main-menubar">
     <menu id="file-menu" label="&fileMenu.label;"
@@ -21,4 +21,4 @@
     </menu>
   </menubar>
 
-</window>
+</overlay>
