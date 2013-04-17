@@ -2,17 +2,20 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
-<!ENTITY quitApplicationCmdWin.label        "Exit">
-<!ENTITY quitApplicationCmdWin.accesskey    "x">
-<!ENTITY quitApplicationCmd.label           "Quit">
-<!ENTITY quitApplicationCmd.accesskey       "Q">
-<!ENTITY quitApplicationCmdMac.label        "Quit Simulator">
-<!ENTITY quitApplicationCmdMac.key          "Q">
-<!ENTITY hideThisAppCmdMac.label            "Hide Simulator">
-<!ENTITY hideThisAppCmdMac.key              "H">
-<!ENTITY hideOtherAppsCmdMac.label          "Hide Others">
-<!ENTITY hideOtherAppsCmdMac.key            "H">
-<!ENTITY showAllAppsCmdMac.label            "Show All">
+<!ENTITY quitApplicationCmdWin.label         "Exit">
+<!ENTITY quitApplicationCmdWin.accesskey     "x">
+<!ENTITY quitApplicationCmd.label            "Quit">
+<!ENTITY quitApplicationCmd.accesskey        "Q">
+<!ENTITY quitApplicationCmdMac.label         "Quit Simulator">
+<!ENTITY quitApplicationCmdMac.key           "Q">
+<!ENTITY hideThisAppCmdMac.label             "Hide Simulator">
+<!ENTITY hideThisAppCmdMac.key               "H">
+<!ENTITY hideOtherAppsCmdMac.label           "Hide Others">
+<!ENTITY hideOtherAppsCmdMac.key             "H">
+<!ENTITY showAllAppsCmdMac.label             "Show All">
 
-<!ENTITY viewMenu.label           "View">
-<!ENTITY viewMenu.accesskey       "V">
+<!ENTITY viewMenu.label                      "View">
+<!ENTITY viewMenu.accesskey                  "V">
+<!ENTITY reloadItem.label                    "Reload">
+<!ENTITY reloadItem.accesskey                "R">
+<!ENTITY updateAppCmd.key                    "R">

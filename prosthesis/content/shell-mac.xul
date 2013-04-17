@@ -23,11 +23,10 @@
   </keyset>
 
   <menubar id="main-menubar">
-    <menu id="view-menu" label="&viewMenu.label;"
-          accesskey="&viewMenu.accesskey;">
+    <menu id="view-menu">
       <menupopup id="menu_viewPopup">
         <!-- These items get moved to the Application menu by nsMenuBarX,
-           - so they can live in any menu. -->
+           - so they can live in any menu.  They just need to be somewhere. -->
         <menuitem id="menu_FileQuitItem"
                   label="&quitApplicationCmdMac.label;"
                   key="key_quitApplication"

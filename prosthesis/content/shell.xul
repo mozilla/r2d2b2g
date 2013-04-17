@@ -45,9 +45,23 @@
 
   <commandset id="mainCommandSet">
     <command id="cmd_quitApplication" oncommand="goQuitApplication()"/>
+    <command id="cmd_updateApp" oncommand="simulatorAppUpdate()"/>
   </commandset>
-  <keyset id="mainKeyset"/>
-  <menubar id="main-menubar"/>
+  <keyset id="mainKeyset">
+    <key id="app-update" modifiers="accel" key="&updateAppCmd.key;"
+         command="cmd_updateApp"/>
+  </keyset>
+  <menubar id="main-menubar">
+    <menu id="view-menu" label="&viewMenu.label;"
+          accesskey="&viewMenu.accesskey;">
+      <menupopup id="menu_viewPopup">
+        <menuitem id="menu_ReloadItem"
+                  label="&reloadItem.label;"
+                  accesskey="&reloadItem.accesskey;"
+                  command="cmd_updateApp"/>
+      </menupopup>
+    </menu>
+  </menubar>
 
   <!-- The html:iframe containing the UI is created here. -->
   <box id="shell"
@@ -61,8 +75,4 @@
     </toolbar>
   </toolbox>
 
-  <keyset>
-    <key id="app-update" modifiers="accel" key="R"
-         oncommand="simulatorAppUpdate();"/>
-  </keyset>
 </window>

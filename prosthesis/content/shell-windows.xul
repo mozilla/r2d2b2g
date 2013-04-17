@@ -19,12 +19,6 @@
                   command="cmd_quitApplication"/>
       </menupopup>
     </menu>
-
-    <menu id="view-menu" label="&viewMenu.label;"
-          accesskey="&viewMenu.accesskey;">
-      <menupopup id="menu_viewPopup">
-      </menupopup>
-    </menu>
   </menubar>
 
 </window>
