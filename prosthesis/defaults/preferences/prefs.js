@@ -13,3 +13,6 @@ user_pref("power.screen.timeout", 86400);
 
 // Enable remote debugging and other tools.
 user_pref("marionette.defaultPrefs.enabled", false);
+
+// On startup, open the prosthesis shell instead of the default B2G one.
+user_pref("toolkit.defaultChromeURI", "chrome://prosthesis/content/shell.xul");
