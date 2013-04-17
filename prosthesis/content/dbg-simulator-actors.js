@@ -73,10 +73,6 @@ SimulatorActor.prototype = {
 
   disconnect: function() {
     this.debug("simulator actor connection closed");
-    Object.keys(this._observers).forEach(function(topic) {
-      let obs = this._observers[topic];
-      Services.obs.removeObserver(obs, topic);
-    });
   },
 
   /**
