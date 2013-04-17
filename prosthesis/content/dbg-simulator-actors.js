@@ -17,7 +17,7 @@ let SimulatorActor = function SimulatorActor(aConnection) {
   this._listeners = {};
   this.clientReady = false;
 
-  let obs = Services.obs.addObserver(this, "r2d2b2g:app-update", false);
+  Services.obs.addObserver(this, "r2d2b2g:app-update", false);
 
   // NOTE: avoid confusing the debugger connection
   // with an unsolicited event in the middle of a request, which causes
@@ -55,9 +55,9 @@ SimulatorActor.prototype = {
 
   observe: function(aSubject, aTopic, aData) {
     switch(aTopic) {
-    case "r2d2b2g:app-update":
-      this.appUpdateObserver(aSubject);
-      break;
+      case "r2d2b2g:app-update":
+        this.appUpdateObserver(aSubject);
+        break;
     }
   },
 
