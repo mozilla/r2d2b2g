@@ -12,7 +12,6 @@
 <window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
         id="prosthesis"
         windowtype="navigator:browser"
-        style="background: black;"
         onload="shell.start();"
         onunload="shell.stop();">
 

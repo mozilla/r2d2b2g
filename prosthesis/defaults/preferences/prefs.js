@@ -16,3 +16,7 @@ user_pref("marionette.defaultPrefs.enabled", false);
 
 // On startup, open the prosthesis shell instead of the default B2G one.
 user_pref("toolkit.defaultChromeURI", "chrome://prosthesis/content/shell.xul");
+
+// B2G disables the native theme, apparently for performance, but we need it
+// to make our chrome appealing and usable, so reenable it.
+user_pref("mozilla.widget.disable-native-theme", false);
