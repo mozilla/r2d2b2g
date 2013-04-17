@@ -61,4 +61,8 @@
     </toolbar>
   </toolbox>
 
+  <keyset>
+    <key id="app-update" modifiers="accel" key="R"
+         oncommand="simulatorAppUpdate();"/>
+  </keyset>
 </window>
