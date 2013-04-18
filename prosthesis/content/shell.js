@@ -29,15 +29,16 @@ document.getElementById("rotateButton").addEventListener("click", function() {
 }, false);
 
 {
-  let initialLatitude = 0,
-      initialLongitude = 0,
+  let currentLatitude = 0,
+      currentLongitude = 0,
       latitude = 0,
       longitude = 0,
-      useCurrent = true,
+      useCurrent = false,
       openWin = function openWin() {
         let params = {
-          input: { lat: latitude, lon: longitude, useCurrent: useCurrent },
-          output: { lat: null, lon: null, useCurrent: useCurrent }
+          lat: latitude,
+          lon: longitude,
+          useCurrent: useCurrent
         };
 
         Services.ww.openWindow(null,
@@ -46,18 +47,18 @@ document.getElementById("rotateButton").addEventListener("click", function() {
           "chrome,dialog,menubar,centerscreen,modal",
           { wrappedJSObject: params });
 
-        useCurrent = params.output.useCurrent;
+        useCurrent = params.useCurrent;
         if (useCurrent) {
-          latitude = initialLatitude;
-          longitude = initialLongitude;
+          latitude = currentLatitude;
+          longitude = currentLongitude;
         } else {
-          latitude = params.output.lat || latitude;
-          longitude = params.output.lon || longitude;
+          latitude = params.lat || latitude;
+          longitude = params.lon || longitude;
         }
       },
       gotCoords = function gotCoords(message) {
-        latitude = initialLatitude = message.wrappedJSObject.lat;
-        longitude = initialLongitude = message.wrappedJSObject.lon;
+        currentLatitude = message.wrappedJSObject.lat;
+        currentLongitude = message.wrappedJSObject.lon;
       },
       gotReady = function requestCoords() {
         Services.obs.notifyObservers(null, "r2d2b2g:geolocation-update", null);
