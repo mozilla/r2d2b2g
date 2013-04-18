@@ -65,8 +65,12 @@ let simulator = module.exports = {
     // unnecessarily if the user is quitting Firefox or disabling the addon;
     // and so they close their filehandles if the user is updating the addon,
     // which we need to do on Windows to replace the files.
-    this.kill();
-    ADB.kill(Runtime.OS == "WINNT" ? true : false /* sync */);
+    this.kill(function() {
+      // We wait until the Simulator process is dead before starting the process
+      // that kills the ADB server because Firefox was crashing or hanging when
+      // we did those two things simultaneously (issue #435).
+      ADB.kill(Runtime.OS == "WINNT" ? true : false /* sync */);
+    });
 
     // Close the Dashboard if the user is disabling or updating the addon.
     // We don't close it if the user is quitting Firefox because we want it
