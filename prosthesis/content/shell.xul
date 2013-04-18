@@ -28,6 +28,7 @@
     }, false);
   </script>
 
+  <script type="application/javascript" src="chrome://prosthesis/content/touch.js"/>
   <script type="application/javascript" src="chrome://prosthesis/content/dbgport.js"/>
   <script type="application/javascript" src="chrome://prosthesis/content/pbport.js"/>
   <script type="application/javascript" src="chrome://browser/content/settings.js"/>
