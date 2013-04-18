@@ -113,6 +113,8 @@ endif
 
 unix_to_windows_path = \
   $(shell echo '$(1)' | sed 's/^\///' | sed 's/\//\\/g' | sed 's/^./\0:/')
+# windows_to_unix_path = \
+#   $(shell echo '$(1)' | sed 's/\\/\//g' | sed 's/://')
 
 ifneq ($(strip $(LOCALES_FILE)),)
   export LOCALE_BASEDIR ?= $(PWD)/gaia-l10n
