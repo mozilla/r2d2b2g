@@ -8,26 +8,25 @@ window.addEventListener("DOMContentLoaded", function() {
       custom = $("custom"),
       latitudeEle = $("latitude"),
       longitudeEle = $("longitude"),
-      inputOutput = window.arguments[0].wrappedJSObject,
-      input = inputOutput.input,
-      output = inputOutput.output,
-      latitude = input.lat,
-      longitude = input.lon,
-      tempUseCurrent = input.useCurrent,
+      windowParams = window.arguments[0].wrappedJSObject,
+      latitude = windowParams.lat,
+      longitude = windowParams.lon,
+      tempUseCurrent = windowParams.useCurrent,
       setTextBoxes = function(disabled) {
         latitudeEle.disabled = disabled;
         longitudeEle.disabled = disabled;
         tempUseCurrent = disabled;
       },
       accept = function () {
-        output.lat = latitudeEle.value;
-        output.lon = longitudeEle.value;
-        output.useCurrent = tempUseCurrent;
+        windowParams.lat = latitudeEle.value;
+        windowParams.lon = longitudeEle.value;
+        windowParams.useCurrent = tempUseCurrent;
         window.close();
       };
 
-  setTextBoxes(input.useCurrent);
-  custom.parentElement.selectedItem = input.useCurrent ? current : custom;
+  setTextBoxes(windowParams.useCurrent);
+  custom.parentElement.selectedItem =
+    windowParams.useCurrent ? current : custom;
   latitudeEle.value = latitude;
   longitudeEle.value = longitude;
 
