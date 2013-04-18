@@ -241,7 +241,7 @@ const RemoteSimulatorClient = Class({
       }).bind(this);
 
       let geolocation = Cc["@mozilla.org/geolocation;1"].
-                        getService(Ci.nsIDOMGeoGeolocation);
+                        getService(Ci.nsISupports);
       geolocation.getCurrentPosition(onsuccess, function error() {
         console.error("error getting current position");
       });
