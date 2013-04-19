@@ -182,3 +182,8 @@ help:
 	@echo '  run: start Firefox with the addon installed into a new profile'
 	@echo '  package: package the addon into a XPI'
 	@echo '  help: show this message'
+
+clean:
+	rm -rf addon/data/$(B2G_PLATFORM)/*
+	rm -rf addon/template/*
+	rm gaia/build/custom-prefs.js
