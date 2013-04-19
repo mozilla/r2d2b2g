@@ -1,4 +1,4 @@
-.PHONY: build profile prosthesis b2g adb locales run package help
+.PHONY: build profile prosthesis b2g adb locales run package clean help
 
 -include local.mk
 
@@ -128,6 +128,13 @@ endif
 
 build: profile prosthesis b2g adb
 
+clean:
+	rm -rf addon/data/$(B2G_PLATFORM)
+	rm -rf addon/template
+	rm gaia/build/custom-prefs.js
+	rm $(ADB_PACKAGE)
+	make -C gaia clean
+
 profile:
 	cp build/override-prefs.js gaia/build/custom-prefs.js
 	GAIA_APP_SRCDIRS=apps make -C gaia
@@ -181,9 +188,5 @@ help:
 	@echo '  adb: download and install ADB'
 	@echo '  run: start Firefox with the addon installed into a new profile'
 	@echo '  package: package the addon into a XPI'
+	@echo '  clean: remove files created during the build process'
 	@echo '  help: show this message'
-
-clean:
-	rm -rf addon/data/$(B2G_PLATFORM)/*
-	rm -rf addon/template/*
-	rm gaia/build/custom-prefs.js
