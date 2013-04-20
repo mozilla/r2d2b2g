@@ -1,4 +1,4 @@
-.PHONY: build profile prosthesis b2g adb locales run package clean help
+.PHONY: build clean profile prosthesis b2g adb locales run package help
 
 -include local.mk
 
