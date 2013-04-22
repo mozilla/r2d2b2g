@@ -27,8 +27,15 @@ PageMod({
   contentScriptFile: Simulator.contentScript,
   contentScriptWhen: 'start',
   onAttach: function(worker) {
-    // TODO: Only allow 1 manager page
-    Simulator.worker = worker;
+    // Ignore tentatives to open multiple simulator page
+    // by showing the tab with existing instance
+    if (Simulator.worker) {
+      Simulator.worker.tab.activate();
+      worker.tab.close();
+    }
+    else {
+      Simulator.worker = worker;
+    }
   },
 });
 
