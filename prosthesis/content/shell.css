@@ -15,7 +15,7 @@ toolbarbutton > .toolbarbutton-text {
 }
 
 #homeButton {
-  list-style-image: url("chrome://prosthesis/skin/home.png");
+  list-style-image: url("chrome://prosthesis/content/icons/home.png");
   -moz-image-region: rect(0, 12px, 12px, 0);
 }
 
@@ -24,7 +24,7 @@ toolbarbutton > .toolbarbutton-text {
 }
 
 #rotateButton {
-  list-style-image: url("chrome://prosthesis/skin/rotate.png");
+  list-style-image: url("chrome://prosthesis/content/icons/rotate.png");
   -moz-image-region: rect(0, 36px, 12px, 24px);
 }
 
@@ -37,7 +37,7 @@ toolbarbutton > .toolbarbutton-text {
 }
 
 #geolocationButton {
-  list-style-image: url("chrome://prosthesis/skin/geo.png");
+  list-style-image: url("chrome://prosthesis/content/icons/geo.png");
   -moz-image-region: rect(0, 9px, 14px, 0);
 }
 

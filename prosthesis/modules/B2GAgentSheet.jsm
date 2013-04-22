@@ -10,7 +10,7 @@ this.EXPORTED_SYMBOLS = [ "switchToB2GAgentSheet" ];
 
 Cu.import("resource://gre/modules/Services.jsm");
 
-let URL = Services.io.newURI("chrome://prosthesis/skin/b2g-content.css", null, null);
+let URL = Services.io.newURI("chrome://prosthesis/content/b2g-content.css", null, null);
 
 let trackedIframes = new WeakMap();
 
