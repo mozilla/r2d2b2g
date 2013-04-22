@@ -5,7 +5,7 @@
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
-<?xml-stylesheet href="chrome://prosthesis/skin/shell.css"?>
+<?xml-stylesheet href="chrome://prosthesis/content/shell.css"?>
 
 <!DOCTYPE window SYSTEM "chrome://prosthesis/locale/shell.dtd">
 
