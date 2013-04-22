@@ -9,7 +9,9 @@ function timedelta(d1) {
     if (d < 24) return d + ' hours ago';
     d = ~~(d/24);
     if (d < 2) return 'a day ago';
-    if (d < 365) return d + ' days ago';
+    if (d < 30) return d + ' days ago';
+    if (d < 60) return 'a month ago';
+    if (d < 360) return ~~(d/30) + ' months ago';
     if (d < 365*2) return 'a year ago';
     return ~~(d / 365) + ' years ago';
 }
