@@ -113,9 +113,15 @@ let simulator = module.exports = {
 
     if (worker) {
       worker.on("message", this.onMessage.bind(this));
-      worker.on("detach", (function(message) {
+      worker.on("detach", function(message) {
         worker = null;
-      }).bind(this));
+      });
+      worker.on("pageshow", function(message) {
+        worker = this;
+      });
+      worker.on("pagehide", function(message) {
+        worker = null;
+      });
 
       if (!ADB.ready) {
         ADB.start();
@@ -890,7 +896,11 @@ let simulator = module.exports = {
   },
 
   openHelperTab: function() {
-    this.openTab(simulator.contentPage, true);
+    // Ensure opening only one simulator page
+    if (this.worker)
+      this.worker.tab.activate();
+    else
+      this.openTab(simulator.contentPage, true);
   },
 
   closeHelperTab: function closeHelperTab() {
