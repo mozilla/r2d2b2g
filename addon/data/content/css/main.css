@@ -518,6 +518,7 @@ figure {
     border-bottom: 1px solid #eee;
     margin-bottom: 25px;
     padding: 0 10px;
+    list-style-type: none;
 }
 #apps-list > em {
     display: block;
@@ -552,6 +553,13 @@ figure {
     padding: 3px 10px;
     font-weight: normal;
     text-decoration: none;
+}
+#apps-list .action[data-action=push] {
+    background-image: url(../device.png);
+    background-repeat: no-repeat;
+    background-position: 6px center;
+    padding-left: 23px;
+    background-size: auto 14px;
 }
 #apps-list label {
     padding-left: 5px;
@@ -591,6 +599,11 @@ figure {
     border: 2px darkred dashed;
     background-color: #E5CBCB;
 }
+
+.app-validation-list {
+    display: none;
+}
+
 #add-app-url {
     width: 220px;
 }
@@ -673,4 +686,17 @@ a.button {
 }
 .popover-wrap:hover .button-popover {
     display: block;
+}
+
+
+
+
+.device-dependent {
+    transition: .5s opacity;
+    opacity: 0;
+    pointer-events: none;
+}
+.device-connected .device-dependent {
+    opacity: 1;
+    pointer-events: all;
 }
