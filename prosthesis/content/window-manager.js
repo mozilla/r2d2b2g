@@ -15,6 +15,8 @@ let SimulatorWindowManager = {
     this._initObservers();
     this._initKeepWindowSize();
     this._initMutationObservers();
+    this._adjustWindowSize(GlobalSimulatorScreen.width,
+                           GlobalSimulatorScreen.height);
   },
   get _homescreen() shell.contentBrowser.contentWindow.wrappedJSObject,
   get _shellElement() document.getElementById("shell"),
