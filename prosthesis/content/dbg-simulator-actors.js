@@ -29,9 +29,6 @@ SimulatorActor.prototype = {
       case "r2d2b2g:app-update":
         this.appUpdateObserver(aSubject);
         break;
-      case "r2d2b2g:geolocation-update":
-        this.geolocationUpdateObserver(aSubject);
-        break;
     }
   },
 
@@ -42,14 +39,6 @@ SimulatorActor.prototype = {
       type: "appUpdateRequest",
       origin: message.wrappedJSObject.origin,
       appId: message.wrappedJSObject.appId
-    });
-  },
-
-  geolocationUpdateObserver: function(message) {
-    this.debug("send geolocationRequest unsolicited request");
-    this._connection.send({
-      from: this.actorID,
-      type: "geolocationRequest"
     });
   },
 
@@ -76,8 +65,10 @@ SimulatorActor.prototype = {
   onGeolocationReady: function(aRequest) {
     this.debug("simulator actor received a 'geolocationReady' command");
     this.clientReady = true;
-
-    Services.obs.notifyObservers(null, "r2d2b2g:geolocation-ready", null);
+    this._connection.send({
+      from: this.actorID,
+      type: "geolocationRequest"
+    });
     return { "msg": "geolocationReady received" };
   },
 

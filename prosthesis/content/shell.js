@@ -60,9 +60,6 @@ document.getElementById("rotateButton").addEventListener("click", function() {
         currentLatitude = message.wrappedJSObject.lat;
         currentLongitude = message.wrappedJSObject.lon;
       },
-      gotReady = function requestCoords() {
-        Services.obs.notifyObservers(null, "r2d2b2g:geolocation-update", null);
-      },
       sendCoords = function sendCoords() {
         Services.obs.notifyObservers({
           wrappedJSObject: {
@@ -72,7 +69,6 @@ document.getElementById("rotateButton").addEventListener("click", function() {
         }, "r2d2b2g:geolocation-response", null);
       };
 
-  Services.obs.addObserver(gotReady, "r2d2b2g:geolocation-ready", false);
   Services.obs.addObserver(gotCoords, "r2d2b2g:geolocation-setup", false);
   Services.obs.addObserver(sendCoords, "r2d2b2g:geolocation-request", false);
 
