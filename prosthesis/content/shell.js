@@ -31,8 +31,8 @@ document.getElementById("rotateButton").addEventListener("click", function() {
 {
   let currentLatitude = 0,
       currentLongitude = 0,
-      latitude = 0,
-      longitude = 0,
+      latitude = 37.78937,
+      longitude = -122.38912,
       useCurrent = false,
       openWin = function openWin() {
         let params = {
