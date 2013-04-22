@@ -125,15 +125,15 @@ this.ADB = {
       arguments: ["start-server"],
 
       stdout: function adb_start_stdout(data) {
-        debug("stdout: " + data);
+        debug(data.trim());
       },
 
       stderr: function adb_start_stderr(data) {
-        debug("stderr: " + data);
+        debug(data.trim());
       },
 
       done: function adb_start_done(result) {
-        debug("start-server exit code: " + result.exitCode);
+        debug("start-server done: " + result.exitCode);
         if (result.exitCode == 0) {
           Services.prefs.setBoolPref("dom.mozTCPSocket.enabled", true);
           self.ready = true;
@@ -164,15 +164,15 @@ this.ADB = {
       arguments: ["kill-server"],
 
       stdout: function adb_start_stdout(data) {
-        debug("kill-server stdout: " + data);
+        debug(data.trim());
       },
 
       stderr: function adb_start_stderr(data) {
-        debug("kill-server stderr: " + data);
+        debug(data.trim());
       },
 
       done: function adb_start_done(result) {
-        debug("kill-server exit code: " + result.exitCode);
+        debug("kill-server done: " + result.exitCode);
         if (result.exitCode == 0) {
           self.ready = false;
           Services.obs.notifyObservers(null, "adb-killed", null);
