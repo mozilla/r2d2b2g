@@ -2,7 +2,6 @@ resource prosthesis ./
 
 content prosthesis content/
 locale prosthesis en-US locale/en-US/
-skin prosthesis skin skin/
 
 # B2G's "content" stylesheet removes styles from a variety of XUL widgets we use
 # in parts of the Simulator interface, making them hard to recognize, so we
