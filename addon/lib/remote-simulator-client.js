@@ -15,7 +15,6 @@ const Runtime = require("runtime");
 const Self = require("self");
 const URL = require("url");
 const Subprocess = require("subprocess");
-
 const Prefs = require("preferences-service");
 
 const { rootURI: ROOT_URI } = require('@loader/options');
