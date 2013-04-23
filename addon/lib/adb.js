@@ -122,13 +122,16 @@ this.ADB = {
     subprocess.call({
       command: this._adb.path,
 
+      // Merge stderr into stdout to work around a subprocess bug in which
+      // it doesn't notice that stdout and stderr have both closed after
+      // the process exits, so it never calls our 'done' handler.  Since all
+      // we do is dump both output streams to a debug log, it doesn't matter
+      // that we merge them.
+      mergeStderr: true,
+
       arguments: ["start-server"],
 
       stdout: function adb_start_stdout(data) {
-        debug(data.trim());
-      },
-
-      stderr: function adb_start_stderr(data) {
         debug(data.trim());
       },
 
