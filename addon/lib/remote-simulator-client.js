@@ -29,6 +29,17 @@ const dbgClient = Cu.import("resource://gre/modules/devtools/dbg-client.jsm");
 dbgClient.UnsolicitedNotifications.geolocationRequest = "geolocationRequest";
 dbgClient.UnsolicitedNotifications.appUpdateRequest = "appUpdateRequest";
 
+// Log subprocess error and debug messages to the console.  This logs messages
+// for all consumers of the API.  We trim the messages because they sometimes
+// have trailing newlines.  And note that registerLogHandler actually registers
+// an error handler, despite its name.
+Subprocess.registerLogHandler(
+  function(s) console.error("subprocess: " + s.trim())
+);
+Subprocess.registerDebugHandler(
+  function(s) console.debug("subprocess: " + s.trim())
+);
+
 const RemoteSimulatorClient = Class({
   extends: EventTarget,
   initialize: function initialize(options) {
