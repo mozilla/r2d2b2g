@@ -37,6 +37,9 @@ try {
 }
 Cu.import("resource://gre/modules/osfile.jsm");
 
+const OLD_SOCKET_API =
+  Services.vc.compare(Services.appinfo.platformVersion, "23.0a1") < 0;
+
 if (!COMMONJS) {
   this.EXPORTED_SYMBOLS = ["ADB"];
 }
@@ -209,7 +212,8 @@ this.ADB = {
   _checkResponse: function adb_checkResponse(aPacket) {
     const OKAY = 0x59414b4f; // OKAY
     const FAIL = 0x4c494146; // FAIL
-    let view = new Uint32Array(aPacket, 0 , 1);
+    let buffer = OLD_SOCKET_API ? aPacket.buffer : aPacket;
+    let view = new Uint32Array(buffer, 0 , 1);
     if (view[0] == FAIL) {
       debug("Response: FAIL");
     }
@@ -220,10 +224,11 @@ this.ADB = {
   // @param aIgnoreResponse True if this packet has no OKAY/FAIL.
   // @return                A js object { length:...; data:... }
   _unpackPacket: function adb_unpackPacket(aPacket, aIgnoreResponse) {
-    let lengthView = new Uint8Array(aPacket, aIgnoreResponse ? 0 : 4, 4);
+    let buffer = OLD_SOCKET_API ? aPacket.buffer : aPacket;
+    let lengthView = new Uint8Array(buffer, aIgnoreResponse ? 0 : 4, 4);
     let decoder = new TextDecoder();
     let length = parseInt(decoder.decode(lengthView), 16);
-    let text = new Uint8Array(aPacket, aIgnoreResponse ? 4 : 8, length);
+    let text = new Uint8Array(buffer, aIgnoreResponse ? 4 : 8, length);
     return { length: length, data: decoder.decode(text) }
   },
 
@@ -240,7 +245,7 @@ this.ADB = {
       debug("trackDevices onopen");
       Services.obs.notifyObservers(null, "adb-track-devices-start", null);
       let req = this._createRequest("host:track-devices");
-      socket.send(req.buffer, req.byteOffset, req.byteLength);
+      ADB.sockSend(socket, req);
 
     }.bind(this);
 
@@ -425,7 +430,12 @@ this.ADB = {
   // debugging version of tcpsocket.send()
   sockSend: function adb_sockSend(aSocket, aArray) {
     debug(this.stringify(aArray.buffer));
-    aSocket.send(aArray.buffer, aArray.byteOffset, aArray.byteLength);
+
+    if (OLD_SOCKET_API) {
+      aSocket.send(aArray);
+    } else {
+      aSocket.send(aArray.buffer, aArray.byteOffset, aArray.byteLength);
+    }
   },
 
   // pushes a file to the device.
@@ -459,7 +469,7 @@ this.ADB = {
           break;
         case "send-transport":
           req = ADB._createRequest("host:transport-any");
-          socket.send(req.buffer, req.byteOffset, req.byteLength);
+          ADB.sockSend(socket, req);
           state = "wait-transport";
           break
         case "wait-transport":
@@ -473,7 +483,7 @@ this.ADB = {
           break
         case "send-sync":
           req = ADB._createRequest("sync:");
-          socket.send(req.buffer, req.byteOffset, req.byteLength);
+          ADB.sockSend(socket, req);
           state = "wait-sync";
           break
         case "wait-sync":
@@ -610,7 +620,7 @@ this.ADB = {
     socket.onopen = function() {
       debug("runCommand onopen");
       let req = this._createRequest(aCommand);
-      socket.send(req.buffer, req.byteOffset, req.byteLength);
+      ADB.sockSend(socket, req);
 
     }.bind(this);
 
