@@ -227,7 +227,7 @@ this.ADB = {
   _checkResponse: function adb_checkResponse(aPacket) {
     const OKAY = 0x59414b4f; // OKAY
     const FAIL = 0x4c494146; // FAIL
-    let view = new Uint32Array(aPacket.buffer, 0 , 1);
+    let view = new Uint32Array(aPacket, 0 , 1);
     if (view[0] == FAIL) {
       debug("Response: FAIL");
     }
@@ -238,10 +238,10 @@ this.ADB = {
   // @param aIgnoreResponse True if this packet has no OKAY/FAIL.
   // @return                A js object { length:...; data:... }
   _unpackPacket: function adb_unpackPacket(aPacket, aIgnoreResponse) {
-    let lengthView = new Uint8Array(aPacket.buffer, aIgnoreResponse ? 0 : 4, 4);
+    let lengthView = new Uint8Array(aPacket, aIgnoreResponse ? 0 : 4, 4);
     let decoder = new TextDecoder();
     let length = parseInt(decoder.decode(lengthView), 16);
-    let text = new Uint8Array(aPacket.buffer, aIgnoreResponse ? 4 : 8, length);
+    let text = new Uint8Array(aPacket, aIgnoreResponse ? 4 : 8, length);
     return { length: length, data: decoder.decode(text) }
   },
 
@@ -258,7 +258,7 @@ this.ADB = {
       debug("trackDevices onopen");
       Services.obs.notifyObservers(null, "adb-track-devices-start", null);
       let req = this._createRequest("host:track-devices");
-      socket.send(req);
+      socket.send(req.buffer, req.byteOffset, req.byteLength);
 
     }.bind(this);
 
@@ -275,9 +275,9 @@ this.ADB = {
     socket.ondata = function(aEvent) {
       debug("trackDevices ondata");
       let data = aEvent.data;
-      debug("length=" + data.length);
+      debug("length=" + data.byteLength);
       let dec = new TextDecoder();
-      debug(dec.decode(data).trim());
+      debug(dec.decode(new Uint8Array(data)).trim());
 
       // check the OKAY or FAIL on first packet.
       if (waitForFirst) {
@@ -438,7 +438,8 @@ this.ADB = {
       }
     }
     debug(dbg);
-    aSocket.send(aArray);
+    debug("byteOffset: " + aArray.byteOffset + "; byteLength: " + aArray.byteLength);
+    aSocket.send(aArray.buffer, aArray.byteOffset, aArray.byteLength);
   },
 
   // pushes a file to the device.
@@ -472,7 +473,7 @@ this.ADB = {
           break;
         case "send-transport":
           req = ADB._createRequest("host:transport-any");
-          socket.send(req);
+          socket.send(req.buffer, req.byteOffset, req.byteLength);
           state = "wait-transport";
           break
         case "wait-transport":
@@ -486,7 +487,7 @@ this.ADB = {
           break
         case "send-sync":
           req = ADB._createRequest("sync:");
-          socket.send(req);
+          socket.send(req.buffer, req.byteOffset, req.byteLength);
           state = "wait-sync";
           break
         case "wait-sync":
@@ -523,9 +524,11 @@ this.ADB = {
           }
 
           // Ending up with DONE + mtime (wtf???)
-          socket.send(encoder.encode("DONE"));
+          let done = encoder.encode("DONE");
+          socket.send(done.buffer, done.byteOffset, done.byteLength);
           uint32Packet[0] = fileTime;
-          socket.send(uint8Packet);
+          socket.send(uint8Packet.buffer, uint8Packet.byteOffset,
+                      uint8Packet.byteLength);
           state = "wait-done";
           break;
         case "wait-done":
@@ -623,7 +626,7 @@ this.ADB = {
     socket.onopen = function() {
       debug("runCommand onopen");
       let req = this._createRequest(aCommand);
-      socket.send(req);
+      socket.send(req.buffer, req.byteOffset, req.byteLength);
 
     }.bind(this);
 
