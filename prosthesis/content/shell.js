@@ -69,7 +69,7 @@ document.getElementById("rotateButton").addEventListener("click", function() {
         }, "r2d2b2g:geolocation-response", null);
       };
 
-  Services.obs.addObserver(gotCoords, "r2d2b2g:geolocation-setup", false);
+  Services.obs.addObserver(gotCoords, "r2d2b2g:geolocation-update", false);
   Services.obs.addObserver(sendCoords, "r2d2b2g:geolocation-request", false);
 
   document.getElementById("geolocationButton")
