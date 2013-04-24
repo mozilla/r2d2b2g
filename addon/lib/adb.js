@@ -23,13 +23,6 @@ let Cu = components.utils;
 
 Cu.import("resource://gre/modules/Services.jsm");
 
-let subprocess;
-if (COMMONJS) {
-  subprocess = require("subprocess");
-} else {
-  Cu.import("chrome://b2g-remote/content/subprocess.jsm");
-}
-
 // Get the TextEncoder and TextDecoder interfaces from the hidden window,
 // since they aren't defined in a CommonJS module by default.
 let hiddenWindow = Cc['@mozilla.org/appshell/appShellService;1']
@@ -117,32 +110,25 @@ this.ADB = {
   // We startup by launching adb in server mode, and setting
   // the tcp socket preference to |true|
   start: function adb_start() {
+    let process = Cc["@mozilla.org/process/util;1"]
+                    .createInstance(Ci.nsIProcess);
+    process.init(this._adb);
+    let params = ["start-server"];
     let self = this;
-
-    subprocess.call({
-      command: this._adb.path,
-
-      arguments: ["start-server"],
-
-      stdout: function adb_start_stdout(data) {
-        debug("stdout: " + data);
-      },
-
-      stderr: function adb_start_stderr(data) {
-        debug("stderr: " + data);
-      },
-
-      done: function adb_start_done(result) {
-        debug("start-server exit code: " + result.exitCode);
-        if (result.exitCode == 0) {
-          Services.prefs.setBoolPref("dom.mozTCPSocket.enabled", true);
-          self.ready = true;
-          Services.obs.notifyObservers(null, "adb-ready", null);
-        } else {
-          self.ready = false;
-        }
-      }
-    });
+    process.runAsync(params, params.length, {
+      observe: function(aSubject, aTopic, aData) {
+        switch(aTopic) {
+          case "process-finished":
+            Services.prefs.setBoolPref("dom.mozTCPSocket.enabled", true);
+            Services.obs.notifyObservers(null, "adb-ready", null);
+            self.ready = true;
+            break;
+          case "process-failed":
+            self.ready = false;
+            break;
+         }
+       }
+    }, false);
   },
 
   /**
@@ -158,41 +144,37 @@ this.ADB = {
    *        the update doesn't race the killing.
    */
   kill: function adb_kill(aSync) {
-    let process = subprocess.call({
-      command: this._adb.path,
+    let process = Cc["@mozilla.org/process/util;1"]
+                    .createInstance(Ci.nsIProcess);
+    process.init(this._adb);
+    let params = ["kill-server"];
 
-      arguments: ["kill-server"],
-
-      stdout: function adb_start_stdout(data) {
-        debug("kill-server stdout: " + data);
-      },
-
-      stderr: function adb_start_stderr(data) {
-        debug("kill-server stderr: " + data);
-      },
-
-      done: function adb_start_done(result) {
-        debug("kill-server exit code: " + result.exitCode);
-        if (result.exitCode == 0) {
-          self.ready = false;
-          Services.obs.notifyObservers(null, "adb-killed", null);
-        } else if (result.exitCode == 1) {
-          // This is a known problem.  For some reason, adb kill-server
-          // frequently writes "* server not running *" and exits with code 1
-          // even though the server process was running, and it killed it.
-          self.ready = false;
-          Services.obs.notifyObservers(null, "adb-killed", null);
-        } else {
-          // It's hard to say whether or not ADB is ready at this point,
-          // but it seems safer to assume that it isn't, so code that wants
-          // to use it later will try to restart it.
-          self.ready = false;
-          Services.obs.notifyObservers(null, "adb-killed", null);
-        }
-      }
-    });
     if (aSync) {
-      process.wait();
+      process.run(true, params, params.length);
+      debug("adb kill-server: " + process.exitValue);
+      this.ready = false;
+    }
+    else {
+      let self = this;
+      process.runAsync(params, params.length, {
+        observe: function(aSubject, aTopic, aData) {
+          switch(aTopic) {
+            case "process-finished":
+              debug("adb kill-server: " + process.exitValue);
+              Services.obs.notifyObservers(null, "adb-killed", null);
+              self.ready = false;
+              break;
+            case "process-failed":
+              debug("adb kill-server failure: " + process.exitValue);
+              // It's hard to say whether or not ADB is ready at this point,
+              // but it seems safer to assume that it isn't, so code that wants
+              // to use it later will try to restart it.
+              Services.obs.notifyObservers(null, "adb-killed", null);
+              self.ready = false;
+              break;
+          }
+        }
+      }, false);
     }
   },
 
