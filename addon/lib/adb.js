@@ -523,11 +523,9 @@ this.ADB = {
           }
 
           // Ending up with DONE + mtime (wtf???)
-          let done = encoder.encode("DONE");
-          socket.send(done.buffer, done.byteOffset, done.byteLength);
+          ADB.sockSend(socket, encoder.encode("DONE"));
           uint32Packet[0] = fileTime;
-          socket.send(uint8Packet.buffer, uint8Packet.byteOffset,
-                      uint8Packet.byteLength);
+          ADB.sockSend(socket, uint8Packet);
           state = "wait-done";
           break;
         case "wait-done":
