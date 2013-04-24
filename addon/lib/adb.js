@@ -396,30 +396,35 @@ this.ADB = {
     return deferred.promise;
   },
 
-  // debugging version of tcpsocket.send()
-  sockSend: function adb_sockSend(aSocket, aArray) {
-    let decoder = new TextDecoder();
-    let s = decoder.decode(aArray);
-    let len = aArray.length;
+  stringify: function adb_stringify(aBuffer) {
+    let decoder = new TextDecoder("windows-1252");
+    let array = new Uint8Array(aBuffer);
+    let s = decoder.decode(array);
+    let len = array.length;
     let dbg = "len=" + len + " ";
-    let l = len > 20 ? 20 : len;
+    let l = len > 255 ? 255 : len;
 
     for (let i = 0; i < l; i++) {
-      let c = aArray[i].toString(16);
+      let c = array[i].toString(16);
       if (c.length == 1)
         c = "0" + c;
       dbg += c;
     }
     dbg += " ";
     for (let i = 0; i < l; i++) {
-      let c = aArray[i];
+      let c = array[i];
       if (c < 32 || c > 127) {
         dbg += ".";
       } else {
         dbg += s[i];
       }
     }
-    debug(dbg);
+    return dbg;
+  },
+
+  // debugging version of tcpsocket.send()
+  sockSend: function adb_sockSend(aSocket, aArray) {
+    debug(this.stringify(aArray.buffer));
     aSocket.send(aArray.buffer, aArray.byteOffset, aArray.byteLength);
   },
 
