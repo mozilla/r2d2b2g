@@ -53,6 +53,8 @@ const PR_CREATE_FILE = 0x08;
 const PR_TRUNCATE = 0x20;
 const PR_USEC_PER_MSEC = 1000;
 
+const MANIFEST_CONTENT_TYPE = "application/x-web-app-manifest+json";
+
 let worker, remoteSimulator;
 let deviceConnected, adbReady, debuggerReady;
 
@@ -597,7 +599,7 @@ let simulator = module.exports = {
         }
 
         let contentType = response.headers["Content-Type"];
-        if (contentType !== "application/x-web-app-manifest+json") {
+        if (contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
           console.warn("Unexpected Content-Type: " + contentType + ".");
         }
 
@@ -621,7 +623,7 @@ let simulator = module.exports = {
           err = "Expected JSON response";
         } else {
           let contentType = response.headers["Content-Type"];
-          if (contentType !== "application/x-web-app-manifest+json") {
+          if (contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
             console.warn("Unexpected Content-Type " + contentType);
           }
         }
@@ -715,7 +717,7 @@ let simulator = module.exports = {
           } else {
             app.manifest = response.json;
             let contentType = response.headers["Content-Type"];
-            if (contentType !== "application/x-web-app-manifest+json") {
+            if (contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
               error = "Unexpected Content-Type: '" + contentType + "'.";
             }
           }
