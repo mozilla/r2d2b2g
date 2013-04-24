@@ -438,7 +438,6 @@ this.ADB = {
       }
     }
     debug(dbg);
-    debug("byteOffset: " + aArray.byteOffset + "; byteLength: " + aArray.byteLength);
     aSocket.send(aArray.buffer, aArray.byteOffset, aArray.byteLength);
   },
 
