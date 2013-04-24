@@ -342,7 +342,7 @@ SimulatorActor.prototype = {
         lat: aRequest.message.lat,
         lon: aRequest.message.lon,
       }
-    }, "r2d2b2g:geolocation-setup", null);
+    }, "r2d2b2g:geolocation-update", null);
 
     return {
       message: "geolocationRequest request received",
