@@ -401,13 +401,19 @@ this.ADB = {
     return deferred.promise;
   },
 
-  stringify: function adb_stringify(aBuffer) {
+  /**
+   * Dump the first few bytes of the given array to the console.
+   *
+   * @param {TypedArray} aArray
+   *        the array to dump
+   */
+  hexdump: function adb_hexdump(aArray) {
     let decoder = new TextDecoder("windows-1252");
-    let array = new Uint8Array(aBuffer);
+    let array = new Uint8Array(aArray.buffer);
     let s = decoder.decode(array);
     let len = array.length;
     let dbg = "len=" + len + " ";
-    let l = len > 255 ? 255 : len;
+    let l = len > 20 ? 20 : len;
 
     for (let i = 0; i < l; i++) {
       let c = array[i].toString(16);
@@ -424,15 +430,17 @@ this.ADB = {
         dbg += s[i];
       }
     }
-    return dbg;
+    debug(dbg);
   },
 
   // debugging version of tcpsocket.send()
   sockSend: function adb_sockSend(aSocket, aArray) {
-    debug(this.stringify(aArray.buffer));
+    this.hexdump(aArray);
 
     if (OLD_SOCKET_API) {
-      aSocket.send(aArray);
+      // Create a new Uint8Array in case the array we got is of a different type
+      // (like Uint32Array), since the old API takes a Uint8Array.
+      aSocket.send(new Uint8Array(aArray.buffer));
     } else {
       aSocket.send(aArray.buffer, aArray.byteOffset, aArray.byteLength);
     }
@@ -499,30 +507,41 @@ this.ADB = {
           // need to send SEND + length($aDest,$fileMode)
           // $fileMode is not the octal one there.
           let encoder = new TextEncoder();
-          let uint32Packet = new Uint32Array(1);
-          let uint8Packet = new Uint8Array(uint32Packet.buffer, 0, 4);
-          ADB.sockSend(socket, encoder.encode("SEND"));
-          let info = aDest + ",33204";
-          uint32Packet[0] = info.length;
-          ADB.sockSend(socket, uint8Packet);
-          ADB.sockSend(socket, encoder.encode(info));
+
+          let (infoLengthPacket = new Uint32Array(1), info = aDest + ",33204") {
+            infoLengthPacket[0] = info.length;
+            ADB.sockSend(socket, encoder.encode("SEND"));
+            ADB.sockSend(socket, infoLengthPacket);
+            ADB.sockSend(socket, encoder.encode(info));
+          }
 
           // now sending file data.
           while (remaining > 0) {
             let toSend = remaining > 65536 ? 65536 : remaining;
             debug("Sending " + toSend + " bytes");
+
+            let dataLengthPacket = new Uint32Array(1);
+            // We have to create a new ArrayBuffer for the fileData slice
+            // because nsIDOMTCPSocket (or ArrayBufferInputStream) chokes on
+            // reused buffers, even when we don't modify their contents.
+            let dataPacket = new Uint8Array(new ArrayBuffer(toSend));
+            dataPacket.set(new Uint8Array(fileData.buffer, currentPos, toSend));
+            dataLengthPacket[0] = toSend;
             ADB.sockSend(socket, encoder.encode("DATA"));
-            uint32Packet[0] = toSend;
-            ADB.sockSend(socket, uint8Packet);
-            ADB.sockSend(socket, new Uint8Array(fileData.buffer, currentPos, toSend));
+            ADB.sockSend(socket, dataLengthPacket);
+            ADB.sockSend(socket, dataPacket);
+
             currentPos += toSend;
             remaining -= toSend;
           }
 
           // Ending up with DONE + mtime (wtf???)
-          ADB.sockSend(socket, encoder.encode("DONE"));
-          uint32Packet[0] = fileTime;
-          ADB.sockSend(socket, uint8Packet);
+          let (fileTimePacket = new Uint32Array(1)) {
+            fileTimePacket[0] = fileTime;
+            ADB.sockSend(socket, encoder.encode("DONE"));
+            ADB.sockSend(socket, fileTimePacket);
+          }
+
           state = "wait-done";
           break;
         case "wait-done":
