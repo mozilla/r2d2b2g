@@ -30,9 +30,9 @@ dbgClient.UnsolicitedNotifications.geolocationRequest = "geolocationRequest";
 dbgClient.UnsolicitedNotifications.appUpdateRequest = "appUpdateRequest";
 
 // Log subprocess error and debug messages to the console.  This logs messages
-// for all consumers of the API, including the ADB module.  We trim the messages
-// because they sometimes have trailing newlines.  And note that
-// registerLogHandler actually registers an error handler, despite its name.
+// for all consumers of the API.  We trim the messages because they sometimes
+// have trailing newlines.  And note that registerLogHandler actually registers
+// an error handler, despite its name.
 Subprocess.registerLogHandler(
   function(s) console.error("subprocess: " + s.trim())
 );
