@@ -29,11 +29,17 @@ document.getElementById("rotateButton").addEventListener("click", function() {
 }, false);
 
 {
-  let currentLatitude = 0,
-      currentLongitude = 0,
-      latitude = 37.78937,
+  let latitude = 37.78937,
       longitude = -122.38912,
       useCurrent = false,
+      sendCoords = function sendCoords() {
+        Services.obs.notifyObservers({
+          wrappedJSObject: {
+            lat: latitude,
+            lon: longitude,
+          }
+        }, "r2d2b2g:geolocation-update", null);
+      },
       openWin = function openWin() {
         let params = {
           lat: latitude,
@@ -49,32 +55,21 @@ document.getElementById("rotateButton").addEventListener("click", function() {
 
         useCurrent = params.useCurrent;
         if (useCurrent) {
-          latitude = currentLatitude;
-          longitude = currentLongitude;
-        } else {
-          latitude = params.lat || latitude;
-          longitude = params.lon || longitude;
-        }
-      },
-      gotCoords = function gotCoords(message) {
-        currentLatitude = message.wrappedJSObject.lat;
-        currentLongitude = message.wrappedJSObject.lon;
-      },
-      sendCoords = function sendCoords() {
-        Services.obs.notifyObservers({
-          wrappedJSObject: {
-            lat: latitude,
-            lon: longitude,
-          }
-        }, "r2d2b2g:geolocation-response", null);
-      };
+          // Start the watchPosition
+          Services.obs.notifyObservers(null, "r2d2b2g:geolocation-start", null);
 
-  Services.obs.addObserver(gotCoords, "r2d2b2g:geolocation-update", false);
-  Services.obs.addObserver(sendCoords, "r2d2b2g:geolocation-request", false);
+        } else {
+          latitude = params.lat;
+          longitude = params.lon;
+          // Stop the watchPosition
+          Services.obs.notifyObservers(null, "r2d2b2g:geolocation-stop", null);
+          // Send custom coordinates to FakeGeolocation
+          sendCoords();
+        }
+      };
 
   document.getElementById("geolocationButton")
           .addEventListener("click", openWin);
-
 }
 
 function simulatorAppUpdate() {

@@ -41,16 +41,18 @@ FakeGeoPositionObject.prototype = {
 };
 
 function FakeGeoPositionProvider() {
+  // Default the initial custom coordinates to Mozilla's SF office.
+  this.position = new FakeGeoPositionObject(37.78937, -122.38912);
   this.updateTimer = null;
   this.started = false;
   this.callback = null;
 
   Services.obs.addObserver((function (message) {
-    if (this.callback) {
-      this.callback.update(new FakeGeoPositionObject(
-        message.wrappedJSObject.lat, message.wrappedJSObject.lon));
-    }
-  }).bind(this), "r2d2b2g:geolocation-response", false);
+    this.position = new FakeGeoPositionObject(
+      message.wrappedJSObject.lat,
+      message.wrappedJSObject.lon
+    );
+  }).bind(this), "r2d2b2g:geolocation-update", false);
 }
 
 FakeGeoPositionProvider.prototype = {
@@ -86,7 +88,9 @@ FakeGeoPositionProvider.prototype = {
   setHighAccuracy: function(enable) {},
 
   walk: function() {
-    Services.obs.notifyObservers(null, "r2d2b2g:geolocation-request", null);
+    if (this.callback) {
+      this.callback.update(this.position);
+    }
   },
 
   notify: function(timer) {

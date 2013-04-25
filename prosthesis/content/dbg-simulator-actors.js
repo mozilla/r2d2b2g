@@ -15,10 +15,9 @@ let SimulatorActor = function SimulatorActor(aConnection) {
 
   this._connection = aConnection;
   this._listeners = {};
-  this.clientReady = false;
 
   Services.obs.addObserver(this, "r2d2b2g:app-update", false);
-  Services.obs.addObserver(this, "r2d2b2g:geolocation-update", false);
+  Services.obs.addObserver(this, "r2d2b2g:geolocation-start", false);
 }
 
 SimulatorActor.prototype = {
@@ -28,6 +27,9 @@ SimulatorActor.prototype = {
     switch(aTopic) {
       case "r2d2b2g:app-update":
         this.appUpdateObserver(aSubject);
+        break;
+      case "r2d2b2g:geolocation-start":
+        this.geolocationStart();
         break;
     }
   },
@@ -39,6 +41,13 @@ SimulatorActor.prototype = {
       type: "appUpdateRequest",
       origin: message.wrappedJSObject.origin,
       appId: message.wrappedJSObject.appId
+    });
+  },
+
+  geolocationStart: function() {
+    this._connection.send({
+      from: this.actorID,
+      type: "geolocationStart"
     });
   },
 
@@ -60,16 +69,6 @@ SimulatorActor.prototype = {
     this.debug("simulator actor received a 'ping' command");
 
     return { "msg": "pong" };
-  },
-
-  onGeolocationReady: function(aRequest) {
-    this.debug("simulator actor received a 'geolocationReady' command");
-    this.clientReady = true;
-    this._connection.send({
-      from: this.actorID,
-      type: "geolocationRequest"
-    });
-    return { "msg": "geolocationReady received" };
   },
 
   onGetBuildID: function(aRequest) {
@@ -336,7 +335,7 @@ SimulatorActor.prototype = {
     };
   },
 
-  onGeolocationResponse: function (aRequest) {
+  onGeolocationUpdate: function (aRequest) {
     Services.obs.notifyObservers({
       wrappedJSObject: {
         lat: aRequest.message.lat,
@@ -345,7 +344,7 @@ SimulatorActor.prototype = {
     }, "r2d2b2g:geolocation-update", null);
 
     return {
-      message: "geolocationRequest request received",
+      message: "geolocationUpdate request received",
       success: true
     };
   },
@@ -373,8 +372,7 @@ SimulatorActor.prototype.requestTypes = {
   "uninstallApp": SimulatorActor.prototype.onUninstallApp,
   "validateManifest": SimulatorActor.prototype.onValidateManifest,
   "showNotification": SimulatorActor.prototype.onShowNotification,
-  "geolocationReady": SimulatorActor.prototype.onGeolocationReady,
-  "geolocationResponse": SimulatorActor.prototype.onGeolocationResponse,
+  "geolocationUpdate": SimulatorActor.prototype.onGeolocationUpdate,
 };
 
 DebuggerServer.removeGlobalActor(SimulatorActor);
