@@ -29,11 +29,19 @@ document.getElementById("rotateButton").addEventListener("click", function() {
 }, false);
 
 {
-  let currentLatitude = 0,
-      currentLongitude = 0,
-      latitude = 37.78937,
+  // Default to Mozilla's SF office.
+  let latitude = 37.78937,
       longitude = -122.38912,
       useCurrent = false,
+      sendCoords = function sendCoords() {
+        debug("Custom coordinates specified in shell, updating provider");
+        Services.obs.notifyObservers({
+          wrappedJSObject: {
+            lat: latitude,
+            lon: longitude,
+          }
+        }, "r2d2b2g:geolocation-update", null);
+      },
       openWin = function openWin() {
         let params = {
           lat: latitude,
@@ -49,36 +57,18 @@ document.getElementById("rotateButton").addEventListener("click", function() {
 
         useCurrent = params.useCurrent;
         if (useCurrent) {
-          latitude = currentLatitude;
-          longitude = currentLongitude;
+          debug("Current coordinates requested in shell, notifying Simulator");
+          Services.obs.notifyObservers(null, "r2d2b2g:geolocation-start", null);
         } else {
-          latitude = params.lat || latitude;
-          longitude = params.lon || longitude;
+          latitude = params.lat;
+          longitude = params.lon;
+          // Send custom coordinates to FakeGeolocation
+          sendCoords();
         }
-      },
-      gotCoords = function gotCoords(message) {
-        currentLatitude = message.wrappedJSObject.lat;
-        currentLongitude = message.wrappedJSObject.lon;
-      },
-      gotReady = function requestCoords() {
-        Services.obs.notifyObservers(null, "r2d2b2g:geolocation-update", null);
-      },
-      sendCoords = function sendCoords() {
-        Services.obs.notifyObservers({
-          wrappedJSObject: {
-            lat: latitude,
-            lon: longitude,
-          }
-        }, "r2d2b2g:geolocation-response", null);
       };
-
-  Services.obs.addObserver(gotReady, "r2d2b2g:geolocation-ready", false);
-  Services.obs.addObserver(gotCoords, "r2d2b2g:geolocation-setup", false);
-  Services.obs.addObserver(sendCoords, "r2d2b2g:geolocation-request", false);
 
   document.getElementById("geolocationButton")
           .addEventListener("click", openWin);
-
 }
 
 function simulatorAppUpdate() {
