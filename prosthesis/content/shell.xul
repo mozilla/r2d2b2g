@@ -11,6 +11,7 @@
 
 <window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
         id="prosthesis"
+        title="&window.title;"
         windowtype="navigator:browser"
         onload="shell.start();"
         onunload="shell.stop();">
