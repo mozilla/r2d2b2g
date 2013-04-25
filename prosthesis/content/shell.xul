@@ -13,7 +13,6 @@
         id="prosthesis"
         title="&window.title;"
         windowtype="navigator:browser"
-        onload="shell.start();"
         onunload="shell.stop();">
 
   <!-- B2G Desktop has a weird bug that causes it not to show app content
