@@ -15,10 +15,9 @@ let SimulatorActor = function SimulatorActor(aConnection) {
 
   this._connection = aConnection;
   this._listeners = {};
-  this.clientReady = false;
 
   Services.obs.addObserver(this, "r2d2b2g:app-update", false);
-  Services.obs.addObserver(this, "r2d2b2g:geolocation-update", false);
+  Services.obs.addObserver(this, "r2d2b2g:geolocation-start", false);
 }
 
 SimulatorActor.prototype = {
@@ -29,8 +28,8 @@ SimulatorActor.prototype = {
       case "r2d2b2g:app-update":
         this.appUpdateObserver(aSubject);
         break;
-      case "r2d2b2g:geolocation-update":
-        this.geolocationUpdateObserver(aSubject);
+      case "r2d2b2g:geolocation-start":
+        this.geolocationStart();
         break;
     }
   },
@@ -45,11 +44,11 @@ SimulatorActor.prototype = {
     });
   },
 
-  geolocationUpdateObserver: function(message) {
-    this.debug("send geolocationRequest unsolicited request");
+  geolocationStart: function() {
+    this.debug("Simulator requesting current geolocation coordinates");
     this._connection.send({
       from: this.actorID,
-      type: "geolocationRequest"
+      type: "geolocationStart"
     });
   },
 
@@ -71,14 +70,6 @@ SimulatorActor.prototype = {
     this.debug("simulator actor received a 'ping' command");
 
     return { "msg": "pong" };
-  },
-
-  onGeolocationReady: function(aRequest) {
-    this.debug("simulator actor received a 'geolocationReady' command");
-    this.clientReady = true;
-
-    Services.obs.notifyObservers(null, "r2d2b2g:geolocation-ready", null);
-    return { "msg": "geolocationReady received" };
   },
 
   onGetBuildID: function(aRequest) {
@@ -345,16 +336,17 @@ SimulatorActor.prototype = {
     };
   },
 
-  onGeolocationResponse: function (aRequest) {
+  onGeolocationUpdate: function (aRequest) {
+    this.debug("Simulator received a geolocation response, updating provider");
     Services.obs.notifyObservers({
       wrappedJSObject: {
         lat: aRequest.message.lat,
         lon: aRequest.message.lon,
       }
-    }, "r2d2b2g:geolocation-setup", null);
+    }, "r2d2b2g:geolocation-update", null);
 
     return {
-      message: "geolocationRequest request received",
+      message: "geolocationUpdate request received",
       success: true
     };
   },
@@ -382,8 +374,7 @@ SimulatorActor.prototype.requestTypes = {
   "uninstallApp": SimulatorActor.prototype.onUninstallApp,
   "validateManifest": SimulatorActor.prototype.onValidateManifest,
   "showNotification": SimulatorActor.prototype.onShowNotification,
-  "geolocationReady": SimulatorActor.prototype.onGeolocationReady,
-  "geolocationResponse": SimulatorActor.prototype.onGeolocationResponse,
+  "geolocationUpdate": SimulatorActor.prototype.onGeolocationUpdate,
 };
 
 DebuggerServer.removeGlobalActor(SimulatorActor);
