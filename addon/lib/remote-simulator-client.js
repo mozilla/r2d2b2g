@@ -26,7 +26,7 @@ const PingbackServer = require("pingback-server");
 const dbgClient = Cu.import("resource://gre/modules/devtools/dbg-client.jsm");
 
 // add an unsolicited notification for geolocation
-dbgClient.UnsolicitedNotifications.geolocationRequest = "geolocationRequest";
+dbgClient.UnsolicitedNotifications.geolocationStart = "geolocationStart";
 dbgClient.UnsolicitedNotifications.appUpdateRequest = "appUpdateRequest";
 
 const RemoteSimulatorClient = Class({
@@ -91,9 +91,6 @@ const RemoteSimulatorClient = Class({
     this.on("clientReady", function (remote) {
       console.debug("rsc.onClientReady");
       this._remote = remote;
-      this._sendGeolocationReady(function(packet) {
-        console.debug("GEOLOCATION READY REPLY:: "+JSON.stringify(packet, null, 2));
-      });
       emit(this, "ready", null);
     });
 
@@ -211,7 +208,7 @@ const RemoteSimulatorClient = Class({
     }).bind(this));
 
     this._registerAppUpdateRequest(client);
-    this._registerGeolocationRequest(client);
+    this._registerGeolocationStart(client);
 
     client.connect((function () {
       emit(this, "clientConnected", {client: client});
@@ -225,18 +222,16 @@ const RemoteSimulatorClient = Class({
     }).bind(this));
   },
 
-  _registerGeolocationRequest: function(client) {
-    client.addListener("geolocationRequest", (function() {
-      console.debug("GEOLOCATION REQUEST");
+  _registerGeolocationStart: function(client) {
+    client.addListener("geolocationStart", (function() {
       let onsuccess = (function success(position) {
-        console.debug("GEOLOCATION RESPONSE", this._remote.simulator);
         this._remote.client.request({
           to: this._remote.simulator,
           message: {
             lat: position.coords.latitude,
             lon: position.coords.longitude,
           },
-          type: "geolocationResponse"
+          type: "geolocationUpdate"
         });
       }).bind(this);
 
@@ -246,12 +241,6 @@ const RemoteSimulatorClient = Class({
         console.error("error getting current position");
       });
     }).bind(this));
-  },
-
-  _sendGeolocationReady: function(onResponse) {
-    console.debug("GEOLOCATION READY");
-    this._remote.client.request({to: this._remote.simulator, type: "geolocationReady"},
-                                onResponse);
   },
 
   // send a getBuildID request to the remote simulator actor
