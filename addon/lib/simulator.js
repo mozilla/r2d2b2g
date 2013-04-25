@@ -127,7 +127,7 @@ let simulator = module.exports = {
     }
   },
 
-  get contentPage() Self.data.url("content/index.html"),
+  get contentPage() Self.data.url("content/index.html*"),
 
   get contentScript() Self.data.url("content-script.js"),
 
