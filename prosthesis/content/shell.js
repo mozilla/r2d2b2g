@@ -34,6 +34,7 @@ document.getElementById("rotateButton").addEventListener("click", function() {
       longitude = -122.38912,
       useCurrent = false,
       sendCoords = function sendCoords() {
+        debug("Custom coordinates specified in shell, updating provider");
         Services.obs.notifyObservers({
           wrappedJSObject: {
             lat: latitude,
@@ -56,6 +57,7 @@ document.getElementById("rotateButton").addEventListener("click", function() {
 
         useCurrent = params.useCurrent;
         if (useCurrent) {
+          debug("Current coordinates requested in shell, notifying Simulator");
           Services.obs.notifyObservers(null, "r2d2b2g:geolocation-start", null);
         } else {
           latitude = params.lat;

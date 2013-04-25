@@ -45,6 +45,7 @@ SimulatorActor.prototype = {
   },
 
   geolocationStart: function() {
+    this.debug("Simulator requesting current geolocation coordinates");
     this._connection.send({
       from: this.actorID,
       type: "geolocationStart"
@@ -336,6 +337,7 @@ SimulatorActor.prototype = {
   },
 
   onGeolocationUpdate: function (aRequest) {
+    this.debug("Simulator received a geolocation response, updating provider");
     Services.obs.notifyObservers({
       wrappedJSObject: {
         lat: aRequest.message.lat,

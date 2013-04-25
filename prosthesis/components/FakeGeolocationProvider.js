@@ -61,6 +61,7 @@ function FakeGeoPositionProvider() {
   this.callback = null;
 
   Services.obs.addObserver((function (message) {
+    dump("Provider received update\n");
     this.position = new FakeGeoPositionObject(
       message.wrappedJSObject.lat,
       message.wrappedJSObject.lon

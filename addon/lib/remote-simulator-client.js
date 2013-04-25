@@ -235,7 +235,9 @@ const RemoteSimulatorClient = Class({
 
   _registerGeolocationStart: function(client) {
     client.addListener("geolocationStart", (function() {
+      console.log("Firefox received geolocation request");
       let onsuccess = (function success(position) {
+        console.log("Firefox sending geolocation response");
         this._remote.client.request({
           to: this._remote.simulator,
           message: {
