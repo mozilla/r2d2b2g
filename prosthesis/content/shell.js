@@ -29,6 +29,7 @@ document.getElementById("rotateButton").addEventListener("click", function() {
 }, false);
 
 {
+  // Default to Mozilla's SF office.
   let latitude = 37.78937,
       longitude = -122.38912,
       useCurrent = false,
@@ -55,14 +56,10 @@ document.getElementById("rotateButton").addEventListener("click", function() {
 
         useCurrent = params.useCurrent;
         if (useCurrent) {
-          // Start the watchPosition
           Services.obs.notifyObservers(null, "r2d2b2g:geolocation-start", null);
-
         } else {
           latitude = params.lat;
           longitude = params.lon;
-          // Stop the watchPosition
-          Services.obs.notifyObservers(null, "r2d2b2g:geolocation-stop", null);
           // Send custom coordinates to FakeGeolocation
           sendCoords();
         }
