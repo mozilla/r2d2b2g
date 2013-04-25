@@ -1,3 +1,3 @@
 {
-  "remove": ["feedback.gaiamobile.org"]
+  "remove": ["packstubtest", "hoststubtest", "mochitest"]
 }
