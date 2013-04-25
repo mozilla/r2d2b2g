@@ -1051,7 +1051,7 @@ let simulator = module.exports = {
     let next = null;
     // if needsUpdateAll try to reinstall all active registered app
     if (SStorage.storage.needsUpdateAll) {
-      next = (typeof cb === "function") ? 
+      next = (typeof cb === "function") ?
         (function(e) e ? cb(e) : simulator.updateAll(cb)) :
         (function(e) e ? null  : simulator.updateAll());
     } else {

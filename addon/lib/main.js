@@ -1,6 +1,6 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. 
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
 'use strict';
@@ -21,14 +21,17 @@ const Simulator = require("simulator.js");
 
 Cu.import("resource://gre/modules/Services.jsm");
 
+console.log('setting up pagemod');
 PageMod({
   include: Simulator.contentPage + '*', //ensure we match hashes (#)
   contentScriptFile: Simulator.contentScript,
   contentScriptWhen: 'start',
   onAttach: function(worker) {
+    console.log('onAttach');
     // Ignore tentatives to open multiple simulator page
     // by showing the tab with existing instance
     if (Simulator.worker) {
+      console.log('using existing worker tab');
       Simulator.worker.tab.activate();
       worker.tab.close();
     }
