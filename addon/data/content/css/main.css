@@ -353,22 +353,13 @@ h2 {
     font-weight: bolder;
     color: white;
 }
-nav {
-    margin: 20px 0;
-}
-nav ul {
-    margin: 0;
-}
-nav li {
-    margin: 0;
-}
-nav li a {
-    display: block;
+
+#help {
+    float: right;
     color: #888;
     text-decoration: none;
-    padding: 5px 0;
 }
-nav li a:active, nav li a.active {
+#help:active {
     color: #4D4E53;
 }
 

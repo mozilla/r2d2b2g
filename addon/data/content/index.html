@@ -16,7 +16,7 @@
 
                 <fieldset id="commands">
                     <h5>
-                        <a href="#help">Simulator</a>
+                        Simulator
                     </h5>
                     <label class="toggle">
                         <input type="checkbox" id="command-toggle" />
@@ -44,37 +44,10 @@
                 <h5 id="device-status" style="opacity: 0">
                     <img src="device.png" alt="Device"> Device connected.
                 </h5>
-                <nav>
-                    <ul>
-                        <li><a href="#dashboard">Dashboard</a></li>
-                        <!--
-                        <li><a href="#debugger">Debugger</a></li>
-                        -->
-                        <li><a href="#help">Help</a></li>
-                    </ul>
-                </nav>
             </header>
 
-            <!--
-            <section id="welcome">
-                <div style="width: 400px; max-width: 400px">
-                    <h2>Welcome Developer!</h2>
-                    <p>
-                        Firefox OS Simulator is a test environment for <a href="http://www.mozilla.org/en-US/b2g/">Firefox OS</a>!
-                        Access its functionality via:
-                        <figure>
-                            <dfn>Tools</dfn> &#62; <dfn>Web Developer</dfn> &#62; <dfn>Firefox OS Simulator</dfn>.
-                        </figure>
-                    </p>
-                    <h2>Usage Tips</h2>
-                    <ul>
-                        <li>Home button: Home key (Fn+←, Fn + Left Arrow on <em>Mac</em>)</li>
-                    </ul>
-                </div>
-            </section>
-            -->
-
             <section id="dashboard">
+                <a id="help" href="https://developer.mozilla.org/en-US/docs/Tools/Firefox_OS_Simulator" target="_blank">Help</a>
                 <h2>Dashboard</h2>
                 <div id="apps-list">
                 </div>
@@ -93,34 +66,6 @@
                 </ul>
             </section>
 
-            <!--
-            <section id="debugger">
-                <h2><strong>INCOMPLETE</strong> Debugger</h2>
-                <textarea id="dump"></textarea>
-            </section>
-            -->
-            <section id="help">
-                <h2>Help</h2>
-                <ul>
-                    <li>
-                        See the <a href="https://marketplace.mozilla.org/developers/" target="_blank">Firefox Marketplace Developer Hub</a>
-                        for docs on designing, building, and publishing your app.
-                    </li>
-                    <li>
-                        Also note these useful keyboard shortcuts (with Mac equivalents) that simulate device buttons in the Simulator:
-                        <ul>
-                            <li>Home key (Fn + LeftArrow on Mac): Home Button</li>
-                            <li>End key (Fn + RightArrow on Mac): Power Button</li>
-                            <li>PageUp/PageDown keys (Fn + UpArrow/DownArrow on Mac): Volume Up/Down buttons</li>
-                        </ul>
-                    <li>
-                        If you think you found a bug in the Simulator, please let us know by reporting it in our
-                        <a href="https://github.com/mozilla/r2d2b2g/issues" target="_blank">issue tracker</a>!
-                        Include your platform (Windows, Mac, Linux), the version of Firefox you're using,
-                        and the version of the Simulator (which you can find in Firefox's list of add-ons).
-                    </li>
-                </ul>
-            </section>
         </article>
 
         <script src="js/vendor/jquery-1.8.3.min.js"></script>
