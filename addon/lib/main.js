@@ -23,7 +23,7 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 
 PageMod({
-  include: Simulator.contentPage,
+  include: Simulator.contentPage + '*', //ensure we match hashes (#)
   contentScriptFile: Simulator.contentScript,
   contentScriptWhen: 'start',
   onAttach: function(worker) {
