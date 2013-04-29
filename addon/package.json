@@ -6,12 +6,14 @@
   "description": "a Firefox OS simulator",
   "author": "Myk Melez (https://github.com/mykmelez)",
   "contributors": [
+    "Alexandre Poirot (https://github.com/ochameau)",
     "Anant Narayanan (https://github.com/anantn)",
     "David Gomes (https://github.com/davidgomes)",
     "Fabrice Desré (https://github.com/fabricedesre)",
     "Harald Kirschner (https://github.com/digitarald)",
     "Kan-Ru Chen (陳侃如) (https://github.com/kanru)",
     "Luca Greco (https://github.com/rpl)",
+    "Matthew Claypotch (https://github.com/potch)",
     "Matthew Riley MacPherson (https://github.com/tofumatt)",
     "Nick Desaulniers (https://github.com/nickdesaulniers)",
     "Victor Bjelkholm (https://github.com/VictorBjelkholm)"
