@@ -59,6 +59,9 @@ let worker, remoteSimulator;
 let deviceConnected, adbReady, debuggerReady;
 
 let simulator = module.exports = {
+  QueryInterface: XPCOMUtils.generateQI([Ci.nsIObserver,
+                                         Ci.nsISupportsWeakReference]),
+
   /**
    * Unload the module.
    */
@@ -1459,9 +1462,9 @@ let simulator = module.exports = {
 
 };
 
-Services.obs.addObserver(simulator, "adb-device-connected", false);
-Services.obs.addObserver(simulator, "adb-device-disconnected", false);
-Services.obs.addObserver(simulator, "adb-ready", false);
+Services.obs.addObserver(simulator, "adb-device-connected", true);
+Services.obs.addObserver(simulator, "adb-device-disconnected", true);
+Services.obs.addObserver(simulator, "adb-ready", true);
 
 /**
  * Convert an XPConnect result code to its name and message.
