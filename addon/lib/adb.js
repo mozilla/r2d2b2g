@@ -27,7 +27,7 @@ Cu.import("resource://gre/modules/Services.jsm");
 // interfaces from the Services JavaScript Module, since they aren't defined
 // in a CommonJS module by default.
 let { TextEncoder, TextDecoder } =
-  COMMONJS ? Cu.import("resource://gre/modules/Services.jsm")
+  COMMONJS ? Cu.import("resource://gre/modules/Services.jsm", {})
            : { TextEncoder: TextEncoder, TextDecoder: TextDecoder };
 
 try {
