@@ -11,7 +11,7 @@ https://github.com/mozilla/r2d2b2g.git`
 7. initialize Add-on SDK `cd addon-sdk && . bin/activate`
 8. change into r2d2b2g dir `cd ..`
 9. Run it! `make run`
-
+10.
 Note: to quit the instance of Firefox started by `make run`, use Firefox's
 Quit/Exit menu item, as aborting the task on the command line with Control-C
 will crash Firefox, and you'll lose changes to the apps on the Dashboard.
