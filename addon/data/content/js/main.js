@@ -57,7 +57,7 @@ var Simulator = {
       var valid = input[0].checkValidity();
       window.postMessage({
         name: "addAppByTab",
-        url: input.val()
+        url: input.val().trim()
       }, "*");
       $("#form-add-app").get(0).reset();
     });
