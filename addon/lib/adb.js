@@ -23,12 +23,12 @@ let Cu = components.utils;
 
 Cu.import("resource://gre/modules/Services.jsm");
 
-// Get the TextEncoder and TextDecoder interfaces from the hidden window,
-// since they aren't defined in a CommonJS module by default.
-let hiddenWindow = Cc['@mozilla.org/appshell/appShellService;1']
-                     .getService(Ci.nsIAppShellService).hiddenDOMWindow;
-let TextEncoder = COMMONJS ? hiddenWindow.TextEncoder : TextEncoder;
-let TextDecoder = COMMONJS ? hiddenWindow.TextDecoder : TextDecoder;
+// When loaded as a CommonJS module, get the TextEncoder and TextDecoder
+// interfaces from the Services JavaScript Module, since they aren't defined
+// in a CommonJS module by default.
+let { TextEncoder, TextDecoder } =
+  COMMONJS ? Cu.import("resource://gre/modules/Services.jsm")
+           : { TextEncoder: TextEncoder, TextDecoder: TextDecoder };
 
 try {
   Cu.import("resource://gre/modules/commonjs/promise/core.js");
