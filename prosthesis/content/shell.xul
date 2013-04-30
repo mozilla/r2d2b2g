@@ -1,17 +1,18 @@
 <?xml version="1.0"?>
 
 <!-- This Source Code Form is subject to the terms of the Mozilla Public
-   - License, v. 2.0. If a copy of the MPL was not distributed with this file,
-   - You can obtain one at http://mozilla.org/MPL/2.0/.  -->
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
-<?xml-stylesheet href="chrome://prosthesis/skin/shell.css"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="chrome://prosthesis/content/shell.css"?>
 
 <!DOCTYPE window SYSTEM "chrome://prosthesis/locale/shell.dtd">
 
 <window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        id="prosthesis"
+        title="&window.title;"
         windowtype="navigator:browser"
-        style="background: black;"
-        onload="shell.start();"
         onunload="shell.stop();">
 
   <!-- B2G Desktop has a weird bug that causes it not to show app content
@@ -21,7 +22,9 @@
   <script type="application/javascript">
     window.addEventListener("ContentStart", function() {
       Services.scriptloader.loadSubScript("chrome://prosthesis/content/shell.js");
+      Services.scriptloader.loadSubScript("chrome://prosthesis/content/mutation-summary.js");
       Services.scriptloader.loadSubScript("chrome://prosthesis/content/lockscreen.js");
+      Services.scriptloader.loadSubScript("chrome://prosthesis/content/window-manager.js");
     }, false);
   </script>
 
@@ -29,12 +32,37 @@
   <script type="application/javascript" src="chrome://prosthesis/content/pbport.js"/>
   <script type="application/javascript" src="chrome://browser/content/settings.js"/>
   <script type="application/javascript" src="chrome://browser/content/shell.js"/>
+  <script type="application/javascript" src="chrome://prosthesis/content/inject-b2g-agentsheet.js"/>
   <script type="application/javascript" src="chrome://prosthesis/content/patch-start-debugger.js"/>
 
   <!-- this script handles the screen argument for desktop builds -->
   <script type="application/javascript" src="chrome://browser/content/screen.js"/>
   <!-- this script handles the "runapp" argument for desktop builds -->
   <script type="application/javascript" src="chrome://browser/content/runapp.js"/>
+  <!-- this script handles the "quit application" command -->
+  <script type="application/javascript" src="chrome://global/content/globalOverlay.js"/>
+
+  <commandset id="mainCommandSet">
+    <command id="quitSimulatorCmd" oncommand="goQuitApplication()"/>
+    <command id="refreshAppCmd" oncommand="simulatorAppUpdate()"/>
+  </commandset>
+  <keyset id="mainKeyset">
+    <key id="refreshAppKey"
+         modifiers="accel"
+         key="&refreshAppKey.key;"
+         command="refreshAppCmd"/>
+  </keyset>
+  <menubar id="mainMenubar">
+    <menu id="appMenu" label="&appMenu.label;" accesskey="&appMenu.accesskey;">
+      <menupopup id="appPopup">
+        <menuitem id="refreshAppItem"
+                  label="&refreshAppItem.label;"
+                  key="refreshAppKey"
+                  accesskey="&refreshAppItem.accesskey;"
+                  command="refreshAppCmd"/>
+      </menupopup>
+    </menu>
+  </menubar>
 
   <!-- The html:iframe containing the UI is created here. -->
   <box id="shell"

@@ -1,4 +1,4 @@
-.PHONY: build profile prosthesis b2g adb run package help
+.PHONY: build clean profile prosthesis b2g adb locales run package help
 
 -include local.mk
 
@@ -53,14 +53,14 @@ B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/
 # Platform-specific Defines
 ifeq (win32, $(B2G_PLATFORM))
   # The URL of the specific B2G build.
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-03-04.en-US.win32.zip
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-04-24.en-US.win32.zip
 
   ADB_PACKAGE = adb-1.0.31-windows.zip
   ADB_BINARIES = adb.exe AdbWinApi.dll AdbWinUsbApi.dll
   BIN_SUFFIX = .exe
 else
 ifeq (mac64, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-03-04.en-US.mac64.dmg
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-04-24.en-US.mac64.dmg
 
   ADB_PACKAGE = adb-1.0.31-mac.zip
   ADB_BINARIES = adb
@@ -68,10 +68,10 @@ ifeq (mac64, $(B2G_PLATFORM))
   DOWNLOAD_CMD = /usr/bin/curl -O
 else
 ifeq (linux64, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-03-04.en-US.linux-x86_64.tar.bz2
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-04-24.en-US.linux-x86_64.tar.bz2
 else
 ifeq (linux, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-03-04.en-US.linux-i686.tar.bz2
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-04-24.en-US.linux-i686.tar.bz2
 endif
 endif
 
@@ -111,10 +111,33 @@ ifdef TEST
   TEST_ARG = -f $(TEST)
 endif
 
+unix_to_windows_path = \
+  $(shell echo '$(1)' | sed 's/^\///' | sed 's/\//\\/g' | sed 's/^./\0:/')
+# windows_to_unix_path = \
+#   $(shell echo '$(1)' | sed 's/\\/\//g' | sed 's/://')
+
+ifneq ($(strip $(LOCALES_FILE)),)
+  export LOCALE_BASEDIR ?= $(PWD)/gaia-l10n
+
+  # Gaia expects these to be Windows-style paths on Windows.
+  ifeq (win32, $(B2G_PLATFORM))
+    LOCALES_FILE := $(call unix_to_windows_path,$(LOCALES_FILE))
+    LOCALE_BASEDIR := $(call unix_to_windows_path,$(LOCALE_BASEDIR))
+  endif
+endif
+
 build: profile prosthesis b2g adb
 
+clean:
+	rm -rf addon/data/$(B2G_PLATFORM)
+	rm -rf addon/template
+	rm gaia/build/custom-prefs.js
+	rm $(ADB_PACKAGE)
+	make -C gaia clean
+
 profile:
-	make -C gaia
+	cp build/override-prefs.js gaia/build/custom-prefs.js
+	GAIA_APP_SRCDIRS=apps make -C gaia
 	python build/override-settings.py
 	python build/override-webapps.py
 	rm -rf gaia/profile/startupCache
@@ -143,6 +166,9 @@ adb:
 	$(DOWNLOAD_CMD) $(ADB_URL)
 	unzip $(ADB_PACKAGE) -d addon/data/$(B2G_PLATFORM)/adb
 
+locales:
+	python build/make-locales.py
+
 run:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx run --templatedir template/ $(BIN_ARG) $(PROFILE_ARG)
 
@@ -162,4 +188,5 @@ help:
 	@echo '  adb: download and install ADB'
 	@echo '  run: start Firefox with the addon installed into a new profile'
 	@echo '  package: package the addon into a XPI'
+	@echo '  clean: remove files created during the build process'
 	@echo '  help: show this message'

@@ -6,7 +6,6 @@
         <meta name="viewport" content="width=device-width">
         <link rel="stylesheet" href="css/normalize.css">
         <link rel="stylesheet" href="css/main.css">
-        <script src="js/vendor/modernizr-2.6.1.min.js"></script>
     </head>
     <body>
         <aside class="beta">Preview</aside>
@@ -16,7 +15,7 @@
 
                 <fieldset id="commands">
                     <h5>
-                        <a href="#help">Simulator</a>
+                        Simulator
                     </h5>
                     <label class="toggle">
                         <input type="checkbox" id="command-toggle" />
@@ -41,43 +40,16 @@
                       <span id="commands-preference-default-app"></span>
                     </label>
                 </fieldset>
-                <h5 id="device-status" style="opacity: 0">
+                <h5 id="device-status" class="device-dependent">
                     <img src="device.png" alt="Device"> Device connected.
                 </h5>
-                <nav>
-                    <ul>
-                        <li><a href="#dashboard">Dashboard</a></li>
-                        <!--
-                        <li><a href="#debugger">Debugger</a></li>
-                        -->
-                        <li><a href="#help">Help</a></li>
-                    </ul>
-                </nav>
             </header>
 
-            <!--
-            <section id="welcome">
-                <div style="width: 400px; max-width: 400px">
-                    <h2>Welcome Developer!</h2>
-                    <p>
-                        Firefox OS Simulator is a test environment for <a href="http://www.mozilla.org/en-US/b2g/">Firefox OS</a>!
-                        Access its functionality via:
-                        <figure>
-                            <dfn>Tools</dfn> &#62; <dfn>Web Developer</dfn> &#62; <dfn>Firefox OS Simulator</dfn>.
-                        </figure>
-                    </p>
-                    <h2>Usage Tips</h2>
-                    <ul>
-                        <li>Home button: Home key (Fn+←, Fn + Left Arrow on <em>Mac</em>)</li>
-                    </ul>
-                </div>
-            </section>
-            -->
-
             <section id="dashboard">
+                <a id="help" href="https://developer.mozilla.org/en-US/docs/Tools/Firefox_OS_Simulator" target="_blank">Help</a>
                 <h2>Dashboard</h2>
-                <div id="apps-list">
-                </div>
+                <ul id="apps-list">
+                </ul>
                 <ul class="list-actions">
                     <li>
                         <button id="action-add-directory" title="Select the manifest.webapp file from your app directory." onclick="Simulator.addAppByDirectory()">Add Directory</button>
@@ -93,38 +65,76 @@
                 </ul>
             </section>
 
-            <!--
-            <section id="debugger">
-                <h2><strong>INCOMPLETE</strong> Debugger</h2>
-                <textarea id="dump"></textarea>
-            </section>
-            -->
-            <section id="help">
-                <h2>Help</h2>
-                <ul>
-                    <li>
-                        See the <a href="https://marketplace.mozilla.org/developers/" target="_blank">Firefox Marketplace Developer Hub</a>
-                        for docs on designing, building, and publishing your app.
-                    </li>
-                    <li>
-                        Also note these useful keyboard shortcuts (with Mac equivalents) that simulate device buttons in the Simulator:
-                        <ul>
-                            <li>Home key (Fn + LeftArrow on Mac): Home Button</li>
-                            <li>End key (Fn + RightArrow on Mac): Power Button</li>
-                            <li>PageUp/PageDown keys (Fn + UpArrow/DownArrow on Mac): Volume Up/Down buttons</li>
-                        </ul>
-                    <li>
-                        If you think you found a bug in the Simulator, please let us know by reporting it in our
-                        <a href="https://github.com/mozilla/r2d2b2g/issues" target="_blank">issue tracker</a>!
-                        Include your platform (Windows, Mac, Linux), the version of Firefox you're using,
-                        and the version of the Simulator (which you can find in Firefox's list of add-ons).
-                    </li>
-                </ul>
-            </section>
         </article>
 
-        <script src="js/vendor/jquery-1.8.3.min.js"></script>
+        <script type="text/template" id="app-template">
+            <li class="app {{ 'removed' if removed }}" data-id="{{ id }}">
+                <div class="options">
+                    {% if removed %}
+                        <button class="action" data-action="undo">Undo</button>
+                    {% else %}
+                        <button class="action device-dependent" data-action="push">Push</button>
+                        <button class="action" data-action="remove">Remove</button>
+                        <button class="action" data-action="update">Update</button>
+                        <button class="action" data-action="run">Run</button>
+                    {% endif %}
+                </div>
+                <h4>
+                    {{ name }}<small>{{ 'has been removed' if removed else prettyType }}</small>
+                </h4>
+                <p>
+                    <a title="{{ id }}" href="#">Open Location</a> <span>({{ id }})</span>
+                </p>
+                <p>
+                    Last updated: {{ prettyLastUpdate or 'never' }}
+                </p>
+                {% if validation and not removed %}
+                    {% set errors = validation.errors %}
+                    {% set warnings = validation.warnings %}
+                    <div class="app-validation">
+                        <span class="app-validation-result">Validation Result:
+                            {% if validation.running %}
+                                RUNNING
+                            {% elif errors.length %}
+                                INVALID
+                            {% elif warnings.length %}
+                                WARNING
+                            {% else %}
+                                OK
+                            {% endif %}
+                        </span>
+                        {% if errors.length or warnings.length %}
+                            <a href="#" class="action" data-action="validation">
+                                ({{ errors.length }} errors and {{ warnings.length }} warnings)
+                            </a>
+                        {% endif %}
+                        <div class="app-validation-list">
+                            {% if errors.length %}
+                                Errors:
+                                <ul class='app-validation-errors'>
+                                    {% for msg in errors %}
+                                        <li>{{ msg }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                            {% if warnings.length %}
+                                Warnings:
+                                <ul class='app-validation-warnings'>
+                                    {% for msg in warnings %}
+                                        <li>{{ msg }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            </li>
+        </script>
+
+        <script src="js/vendor/jquery-1.9.1.js"></script>
+        <script src="js/vendor/nunjucks-dev.js"></script>
         <script src="js/plugins.js"></script>
+        <script src="js/applist.js"></script>
         <script src="js/main.js"></script>
     </body>
 </html>

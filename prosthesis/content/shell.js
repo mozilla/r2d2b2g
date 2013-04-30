@@ -2,6 +2,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+// Override the B2G shell's debug function with a version that concatenates
+// arguments (to simplify outputting certain kinds of messages) and always dumps
+// messages (which the Add-on SDK automatically determines whether to log).
+let debug = function debugSimulator() {
+  dump(Array.slice(arguments).join(" ") + "\n");
+};
+
 document.getElementById("homeButton").addEventListener("mousedown", function() {
   let event = document.createEvent("KeyboardEvent");
   event.initKeyEvent("keydown", true, true, null, false, false, false, false,
@@ -22,15 +29,24 @@ document.getElementById("rotateButton").addEventListener("click", function() {
 }, false);
 
 {
-  let initialLatitude = 0,
-      initialLongitude = 0,
-      latitude = 0,
-      longitude = 0,
-      useCurrent = true,
+  // Default to Mozilla's SF office.
+  let latitude = 37.78937,
+      longitude = -122.38912,
+      useCurrent = false,
+      sendCoords = function sendCoords() {
+        debug("Custom coordinates specified in shell, updating provider");
+        Services.obs.notifyObservers({
+          wrappedJSObject: {
+            lat: latitude,
+            lon: longitude,
+          }
+        }, "r2d2b2g:geolocation-update", null);
+      },
       openWin = function openWin() {
         let params = {
-          input: { lat: latitude, lon: longitude, useCurrent: useCurrent },
-          output: { lat: null, lon: null, useCurrent: useCurrent }
+          lat: latitude,
+          lon: longitude,
+          useCurrent: useCurrent
         };
 
         Services.ww.openWindow(null,
@@ -39,31 +55,32 @@ document.getElementById("rotateButton").addEventListener("click", function() {
           "chrome,dialog,menubar,centerscreen,modal",
           { wrappedJSObject: params });
 
-        useCurrent = params.output.useCurrent;
+        useCurrent = params.useCurrent;
         if (useCurrent) {
-          latitude = initialLatitude;
-          longitude = initialLongitude;
+          debug("Current coordinates requested in shell, notifying Simulator");
+          Services.obs.notifyObservers(null, "r2d2b2g:geolocation-start", null);
         } else {
-          latitude = params.output.lat || latitude;
-          longitude = params.output.lon || longitude;
+          latitude = params.lat;
+          longitude = params.lon;
+          // Send custom coordinates to FakeGeolocation
+          sendCoords();
         }
-      },
-      gotCoords = function gotCoords(message) {
-        latitude = initialLatitude = message.wrappedJSObject.lat;
-        longitude = initialLongitude = message.wrappedJSObject.lon;
-        document.getElementById("geolocationButton")
-                .addEventListener("click", openWin);
-      },
-      sendCoords = function sendCoords() {
-        Services.obs.notifyObservers({
-          wrappedJSObject: {
-            lat: latitude,
-            lon: longitude,
-          }
-        }, "r2d2b2g-geolocation-response", null);
       };
 
-  Services.obs.addObserver(gotCoords, "r2d2b2g-geolocation-setup", false);
-  Services.obs.addObserver(sendCoords, "r2d2b2g-geolocation-request", false);
+  document.getElementById("geolocationButton")
+          .addEventListener("click", openWin);
 }
 
+function simulatorAppUpdate() {
+  let wm = shell.contentBrowser.contentWindow.wrappedJSObject.
+           WindowManager;
+
+  let origin = wm.getCurrentDisplayedApp().origin;
+
+  Services.obs.notifyObservers({
+    wrappedJSObject: {
+      origin: origin,
+      appId: DOMApplicationRegistry._appId(origin)
+    }
+  }, "r2d2b2g:app-update", null);
+}

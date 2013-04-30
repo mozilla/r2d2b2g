@@ -353,22 +353,13 @@ h2 {
     font-weight: bolder;
     color: white;
 }
-nav {
-    margin: 20px 0;
-}
-nav ul {
-    margin: 0;
-}
-nav li {
-    margin: 0;
-}
-nav li a {
-    display: block;
+
+#help {
+    float: right;
     color: #888;
     text-decoration: none;
-    padding: 5px 0;
 }
-nav li a:active, nav li a.active {
+#help:active {
     color: #4D4E53;
 }
 
@@ -518,6 +509,7 @@ figure {
     border-bottom: 1px solid #eee;
     margin-bottom: 25px;
     padding: 0 10px;
+    list-style-type: none;
 }
 #apps-list > em {
     display: block;
@@ -552,6 +544,13 @@ figure {
     padding: 3px 10px;
     font-weight: normal;
     text-decoration: none;
+}
+#apps-list .action[data-action=push] {
+    background-image: url(../device.png);
+    background-repeat: no-repeat;
+    background-position: 6px center;
+    padding-left: 23px;
+    background-size: auto 14px;
 }
 #apps-list label {
     padding-left: 5px;
@@ -592,6 +591,13 @@ figure {
     background-color: #E5CBCB;
 }
 
+.app-validation-list {
+    display: none;
+}
+
+#add-app-url {
+    width: 220px;
+}
 button, input[type="url"], input[type="text"] {
     font-size: 0.8em;
     color: #444;
@@ -671,4 +677,17 @@ a.button {
 }
 .popover-wrap:hover .button-popover {
     display: block;
+}
+
+
+
+
+.device-dependent {
+    transition: .5s opacity;
+    opacity: 0;
+    pointer-events: none;
+}
+.device-connected .device-dependent {
+    opacity: 1;
+    pointer-events: all;
 }

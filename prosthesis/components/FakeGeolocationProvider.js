@@ -2,6 +2,19 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+/* The FakeGeolocationProvider relies on observing r2d2b2g:geolocation-update
+ * notifications from content/shell.js, when the user changes their custom
+ * coordinates, AND from content/dbg-simulator-actors.js, when the user wants
+ * to use their current coordinates.  The current coordinates are never fetched
+ * until the user has explicitly selected that they want to share them.
+ * shell.js will send a r2d2b2g:geolocation-start notification that is observed
+ * by dbg-simulator-actors.js.  dbg-simulator-actors.js uses "unsolicited"
+ * events to addon/lib/remote-simulator-client.js to request the current
+ * coordinates from the main Firefox process.  shell.js keeps track of the
+ * latest custom coordinates to show the user when they reopen the geolocation
+ * window, while FakeGeolocationProvider.js keeps track of the coordinates that
+ * will be passed to any DOM calls. */
+
 const Ci = Components.interfaces;
 const Cc = Components.classes;
 const Cu = Components.utils;
@@ -41,16 +54,19 @@ FakeGeoPositionObject.prototype = {
 };
 
 function FakeGeoPositionProvider() {
+  // Default the initial custom coordinates to Mozilla's SF office.
+  this.position = new FakeGeoPositionObject(37.78937, -122.38912);
   this.updateTimer = null;
   this.started = false;
   this.callback = null;
 
   Services.obs.addObserver((function (message) {
-    if (this.callback) {
-      this.callback.update(new FakeGeoPositionObject(
-        message.wrappedJSObject.lat, message.wrappedJSObject.lon));
-    }
-  }).bind(this), "r2d2b2g-geolocation-response", false);
+    dump("Provider received update\n");
+    this.position = new FakeGeoPositionObject(
+      message.wrappedJSObject.lat,
+      message.wrappedJSObject.lon
+    );
+  }).bind(this), "r2d2b2g:geolocation-update", false);
 }
 
 FakeGeoPositionProvider.prototype = {
@@ -86,7 +102,9 @@ FakeGeoPositionProvider.prototype = {
   setHighAccuracy: function(enable) {},
 
   walk: function() {
-    Services.obs.notifyObservers(null, "r2d2b2g-geolocation-request", null);
+    if (this.callback) {
+      this.callback.update(this.position);
+    }
   },
 
   notify: function(timer) {

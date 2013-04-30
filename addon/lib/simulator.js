@@ -22,6 +22,7 @@ const xulapp = require("sdk/system/xul-app");
 const JsonLint = require("jsonlint/jsonlint");
 const ADB = require("adb");
 const Promise = require("sdk/core/promise");
+const Runtime = require("runtime");
 
 // The b2gremote debugger module that installs apps to devices.
 const Debugger = require("debugger");
@@ -46,10 +47,40 @@ const PR_CREATE_FILE = 0x08;
 const PR_TRUNCATE = 0x20;
 const PR_USEC_PER_MSEC = 1000;
 
+const MANIFEST_CONTENT_TYPE = "application/x-web-app-manifest+json";
+
 let worker, remoteSimulator;
 let deviceConnected, adbReady, debuggerReady;
 
 let simulator = module.exports = {
+  QueryInterface: XPCOMUtils.generateQI([Ci.nsIObserver,
+                                         Ci.nsISupportsWeakReference]),
+
+  /**
+   * Unload the module.
+   */
+  unload: function unload(reason) {
+    // Kill the Simulator and ADB processes, so they don't continue to run
+    // unnecessarily if the user is quitting Firefox or disabling the addon;
+    // and so they close their filehandles if the user is updating the addon,
+    // which we need to do on Windows to replace the files.
+    this.kill();
+    ADB.kill(Runtime.OS == "WINNT" ? true : false /* sync */);
+
+    // Close the Dashboard if the user is disabling or updating the addon.
+    // We don't close it if the user is quitting Firefox because we want it
+    // to reopen when the user restarts the browser.
+    if (["disable", "upgrade", "downgrade"].indexOf(reason) != -1) {
+      this.closeHelperTab();
+
+      // The worker detach handler will do this for us, but Tabs.close fires
+      // before worker.detach, after which the main module calls sendListTabs(),
+      // which tries to message the worker, by which time it's already frozen
+      // and throws an exception.
+      worker = null;
+    }
+  },
+
   get apps() {
     return SStorage.storage.apps || (SStorage.storage.apps = {});
   },
@@ -77,7 +108,19 @@ let simulator = module.exports = {
 
     if (worker) {
       worker.on("message", this.onMessage.bind(this));
-      worker.on("detach", (function(message) worker = null).bind(this));
+      worker.on("detach", function(message) {
+        worker = null;
+      });
+      worker.on("pageshow", function(message) {
+        worker = this;
+      });
+      worker.on("pagehide", function(message) {
+        worker = null;
+      });
+
+      if (!ADB.ready) {
+        ADB.start();
+      }
     }
   },
 
@@ -108,11 +151,11 @@ let simulator = module.exports = {
       console.log("Registered App " + JSON.stringify(apps[manifestFile]));
 
       this.updateApp(manifestFile, function next(error, app) {
-        // app reinstall completed
-        // success/error detection and report to the user
-        if (error) {
-          simulator.error(error);
-        } else {
+        // Update the Dashboard to reflect changes to the record and run the app
+        // if the update succeeded.  Otherwise, it isn't necessary to notify
+        // the user about the error, as it'll show up in the validation results.
+        simulator.sendListApps();
+        if (!error) {
           simulator.runApp(app);
         }
       });
@@ -170,19 +213,49 @@ let simulator = module.exports = {
 
   updateApp: function(id, next) {
     console.log("Simulator.updateApp " + id);
-    simulator.validateApp(id, function(error, app) {
-      // update dashboard app validation info
-      simulator.sendListApps();
 
-      if (!error) {
-        // NOTE: try to updateApp if there isn't any blocking error
-        simulator._updateApp(id, next);
-      } else {
-        // validation error
+    simulator._updateCachedManifest(id, function(error, manifest) {
+      let app = simulator.apps[id];
+      app.validation = {errors: [], warnings: []};
+
+      if (error) {
+        app.validation.errors.push("Error updating cached Manifest: " + error);
         if (typeof next === "function") {
-          next(error, app);
+          // NOTE: blocking error
+          next(Error("Unable to read manifest: '" + id + "'."), app);
+        }
+        return;
+      }
+
+      if (!app.manifest) {
+        app.validation.errors.push("Missing Manifest.");
+        if (typeof next === "function") {
+          // NOTE: blocking error
+          next(Error("Missing manifest: '" + id + "'."), app);
+          return;
         }
       }
+
+      // Update the app listing on the Dashboard.  We do this again after
+      // validation, but validation can stall and never call our callback;
+      // and we want to make sure the app listing is updated with the info
+      // we just got from the manifest; so we do it here as well.
+      simulator.sendListApps();
+
+      simulator.validateApp(id, function(error, app) {
+        // update dashboard app validation info
+        simulator.sendListApps();
+
+        if (!error) {
+          // NOTE: try to updateApp if there isn't any blocking error
+          simulator._updateApp(id, next);
+        } else {
+          // validation error
+          if (typeof next === "function") {
+            next(error, app);
+          }
+        }
+      });
     });
   },
 
@@ -402,10 +475,10 @@ let simulator = module.exports = {
     simulator.updateApp(id, function next(error, app) {
       // app reinstall completed
       // success/error detection and report to the user
+      simulator.sendListApps();
       if (error) {
         simulator.error(error);
       } else {
-        simulator.sendListApps();
         simulator.runApp(app);
       }
     });
@@ -518,7 +591,7 @@ let simulator = module.exports = {
         }
 
         let contentType = response.headers["Content-Type"];
-        if (contentType !== "application/x-web-app-manifest+json") {
+        if (contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
           console.warn("Unexpected Content-Type: " + contentType + ".");
         }
 
@@ -542,7 +615,7 @@ let simulator = module.exports = {
           err = "Expected JSON response";
         } else {
           let contentType = response.headers["Content-Type"];
-          if (contentType !== "application/x-web-app-manifest+json") {
+          if (contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
             console.warn("Unexpected Content-Type " + contentType);
           }
         }
@@ -594,11 +667,11 @@ let simulator = module.exports = {
     console.log("Registered App " + JSON.stringify(apps[id], null, 2));
 
     this.updateApp(id, function next(error, app) {
-      // success/error detection and report to the user
-      if (error) {
-        simulator.error(error);
-      } else {
-        simulator.sendListApps();
+      // Update the Dashboard to reflect changes to the record and run the app
+      // if the update succeeded.  Otherwise, it isn't necessary to notify
+      // the user about the error, as it'll show up in the validation results.
+      simulator.sendListApps();
+      if (!error) {
         simulator.runApp(app);
       }
     });
@@ -636,7 +709,7 @@ let simulator = module.exports = {
           } else {
             app.manifest = response.json;
             let contentType = response.headers["Content-Type"];
-            if (contentType !== "application/x-web-app-manifest+json") {
+            if (contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
               error = "Unexpected Content-Type: '" + contentType + "'.";
             }
           }
@@ -674,78 +747,60 @@ let simulator = module.exports = {
     let app = simulator.apps[id];
     app.validation = {errors: [], warnings: []};
 
-    this._updateCachedManifest(id, function(error, manifest) {
-      if (error) {
-        app.validation.errors.push("Error updating cached Manifest: " + error);
-        if (typeof next === "function") {
-          // NOTE: blocking error
-          next(Error("Unable to read manifest: '" + id + "'."), app);
-        }
+    // NOTE: add errors/warnings for name and icons manifest attributes
+    //       and updates name and icon attributes on the registered app object
+    simulator._validateNameIcons(app.validation.errors, app.validation.warnings,
+                                 app.manifest, app);
+    // NOTE: add errors/warnings for WebAPIs not supported by the simulator
+    simulator._validateWebAPIs(app.validation.errors, app.validation.warnings,
+                               app.manifest);
+
+    if (["generated", "hosted"].indexOf(app.type) !== -1 &&
+        ["certified", "privileged"].indexOf(app.manifest.type) !== -1) {
+      app.validation.errors.push("Hosted App can't be type '" + app.manifest.type + "'.");
+      if (typeof next === "function") {
+        // NOTE: blocking error
+        next(Error("Invalid Manifest."), app);
         return;
       }
-
-      if (!app.manifest) {
-        app.validation.errors.push("Missing Manifest.");
-        if (typeof next === "function") {
-          // NOTE: blocking error
-          next(Error("Missing manifest: '" + id + "'."), app);
+    } else {
+      app.validation.running = true;
+      simulator.run(function (error) {
+        // on error running b2g-desktop, reports error and exits
+        if (error) {
+          if (typeof next === "function") {
+            app.validation.errors.push("Unable to complete manifest validation: " +
+                                       error);
+            next(Error("Unable to complete manifest validation."), app);
+          }
           return;
         }
-      }
 
-      // NOTE: add errors/warnings for name and icons manifest attributes
-      //       and updates name and icon attributes on the registered app object
-      simulator._validateNameIcons(app.validation.errors, app.validation.warnings, 
-                                   app.manifest, app);
-      // NOTE: add errors/warnings for WebAPIs not supported by the simulator
-      simulator._validateWebAPIs(app.validation.errors, app.validation.warnings, 
-                                 app.manifest);
-
-      if (["generated", "hosted"].indexOf(app.type) !== -1 &&
-          ["certified", "privileged"].indexOf(app.manifest.type) !== -1) {
-        app.validation.errors.push("Hosted App can't be type '" + app.manifest.type + "'.");
-        if (typeof next === "function") {
-          // NOTE: blocking error
-          next(Error("Invalid Manifest."), app);
-          return;
-        }
-      } else {
-        simulator.run(function (error) {
-          // on error running b2g-desktop, reports error and exits
-          if (error) {
-            if (typeof next === "function") {
-              app.validation.errors.push("Unable to complete manifest validation: " +
-                                         error);
-              next(Error("Unable to complete manifest validation."), app);
-            }
+        simulator.remoteSimulator.validateManifest(app.manifest, function (reply) {
+          app.validation.running = false;
+          console.debug("VALIDATE REPLY: ", JSON.stringify(reply, null, 2));
+          if (reply.error) {
+            app.validation.errors.push("Unable to complete manifest validation: " +
+                                       reply.error);
+            next(Error("Unable to complete manifest validation."), app);
             return;
           }
-
-          simulator.remoteSimulator.validateManifest(app.manifest, function (reply) {
-            console.log("VALIDATE REPLY: ", JSON.stringify(reply, null, 2));
-            if (reply.error) {
-              app.validation.errors.push("Unable to complete manifest validation: " +
-                                         reply.error);
-              next(Error("Unable to complete manifest validation."), app);
-              return;
+          if (!reply.success && reply.errors && reply.errors.length > 0) {
+            // concatenate validation errors as warnings (non-blocking errors)
+            app.validation.warnings = app.validation.warnings.
+              concat(reply.errors);
+          }
+          // check if there's any validation error
+          if (typeof next === "function") {
+            if (app.validation.errors.length === 0) {
+              next(null, app);
+            } else {
+              next(Error("Invalid Manifest."), app);
             }
-            if (!reply.success && reply.errors && reply.errors.length > 0) {
-              // concatenate validation errors as warnings (non-blocking errors)
-              app.validation.warnings = app.validation.warnings.
-                concat(reply.errors);
-            }
-            // check if there's any validation error
-            if (typeof next === "function") {
-              if (app.validation.errors.length === 0) {
-                next(null, app);
-              } else {
-                next(Error("Invalid Manifest."), app);
-              }
-            }
-          });
+          }
         });
-      }
-    });
+      });
+    }
   },
 
   _validateNameIcons: function(errors, warnings, manifest, app) {
@@ -835,17 +890,31 @@ let simulator = module.exports = {
   },
 
   openHelperTab: function() {
-    this.openTab(simulator.contentPage, true);
+    // Ensure opening only one simulator page
+    if (this.worker)
+      this.worker.tab.activate();
+    else
+      this.openTab(simulator.contentPage, true);
+  },
+
+  closeHelperTab: function closeHelperTab() {
+    if (this.worker) {
+      this.worker.tab.close();
+    }
   },
 
   openConnectDevtools: function() {
     let port = this.remoteSimulator.remoteDebuggerPort;
+    let originalPort = Services.prefs.getIntPref("devtools.debugger.remote-port");
     Tabs.open({
       url: "chrome://browser/content/devtools/connect.xhtml",
       onReady: function(tab) {
         // NOTE: inject the allocated remoteDebuggerPort on the opened tab
         tab.attach({
           contentScript: "window.addEventListener('load', function() { document.getElementById('port').value = '"+port+"'; }, true);"
+        }).on('detach', function restoreOriginalRemotePort() {
+          // restore previous value (autosaved on submit by connect.xhtml)
+          Services.prefs.setIntPref("devtools.debugger.remote-port", originalPort);
         });
       }
     });
@@ -980,8 +1049,30 @@ let simulator = module.exports = {
 
     let simulator = this;
     remoteSimulator = new RemoteSimulatorClient({
-      onStdout: function (data) dump(data),
-      onStderr: function (data) dump(data),
+      appUpdateHandler: function(appId) {
+        console.log("handle requested appUpdateRequest", appId);
+        let foundAppKey = null;
+        Object.keys(simulator.apps).forEach(function (key) {
+          if (simulator.apps[key].xkey === appId) {
+            foundAppKey = key;
+          }
+        });
+
+        if (!foundAppKey) {
+          simulator.remoteSimulator.showNotification("App not updated (not found)");
+        }
+
+        simulator.updateApp(foundAppKey, function next(error, app) {
+          simulator.sendListApps();
+          // success/error detection and report to the user
+          if (error) {
+            simulator.remoteSimulator.showNotification(error);
+          } else {
+            // TODO: find a less obtrusive way to display warnings
+            simulator.runApp(app);
+          }
+        });
+      },
       onReady: function () {
         simulator.postIsRunning();
       },
@@ -1036,11 +1127,11 @@ let simulator = module.exports = {
         break;
       case "updateApp":
         simulator.updateApp(message.id, function next(error, app) {
+          simulator.sendListApps();
           // success/error detection and report to the user
           if (error) {
             simulator.error(error);
           } else {
-            simulator.sendListApps();
             simulator.runApp(app);
           }
         });
@@ -1364,9 +1455,9 @@ let simulator = module.exports = {
 
 };
 
-Services.obs.addObserver(simulator, "adb-device-connected", false);
-Services.obs.addObserver(simulator, "adb-device-disconnected", false);
-Services.obs.addObserver(simulator, "adb-ready", false);
+Services.obs.addObserver(simulator, "adb-device-connected", true);
+Services.obs.addObserver(simulator, "adb-device-disconnected", true);
+Services.obs.addObserver(simulator, "adb-ready", true);
 
 /**
  * Convert an XPConnect result code to its name and message.

@@ -18,17 +18,23 @@ const Request = require('request').Request;
 const SStorage = require("simple-storage");
 const Gcli = require('gcli');
 const Simulator = require("simulator.js");
-require("addon-page");
 
 Cu.import("resource://gre/modules/Services.jsm");
 
 PageMod({
-  include: Simulator.contentPage,
+  include: Simulator.contentPage + '*', //ensure we match hashes (#)
   contentScriptFile: Simulator.contentScript,
   contentScriptWhen: 'start',
   onAttach: function(worker) {
-    // TODO: Only allow 1 manager page
-    Simulator.worker = worker;
+    // Ignore tentatives to open multiple simulator page
+    // by showing the tab with existing instance
+    if (Simulator.worker) {
+      Simulator.worker.tab.activate();
+      worker.tab.close();
+    }
+    else {
+      Simulator.worker = worker;
+    }
   },
 });
 
@@ -55,6 +61,12 @@ function ensureXkeysValid() {
   }
 }
 
+// Restore standard remote debugger port
+// (autosaved on submit by connect.xhtml on simulator < 3.0pre5)
+function restoreStandardRemoteDebuggerPort() {
+  Services.prefs.setIntPref("devtools.debugger.remote-port", 6000);
+}
+
 // Retrieve the last addon version from storage, and update storage if it
 // has changed, so we can do work on addon upgrade/downgrade that depends on
 // the last version the user used.
@@ -75,6 +87,9 @@ if (["install", "downgrade", "upgrade"].indexOf(Self.loadReason) >= 0) {
       if (Services.vc.compare(lastVersion, "3.0pre3") < 0) {
         ensureXkeysValid();
       }
+      if (Services.vc.compare(lastVersion, "3.0pre5") < 0) {
+        restoreStandardRemoteDebuggerPort();
+      }
       SStorage.storage.needsUpdateAll = true;
     }
   }
@@ -87,7 +102,7 @@ switch (Self.loadReason) {
 }
 
 exports.onUnload = function(reason) {
-  Simulator.kill();
+  Simulator.unload(reason);
 };
 
 Tabs.on('ready', function() {

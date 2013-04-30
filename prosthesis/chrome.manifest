@@ -2,9 +2,6 @@ resource prosthesis ./
 
 content prosthesis content/
 locale prosthesis en-US locale/en-US/
-skin prosthesis skin skin/
-
-override chrome://browser/content/shell.xul chrome://prosthesis/content/shell.xul
 
 # B2G's "content" stylesheet removes styles from a variety of XUL widgets we use
 # in parts of the Simulator interface, making them hard to recognize, so we
@@ -13,6 +10,10 @@ override chrome://browser/content/shell.xul chrome://prosthesis/content/shell.xu
 # prevents the B2G one from loading. But we can create it at some point to apply
 # our own style (including style from the B2G sheet that we end up wanting).
 override chrome://browser/content/content.css chrome://prosthesis/content/global.css
+
+overlay chrome://prosthesis/content/shell.xul chrome://prosthesis/content/shell-mac.xul os=Darwin
+overlay chrome://prosthesis/content/shell.xul chrome://prosthesis/content/shell-windows.xul os=WINNT
+overlay chrome://prosthesis/content/shell.xul chrome://prosthesis/content/shell-linux.xul os=Linux
 
 manifest components/FakeGeolocationProvider.manifest
 manifest components/SimulatorScreen.manifest

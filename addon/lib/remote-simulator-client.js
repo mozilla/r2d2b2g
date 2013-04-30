@@ -26,27 +26,40 @@ const PingbackServer = require("pingback-server");
 const dbgClient = Cu.import("resource://gre/modules/devtools/dbg-client.jsm");
 
 // add an unsolicited notification for geolocation
-dbgClient.UnsolicitedNotifications.geolocationRequest = "geolocationRequest";
+dbgClient.UnsolicitedNotifications.geolocationStart = "geolocationStart";
+dbgClient.UnsolicitedNotifications.appUpdateRequest = "appUpdateRequest";
+
+// Log subprocess error and debug messages to the console.  This logs messages
+// for all consumers of the API.  We trim the messages because they sometimes
+// have trailing newlines.  And note that registerLogHandler actually registers
+// an error handler, despite its name.
+Subprocess.registerLogHandler(
+  function(s) console.error("subprocess: " + s.trim())
+);
+Subprocess.registerDebugHandler(
+  function(s) console.debug("subprocess: " + s.trim())
+);
 
 const RemoteSimulatorClient = Class({
   extends: EventTarget,
   initialize: function initialize(options) {
+    this._appUpdateHandler = options.appUpdateHandler;
     EventTarget.prototype.initialize.call(this, options);
     this._hookInternalEvents();
   },
   // check if b2g is running and connected
   get isConnected() this._clientConnected,
   // check if b2g is running
-  get isRunning() !!this.process, 
+  get isRunning() !!this.process,
   // check if b2g exited without reach a ready state
   get isExitedWithoutReady() { return !this.process && !this._pingbackCompleted; },
-  
+
   _hookInternalEvents: function () {
     // NOTE: remote all listeners (currently disabled cause this function
     //       will be called only once)
     //off(this);
 
-    // on pinbackTimeout, emit an high level "timeout" event
+    // on pingbackTimeout, emit a high level "timeout" event
     // and kill the stalled instance
     this.once("pingbackTimeout", function() {
       this._pingbackCompleted = false;
@@ -84,17 +97,12 @@ const RemoteSimulatorClient = Class({
       }).bind(this));
     });
 
-    // on clientReady, track remote target, resubscribe old window manager
+    // on clientReady, track remote target
     // listeners and emit an high level "ready" event
     this.on("clientReady", function (remote) {
       console.debug("rsc.onClientReady");
       this._remote = remote;
-      this._unsubscribeWindowManagerEvents();
-      this._subscribeWindowManagerEvents(function(packet) {
-        console.debug("received a gaia WindowManager event: "+JSON.stringify(packet));
-      });
       emit(this, "ready", null);
-      this.ping();
     });
 
     // on clientClosed, untrack old remote target and emit 
@@ -106,7 +114,11 @@ const RemoteSimulatorClient = Class({
       this._remote = null;
       emit(this, "disconnected", null);
     });
+
+    this.on("stdout", function onStdout(data) console.log(data.trim()));
+    this.on("stderr", function onStderr(data) console.error(data.trim()));
   },
+
   // run({defaultApp: "Appname", pingbackTimeout: 15000})
   // will spawn a b2g instance, optionally run an application
   // and change pingback timeout interval
@@ -154,16 +166,16 @@ const RemoteSimulatorClient = Class({
       command: b2gExecutable,
       arguments: this.b2gArguments,
 
-      // emit stdout messages
+      // emit stdout event
       stdout: (function(data) {
         emit(this, "stdout", data);
       }).bind(this),
-      
-      // emit stdout messages
+
+      // emit stderr event
       stderr: (function(data) {
         emit(this, "stderr", data);
       }).bind(this),
-      
+
       // on b2g instance exit, reset tracked process, remoteDebuggerPort and
       // shuttingDown flag, then finally emit an exit event
       done: (function(result) {       
@@ -206,26 +218,41 @@ const RemoteSimulatorClient = Class({
       emit(this, "clientClosed", {client: client});
     }).bind(this));
 
-    client.addListener("geolocationRequest", (function() {
-      let geolocation = Cc["@mozilla.org/geolocation;1"].
-                        getService(Ci.nsIDOMGeoGeolocation);
-      geolocation.getCurrentPosition((function success(position) {
-        let remote = this._remote;
-        remote.client.request({
-          to: remote.simulator,
+    this._registerAppUpdateRequest(client);
+    this._registerGeolocationStart(client);
+
+    client.connect((function () {
+      emit(this, "clientConnected", {client: client});
+    }).bind(this));
+  },
+
+  _registerAppUpdateRequest: function(client) {
+    client.addListener("appUpdateRequest", (function(type, pkt) {
+      console.log("APP UPDATE REQUEST RECEIVED", JSON.stringify(arguments, null, 2));
+      this._appUpdateHandler(pkt.appId);
+    }).bind(this));
+  },
+
+  _registerGeolocationStart: function(client) {
+    client.addListener("geolocationStart", (function() {
+      console.log("Firefox received geolocation request");
+      let onsuccess = (function success(position) {
+        console.log("Firefox sending geolocation response");
+        this._remote.client.request({
+          to: this._remote.simulator,
           message: {
             lat: position.coords.latitude,
             lon: position.coords.longitude,
           },
-          type: "geolocationResponse"
+          type: "geolocationUpdate"
         });
-      }).bind(this), function error() {
+      }).bind(this);
+
+      let geolocation = Cc["@mozilla.org/geolocation;1"].
+                        getService(Ci.nsISupports);
+      geolocation.getCurrentPosition(onsuccess, function error() {
         console.error("error getting current position");
       });
-    }).bind(this));
-
-    client.connect((function () {
-      emit(this, "clientConnected", {client: client});
     }).bind(this));
   },
 
@@ -233,14 +260,6 @@ const RemoteSimulatorClient = Class({
   getBuildID: function(onResponse) {
     let remote = this._remote;
     remote.client.request({to: remote.simulator, type: "getBuildID"}, onResponse);
-  },
-
-  // send a logStdout request to the remote simulator actor
-  logStdout: function(message, onResponse) {
-    let remote = this._remote;
-    remote.client.request({to: remote.simulator, 
-                           message: message,
-                           type: "logStdout"}, onResponse);
   },
 
   // send a runApp request to the remote simulator actor
@@ -268,7 +287,7 @@ const RemoteSimulatorClient = Class({
                                 onResponse);
   },
 
-validateManifest: function(manifest, onResponse) {
+  validateManifest: function(manifest, onResponse) {
     this._remote.client.request({ to: this._remote.simulator,
                                   type: "validateManifest",
                                   manifest: manifest,
@@ -288,33 +307,6 @@ validateManifest: function(manifest, onResponse) {
   ping: function(onResponse) {
     let remote = this._remote;
     remote.client.request({to: remote.simulator, type: "ping"}, onResponse);
-  },
-
-  // send a subscribeWindowManagerEvents request to the remote simulator actor
-  // NOTE: this events will be automatically sent on clientReady
-  _subscribeWindowManagerEvents: function(onEvent) {
-    let remote = this._remote;
-
-    let handler = (function(type, packet) {
-      let unregister = onEvent(packet);
-      if (unregister) {
-        this._offRemotePacket("windowManagerEvent", handler);
-      }
-    }).bind(this);
-
-    this._onRemotePacket("windowManagerEvent", handler);
-
-    let remote = this._remote;
-    remote.client.request({to: remote.simulator, type: "subscribeWindowManagerEvents"}, 
-                          onEvent);
-  },
-
-  // send a unsubscribeWindowManagerEvents request to the remote simulator actor
-  _unsubscribeWindowManagerEvents: function() {
-    let remote = this._remote;
-    this._unsubscribeRemotePacket("windowManagerEvent");
-    remote.client.request({to: remote.simulator, type: "unsubscribeWindowManagerEvents"}, 
-                          function() {});
   },
 
   /* REMOTE PACKET LISTENERS MANAGEMENT */

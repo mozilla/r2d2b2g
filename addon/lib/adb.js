@@ -9,10 +9,10 @@
 // Whether or not this script is being loaded as a CommonJS module
 // (from an addon built using the Add-on SDK).  If it isn't a CommonJS Module,
 // then it's a JavaScript Module.
-const COMMONJS_MODULE = ("require" in this);
+const COMMONJS = ("require" in this);
 
 let components;
-if (COMMONJS_MODULE) {
+if (COMMONJS) {
   components = require("chrome").components;
 } else {
   components = Components;
@@ -23,12 +23,12 @@ let Cu = components.utils;
 
 Cu.import("resource://gre/modules/Services.jsm");
 
-// Get the TextEncoder and TextDecoder interfaces from the hidden window,
-// since they aren't defined in a CommonJS module by default.
-let hiddenWindow = Cc['@mozilla.org/appshell/appShellService;1']
-                     .getService(Ci.nsIAppShellService).hiddenDOMWindow;
-let TextEncoder = COMMONJS_MODULE ? hiddenWindow.TextEncoder : TextEncoder;
-let TextDecoder = COMMONJS_MODULE ? hiddenWindow.TextDecoder : TextDecoder;
+// When loaded as a CommonJS module, get the TextEncoder and TextDecoder
+// interfaces from the Services JavaScript Module, since they aren't defined
+// in a CommonJS module by default.
+let { TextEncoder, TextDecoder } =
+  COMMONJS ? Cu.import("resource://gre/modules/Services.jsm", {})
+           : { TextEncoder: TextEncoder, TextDecoder: TextDecoder };
 
 try {
   Cu.import("resource://gre/modules/commonjs/promise/core.js");
@@ -37,12 +37,19 @@ try {
 }
 Cu.import("resource://gre/modules/osfile.jsm");
 
-if (!COMMONJS_MODULE) {
+const OLD_SOCKET_API =
+  Services.vc.compare(Services.appinfo.platformVersion, "23.0a1") < 0;
+
+if (!COMMONJS) {
   this.EXPORTED_SYMBOLS = ["ADB"];
 }
 
 function debug(aStr) {
-  dump("--*-- ADB.jsm: " + aStr + "\n");
+  if (COMMONJS) {
+    console.log("adb: " + aStr);
+  } else {
+    dump("--*-- ADB.jsm: " + aStr + "\n");
+  }
 }
 
 let ready = false;
@@ -51,14 +58,12 @@ this.ADB = {
   get ready() ready,
   set ready(newVal) { ready = newVal },
 
-  // We startup by launching adb in server mode, and setting
-  // the tcp socket preference to |true|
   init: function adb_init() {
     debug("init");
     let platform = Services.appinfo.OS;
 
     let uri;
-    if (COMMONJS_MODULE) {
+    if (COMMONJS) {
       uri = require("self").data.url("");
     } else {
       uri = "chrome://b2g-remote/content/binaries/";
@@ -67,21 +72,21 @@ this.ADB = {
     let bin;
     switch(platform) {
       case "Linux":
-        if (COMMONJS_MODULE) {
+        if (COMMONJS) {
           bin = uri + (require("runtime").XPCOMABI.indexOf("x86_64") == 0 ? "linux64" : "linux") + "/adb/adb";
         } else {
           bin = uri + "linux/adb";
         }
         break;
       case "Darwin":
-        if (COMMONJS_MODULE) {
+        if (COMMONJS) {
           bin = uri + "mac64/adb/adb";
         } else {
           bin = uri + "darwin/adb";
         }
         break;
       case "WINNT":
-        if (COMMONJS_MODULE) {
+        if (COMMONJS) {
           bin = uri + "win32/adb/adb.exe";
         } else {
           bin = uri + "win32/adb.exe";
@@ -92,7 +97,7 @@ this.ADB = {
         return;
     }
 
-    if (COMMONJS_MODULE) {
+    if (COMMONJS) {
       let url = Services.io.newURI(bin, null, null)
                         .QueryInterface(Ci.nsIFileURL);
       this._adb = url.file;
@@ -103,7 +108,11 @@ this.ADB = {
                          .QueryInterface(Ci.nsIFileURL);
       this._adb = url.file;
     }
+  },
 
+  // We startup by launching adb in server mode, and setting
+  // the tcp socket preference to |true|
+  start: function adb_start() {
     let process = Cc["@mozilla.org/process/util;1"]
                     .createInstance(Ci.nsIProcess);
     process.init(this._adb);
@@ -120,9 +129,56 @@ this.ADB = {
           case "process-failed":
             self.ready = false;
             break;
-        }
-      }
+         }
+       }
     }, false);
+  },
+
+  /**
+   * Kill the ADB server.  We do this by running ADB again, passing it
+   * the "kill-server" argument.
+   *
+   * @param {Boolean} aSync
+   *        Whether or not to kill the server synchronously.  In general,
+   *        this should be false.  But on Windows, an addon may fail to update
+   *        if its copy of ADB is running when Firefox tries to update it.
+   *        So addons who observe their own updates and kill the ADB server
+   *        beforehand should do so synchronously on Windows to make sure
+   *        the update doesn't race the killing.
+   */
+  kill: function adb_kill(aSync) {
+    let process = Cc["@mozilla.org/process/util;1"]
+                    .createInstance(Ci.nsIProcess);
+    process.init(this._adb);
+    let params = ["kill-server"];
+
+    if (aSync) {
+      process.run(true, params, params.length);
+      debug("adb kill-server: " + process.exitValue);
+      this.ready = false;
+    }
+    else {
+      let self = this;
+      process.runAsync(params, params.length, {
+        observe: function(aSubject, aTopic, aData) {
+          switch(aTopic) {
+            case "process-finished":
+              debug("adb kill-server: " + process.exitValue);
+              Services.obs.notifyObservers(null, "adb-killed", null);
+              self.ready = false;
+              break;
+            case "process-failed":
+              debug("adb kill-server failure: " + process.exitValue);
+              // It's hard to say whether or not ADB is ready at this point,
+              // but it seems safer to assume that it isn't, so code that wants
+              // to use it later will try to restart it.
+              Services.obs.notifyObservers(null, "adb-killed", null);
+              self.ready = false;
+              break;
+          }
+        }
+      }, false);
+    }
   },
 
   // Creates a socket connected to the adb instance.
@@ -156,7 +212,8 @@ this.ADB = {
   _checkResponse: function adb_checkResponse(aPacket) {
     const OKAY = 0x59414b4f; // OKAY
     const FAIL = 0x4c494146; // FAIL
-    let view = new Uint32Array(aPacket.buffer, 0 , 1);
+    let buffer = OLD_SOCKET_API ? aPacket.buffer : aPacket;
+    let view = new Uint32Array(buffer, 0 , 1);
     if (view[0] == FAIL) {
       debug("Response: FAIL");
     }
@@ -167,10 +224,11 @@ this.ADB = {
   // @param aIgnoreResponse True if this packet has no OKAY/FAIL.
   // @return                A js object { length:...; data:... }
   _unpackPacket: function adb_unpackPacket(aPacket, aIgnoreResponse) {
-    let lengthView = new Uint8Array(aPacket.buffer, aIgnoreResponse ? 0 : 4, 4);
+    let buffer = OLD_SOCKET_API ? aPacket.buffer : aPacket;
+    let lengthView = new Uint8Array(buffer, aIgnoreResponse ? 0 : 4, 4);
     let decoder = new TextDecoder();
     let length = parseInt(decoder.decode(lengthView), 16);
-    let text = new Uint8Array(aPacket.buffer, aIgnoreResponse ? 4 : 8, length);
+    let text = new Uint8Array(buffer, aIgnoreResponse ? 4 : 8, length);
     return { length: length, data: decoder.decode(text) }
   },
 
@@ -187,7 +245,7 @@ this.ADB = {
       debug("trackDevices onopen");
       Services.obs.notifyObservers(null, "adb-track-devices-start", null);
       let req = this._createRequest("host:track-devices");
-      socket.send(req);
+      ADB.sockSend(socket, req);
 
     }.bind(this);
 
@@ -204,9 +262,9 @@ this.ADB = {
     socket.ondata = function(aEvent) {
       debug("trackDevices ondata");
       let data = aEvent.data;
-      debug("length=" + data.length);
+      debug("length=" + data.byteLength);
       let dec = new TextDecoder();
-      debug(dec.decode(data));
+      debug(dec.decode(new Uint8Array(data)).trim());
 
       // check the OKAY or FAIL on first packet.
       if (waitForFirst) {
@@ -343,23 +401,29 @@ this.ADB = {
     return deferred.promise;
   },
 
-  // debugging version of tcpsocket.send()
-  sockSend: function adb_sockSend(aSocket, aArray) {
-    let decoder = new TextDecoder();
-    let s = decoder.decode(aArray);
-    let len = aArray.length;
+  /**
+   * Dump the first few bytes of the given array to the console.
+   *
+   * @param {TypedArray} aArray
+   *        the array to dump
+   */
+  hexdump: function adb_hexdump(aArray) {
+    let decoder = new TextDecoder("windows-1252");
+    let array = new Uint8Array(aArray.buffer);
+    let s = decoder.decode(array);
+    let len = array.length;
     let dbg = "len=" + len + " ";
     let l = len > 20 ? 20 : len;
 
     for (let i = 0; i < l; i++) {
-      let c = aArray[i].toString(16);
+      let c = array[i].toString(16);
       if (c.length == 1)
         c = "0" + c;
       dbg += c;
     }
     dbg += " ";
     for (let i = 0; i < l; i++) {
-      let c = aArray[i];
+      let c = array[i];
       if (c < 32 || c > 127) {
         dbg += ".";
       } else {
@@ -367,7 +431,19 @@ this.ADB = {
       }
     }
     debug(dbg);
-    aSocket.send(aArray);
+  },
+
+  // debugging version of tcpsocket.send()
+  sockSend: function adb_sockSend(aSocket, aArray) {
+    this.hexdump(aArray);
+
+    if (OLD_SOCKET_API) {
+      // Create a new Uint8Array in case the array we got is of a different type
+      // (like Uint32Array), since the old API takes a Uint8Array.
+      aSocket.send(new Uint8Array(aArray.buffer));
+    } else {
+      aSocket.send(aArray.buffer, aArray.byteOffset, aArray.byteLength);
+    }
   },
 
   // pushes a file to the device.
@@ -401,7 +477,7 @@ this.ADB = {
           break;
         case "send-transport":
           req = ADB._createRequest("host:transport-any");
-          socket.send(req);
+          ADB.sockSend(socket, req);
           state = "wait-transport";
           break
         case "wait-transport":
@@ -415,7 +491,7 @@ this.ADB = {
           break
         case "send-sync":
           req = ADB._createRequest("sync:");
-          socket.send(req);
+          ADB.sockSend(socket, req);
           state = "wait-sync";
           break
         case "wait-sync":
@@ -431,30 +507,41 @@ this.ADB = {
           // need to send SEND + length($aDest,$fileMode)
           // $fileMode is not the octal one there.
           let encoder = new TextEncoder();
-          let uint32Packet = new Uint32Array(1);
-          let uint8Packet = new Uint8Array(uint32Packet.buffer, 0, 4);
-          ADB.sockSend(socket, encoder.encode("SEND"));
-          let info = aDest + ",33204";
-          uint32Packet[0] = info.length;
-          ADB.sockSend(socket, uint8Packet);
-          ADB.sockSend(socket, encoder.encode(info));
+
+          let (infoLengthPacket = new Uint32Array(1), info = aDest + ",33204") {
+            infoLengthPacket[0] = info.length;
+            ADB.sockSend(socket, encoder.encode("SEND"));
+            ADB.sockSend(socket, infoLengthPacket);
+            ADB.sockSend(socket, encoder.encode(info));
+          }
 
           // now sending file data.
           while (remaining > 0) {
             let toSend = remaining > 65536 ? 65536 : remaining;
             debug("Sending " + toSend + " bytes");
+
+            let dataLengthPacket = new Uint32Array(1);
+            // We have to create a new ArrayBuffer for the fileData slice
+            // because nsIDOMTCPSocket (or ArrayBufferInputStream) chokes on
+            // reused buffers, even when we don't modify their contents.
+            let dataPacket = new Uint8Array(new ArrayBuffer(toSend));
+            dataPacket.set(new Uint8Array(fileData.buffer, currentPos, toSend));
+            dataLengthPacket[0] = toSend;
             ADB.sockSend(socket, encoder.encode("DATA"));
-            uint32Packet[0] = toSend;
-            ADB.sockSend(socket, uint8Packet);
-            ADB.sockSend(socket, new Uint8Array(fileData.buffer, currentPos, toSend));
+            ADB.sockSend(socket, dataLengthPacket);
+            ADB.sockSend(socket, dataPacket);
+
             currentPos += toSend;
             remaining -= toSend;
           }
 
           // Ending up with DONE + mtime (wtf???)
-          socket.send(encoder.encode("DONE"));
-          uint32Packet[0] = fileTime;
-          socket.send(uint8Packet);
+          let (fileTimePacket = new Uint32Array(1)) {
+            fileTimePacket[0] = fileTime;
+            ADB.sockSend(socket, encoder.encode("DONE"));
+            ADB.sockSend(socket, fileTimePacket);
+          }
+
           state = "wait-done";
           break;
         case "wait-done":
@@ -552,7 +639,7 @@ this.ADB = {
     socket.onopen = function() {
       debug("runCommand onopen");
       let req = this._createRequest(aCommand);
-      socket.send(req);
+      ADB.sockSend(socket, req);
 
     }.bind(this);
 
@@ -588,6 +675,6 @@ this.ADB = {
 
 this.ADB.init();
 
-if (COMMONJS_MODULE) {
+if (COMMONJS) {
   module.exports = this.ADB;
 }
