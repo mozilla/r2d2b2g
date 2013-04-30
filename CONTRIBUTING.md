@@ -8,9 +8,7 @@
 https://github.com/mozilla/r2d2b2g.git`
 5. initialize submodules `git submodule init && git submodule update`
 6. make `make`
-7. initialize Add-on SDK `cd addon-sdk && . bin/activate`
-8. change into addon dir `cd ../addon`
-9. Run it! `make run`
+7. Run it! `make run`
 
 Note: to quit the instance of Firefox started by `make run`, use Firefox's
 Quit/Exit menu item, as aborting the task on the command line with Control-C
