@@ -13,7 +13,7 @@ exports["test RemoteSimulatorClient run/ping/kill"] = function(assert, done) {
       assert.pass("simulator ready");
       rsc.ping(
         function onResponse(response) {
-          assert.ok(response.msg == "pong", "ping response is pong");
+          assert.equal(response.msg, "pong", "ping response is pong");
           rsc.kill();
         }
       );
