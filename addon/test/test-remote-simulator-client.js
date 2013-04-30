@@ -6,32 +6,31 @@
 
 const RemoteSimulatorClient = require("remote-simulator-client");
 
-exports["test:RemoteSimulatorClient run/onReady/onStdout/onExit"] = function(test, done) {
-  var timeout = false;
-  var stdout = false;
+exports["test RemoteSimulatorClient run/ping/kill"] = function(assert, done) {
+  var output = "";
   var rsc = new RemoteSimulatorClient({
-    onStdout: function (data) { 
-      if (data.search("__test_stdout__") >= 0) {
-        stdout = true;
-      }
-    },
-    onReady: function () {      
-      test.pass("emulator ready");
-      rsc.logStdout("__test_stdout__", function () {
-        rsc.getBuildID(function (response) {
-          console.log("RESPONSE RECEIVED", response.buildID);
-          test.ok("buildID" in response, "response should contains buildID");
+    onReady: function onReady() {
+      assert.pass("simulator ready");
+      rsc.ping(
+        function onResponse(response) {
+          assert.ok(response.msg == "pong", "ping response is pong");
           rsc.kill();
-        });
-      });
+        }
+      );
     },
-    onTimeout: function () {
-      timeout = true;
+
+    onStdout: function onStdout(data) {
+      output += data;
     },
-    onExit: function () {
-      test.pass("emulator exit");
-      test.ok(!timeout, "timeout should not be true");
-      test.ok(stdout, "log to stdout should work correctly");
+
+    onTimeout: function onTimeout() {
+      assert.fail("simulator should not time out");
+    },
+
+    onExit: function onExit() {
+      assert.pass("simulator exit");
+      assert.ok(output.contains("simulator actor received a 'ping' command"),
+                "stdout includes debug message about 'ping' request");
       done();
     }
   });
