@@ -25,11 +25,11 @@ toolbarbutton > .toolbarbutton-text {
 
 #rotateButton {
   list-style-image: url("chrome://prosthesis/content/icons/rotate.png");
-  -moz-image-region: rect(0, 36px, 12px, 24px);
+  -moz-image-region: rect(0, 24px, 12px, 12px);
 }
 
 #rotateButton.active {
-  -moz-image-region: rect(0, 24px, 12px, 12px);
+  -moz-image-region: rect(0, 36px, 12px, 24px);
 }
 
 #rotateButton.active:hover {
