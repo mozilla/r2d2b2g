@@ -33,6 +33,7 @@ const DEBUGGER_PORT = 6000;
 const { rootURI: ROOT_URI } = require('@loader/options');
 const PROFILE_URL = ROOT_URI + "profile/";
 
+Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 
 // NOTE: detect if developer toolbox feature can be enabled
