@@ -36,11 +36,6 @@ const PROFILE_URL = ROOT_URI + "profile/";
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 
-XPCOMUtils.defineLazyServiceGetter(this,
-                                   "permissionManager",
-                                   "@mozilla.org/permissionmanager;1",
-                                   "nsIPermissionManager");
-
 // NOTE: detect if developer toolbox feature can be enabled
 const HAS_CONNECT_DEVTOOLS = xulapp.is("Firefox") &&
   xulapp.versionInRange(xulapp.platformVersion, "20.0a1", "*");
@@ -137,7 +132,6 @@ let simulator = module.exports = {
   addAppByDirectory: function() {
     console.log("Simulator.addAppByDirectory");
 
-    Cu.import("resource://gre/modules/Services.jsm");
     let win = Services.wm.getMostRecentWindow("navigator:browser");
 
     let fp = Cc["@mozilla.org/filepicker;1"].createInstance(Ci.nsIFilePicker);
@@ -507,7 +501,7 @@ let simulator = module.exports = {
     if (permissions[config.origin]) {
       let host = config.host;
       permissions[config.origin].forEach(function(type) {
-        permissionManager.remove(host, type);
+        Services.perms.remove(host, type);
       });
       delete permissions[config.origin];
     }

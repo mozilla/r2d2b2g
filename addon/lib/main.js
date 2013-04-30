@@ -19,7 +19,6 @@ const SStorage = require("simple-storage");
 const Gcli = require('gcli');
 const Simulator = require("simulator.js");
 
-Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 
 PageMod({
@@ -203,19 +202,6 @@ if (PermissionSettings) {
   PermissionSettings.addPermissionOld = PermissionSettings.addPermission;
   PermissionSettings.getPermissionOld = PermissionSettings.getPermission;
 
-  XPCOMUtils.defineLazyServiceGetter(this,
-                                     "permissionManager",
-                                     "@mozilla.org/permissionmanager;1",
-                                     "nsIPermissionManager");
-  XPCOMUtils.defineLazyServiceGetter(this,
-                                     "secMan",
-                                     "@mozilla.org/scriptsecuritymanager;1",
-                                     "nsIScriptSecurityManager");
-  XPCOMUtils.defineLazyServiceGetter(this,
-                                     "appsService",
-                                     "@mozilla.org/AppsService;1",
-                                     "nsIAppsService");
-
   PermissionSettings.addPermission = function CustomAddPermission(aData, aCallbacks) {
     console.log("PermissionSettings.addPermission " + aData.origin);
 
@@ -242,7 +228,7 @@ if (PermissionSettings) {
     }
     console.log("PermissionSettings.addPermission add: " + aData.origin + " " + action);
 
-    permissionManager.add(uri, aData.type, action);
+    Services.perms.add(uri, aData.type, action);
 
     let permissions = Simulator.permissions;
     if (!permissions[aData.origin]) {
@@ -256,7 +242,7 @@ if (PermissionSettings) {
     console.log("getPermission: " + aPermName + ", " + aManifestURL + ", " + aOrigin);
 
     let uri = Services.io.newURI(aOrigin, null, null);
-    let result = permissionManager.testExactPermission(uri, aPermName);
+    let result = Services.perms.testExactPermission(uri, aPermName);
 
     switch (result) {
       case Ci.nsIPermissionManager.UNKNOWN_ACTION:
