@@ -1,5 +1,7 @@
 {
   "debug.oop.disabled": true,
   "devtools.debugger.remote-enabled": true,
-  "screen.timeout": 0
+  "screen.timeout": 0,
+  "lockscreen.enabled": false,
+  "lockscreen.locked": false
 }
