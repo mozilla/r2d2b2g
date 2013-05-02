@@ -132,13 +132,14 @@ clean:
 	rm -rf addon/data/$(B2G_PLATFORM)
 	rm -rf addon/template
 	rm gaia/build/custom-prefs.js
+	rm gaia/build/custom-settings.json
 	rm $(ADB_PACKAGE)
 	make -C gaia clean
 
 profile:
 	cp build/override-prefs.js gaia/build/custom-prefs.js
-	GAIA_APP_SRCDIRS=apps make -C gaia
-	python build/override-settings.py
+	cp build/override-settings.json gaia/build/custom-settings.json
+	NOFTU=1 GAIA_APP_SRCDIRS=apps make -C gaia
 	python build/override-webapps.py
 	rm -rf gaia/profile/startupCache
 	rm -rf addon/template
