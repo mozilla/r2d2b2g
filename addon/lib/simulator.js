@@ -32,6 +32,7 @@ const DEBUGGER_PORT = 6000;
 
 const { rootURI: ROOT_URI } = require('@loader/options');
 const PROFILE_URL = ROOT_URI + "profile/";
+const TEST_RECEIPT_URL = "https://marketplace-dev.allizom.org/api/v1/receipts/test/";
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
@@ -129,7 +130,7 @@ let simulator = module.exports = {
 
   get contentScript() Self.data.url("content-script.js"),
 
-  addAppByDirectory: function() {
+  addAppByDirectory: function(receipt) {
     console.log("Simulator.addAppByDirectory");
 
     let win = Services.wm.getMostRecentWindow("navigator:browser");
@@ -148,6 +149,7 @@ let simulator = module.exports = {
       apps[manifestFile] = {
         type: "local",
         xkey: null,
+        receipt: receipt
       }
       console.log("Registered App " + JSON.stringify(apps[manifestFile]));
 
@@ -336,7 +338,7 @@ let simulator = module.exports = {
               }
               return;
             }
-            simulator.remoteSimulator.install(config.xkey, null, function(res) {
+            simulator.remoteSimulator.install(config.xkey, null, config.receipt, function(res) {
               console.debug("webappsActor install packaged app reply: ",
                             JSON.stringify(res));
               if (typeof next === "function") {
@@ -412,7 +414,7 @@ let simulator = module.exports = {
                   return;
                 }
                 console.log("Requesting webappsActor to install hosted app: ",config.xkey);
-                simulator.remoteSimulator.install(config.xkey, null, function(res) {
+                simulator.remoteSimulator.install(config.xkey, null, config.receipt, function(res) {
                   console.debug("webappsActor install hosted app reply: ",
                                 JSON.stringify(res));
                   if (next) {
@@ -527,7 +529,7 @@ let simulator = module.exports = {
   /**
    * Installs the web page in the active tab as if it was an app.
    */
-  addAppByTabUrl: function(tabUrl, force) {
+  addAppByTabUrl: function(tabUrl, force, receipt) {
     console.log("Simulator.addAppByTabUrl " + tabUrl);
     let url = URL.URL(tabUrl);
     let found = false;
@@ -545,9 +547,9 @@ let simulator = module.exports = {
       if (!force) {
         this.validateUrl(tabUrl, function(err) {
           if (err) {
-            simulator.addAppByTabUrl(tabUrl, true);
+            simulator.addAppByTabUrl(tabUrl, true, receipt);
           } else {
-            simulator.addManifestUrl(tabUrl);
+            simulator.addManifestUrl(tabUrl, receipt);
           }
         });
         return;
@@ -569,10 +571,40 @@ let simulator = module.exports = {
     };
     console.log("Generated manifest " + JSON.stringify(webapp, null, 2));
     // Possible icon? 'http://www.google.com/s2/favicons?domain=' + url.host
-    this.addManifest(manifestUrl, webapp, origin, true);
+    this.addManifest(manifestUrl, webapp, origin, true, receipt);
   },
 
-  addManifestUrl: function(manifestUrl) {
+  fetchReceipt: function fetchReceipt(params, cb) {
+    console.log("Fetching test receipt from marketplace");
+    Request({
+      url: TEST_RECEIPT_URL,
+      content: params,
+      onComplete: function(response) {
+        const INVALID_MESSAGE = "INVALID_RECEIPT";
+        console.log("request complete");
+        if (response.status === 400 && "error_message" in response.json) {
+          return console.log("Bad request made to test receipt server: " +
+            JSON.stringify(response.json.error_message));
+        }
+        if (response.status !== 201) {
+          console.log("Unexpected status code " + response.status);
+          return cb(INVALID_MESSAGE);
+        }
+        if (!response.json) {
+          console.log("Expected JSON response.");
+          return cb(INVALID_MESSAGE);
+        }
+        if (!('receipt' in response.json)) {
+          console.log("Expected receipt field in test receipt response");
+          return cb(INVALID_MESSAGE);
+        }
+        console.log("Received receipt: " + response.json.receipt);
+        cb(response.json.receipt);
+      },
+    }).post();
+  },
+
+  addManifestUrl: function(manifestUrl, receipt) {
     console.log("Simulator.addManifestUrl " + manifestUrl);
 
     Request({
@@ -580,7 +612,7 @@ let simulator = module.exports = {
       onComplete: function (response) {
         if (response.status != 200) {
           simulator.error("Unexpected status code " + response.status);
-          return
+          return;
         }
         if (!response.json) {
           simulator.error("Expected JSON response.");
@@ -598,7 +630,7 @@ let simulator = module.exports = {
 
         console.log("Fetched manifest " + JSON.stringify(response.json, null, 2));
 
-        simulator.addManifest(manifestUrl, response.json);
+        simulator.addManifest(manifestUrl, response.json, null, null, receipt);
       }
     }).get();
   },
@@ -636,7 +668,7 @@ let simulator = module.exports = {
     }).get();
   },
 
-  addManifest: function(manifestUrl, webapp, installOrigin, generated) {
+  addManifest: function(manifestUrl, webapp, installOrigin, generated, receipt) {
     console.log("Simulator.addManifest " + manifestUrl);
     manifestUrl = URL.URL(manifestUrl.toString());
     let origin = manifestUrl.toString().substring(0, manifestUrl.toString().lastIndexOf(manifestUrl.path));
@@ -664,6 +696,7 @@ let simulator = module.exports = {
       origin: origin,
       host: manifestUrl.host,
       installOrigin: installOrigin,
+      receipt: receipt
     }
     console.log("Registered App " + JSON.stringify(apps[id], null, 2));
 
@@ -1107,6 +1140,7 @@ let simulator = module.exports = {
   onMessage: function onMessage(message) {
     console.log("Simulator.onMessage " + message.name);
     let app = null;
+    let params = null;
     switch (message.name) {
       case "openConnectDevtools":
         simulator.openConnectDevtools();
@@ -1115,10 +1149,20 @@ let simulator = module.exports = {
         simulator.postIsRunning();
         break;
       case "addAppByDirectory":
-        simulator.addAppByDirectory();
+        // packaged apps
+        params = message.receiptParams;
+        params.manifest_url = 'http://yoyoyoyo.com';
+        simulator.fetchReceipt(params, function onReceipt(receipt) {
+          simulator.addAppByDirectory(receipt);
+        });
         break;
       case "addAppByTab":
-        simulator.addAppByTabUrl(message.url);
+        // hosted and generated apps
+        params = message.receiptParams;
+        params.manifest_url = 'http://yoyoyoyo.com';
+        simulator.fetchReceipt(params, function onReceipt(receipt) {
+          simulator.addAppByTabUrl(message.url, null, receipt);
+        });
         break;
       case "listApps":
         if (message.flush) {

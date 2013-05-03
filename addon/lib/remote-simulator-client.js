@@ -271,10 +271,11 @@ const RemoteSimulatorClient = Class({
   },
 
   // send an install request to the remote webappsActor
-  install: function(appId, appType, onResponse) {
+  install: function(appId, appType, appReceipt, onResponse) {
     this._remote.client.request({ to: this._remote.webapps,
                                   type: "install",
                                   appId: appId,
+                                  appReceipt: appReceipt,
                                   appType: appType},
                                 onResponse);
   },
