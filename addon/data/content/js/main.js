@@ -55,9 +55,11 @@ var Simulator = {
 
       var input = $('#add-app-url');
       var valid = input[0].checkValidity();
+      // hosted and generated apps
       window.postMessage({
         name: "addAppByTab",
-        url: input.val().trim()
+        url: input.val().trim(),
+        receiptParams: Simulator.receiptParams()
       }, "*");
       $("#form-add-app").get(0).reset();
     });
@@ -168,12 +170,21 @@ var Simulator = {
   },
 
   addAppByDirectory: function() {
-    window.postMessage({ name: "addAppByDirectory" }, "*");
+    // packaged apps
+    window.postMessage({
+      name: "addAppByDirectory",
+      receiptParams: Simulator.receiptParams()
+    }, "*");
   },
 
   openConnectDevtools: function() {
     window.postMessage({ name: "openConnectDevtools" }, "*");
-  }
+  },
+
+  receiptParams: function() {
+    // Once UI is added, this method should parse the receipt type, duration
+    return { receipt_type: "ok" };
+  },
 
 };
 
