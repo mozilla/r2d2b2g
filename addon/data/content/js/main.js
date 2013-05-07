@@ -55,9 +55,11 @@ var Simulator = {
 
       var input = $('#add-app-url');
       var valid = input[0].checkValidity();
+      // hosted and generated apps
       window.postMessage({
         name: "addAppByTab",
-        url: input.val().trim()
+        url: input.val().trim(),
+        receiptType: Simulator.getReceiptType()
       }, "*");
       $("#form-add-app").get(0).reset();
     });
@@ -168,13 +170,22 @@ var Simulator = {
   },
 
   addAppByDirectory: function() {
-    window.postMessage({ name: "addAppByDirectory" }, "*");
+    // packaged apps
+    window.postMessage({
+      name: "addAppByDirectory",
+      receiptType: Simulator.getReceiptType()
+    }, "*");
   },
 
   openConnectDevtools: function() {
     window.postMessage({ name: "openConnectDevtools" }, "*");
-  }
+  },
 
+  // Once UI is added, this method should parse the receipt type
+  // receipt type can be: ok, expired, invalid, or refunded
+  getReceiptType: function() {
+    return "ok";
+  },
 };
 
 $(window).load(function() {

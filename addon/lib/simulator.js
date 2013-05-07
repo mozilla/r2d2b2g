@@ -32,6 +32,7 @@ const DEBUGGER_PORT = 6000;
 
 const { rootURI: ROOT_URI } = require('@loader/options');
 const PROFILE_URL = ROOT_URI + "profile/";
+const TEST_RECEIPT_URL = "https://marketplace.firefox.com/api/v1/receipts/test/";
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
@@ -52,6 +53,7 @@ const MANIFEST_CONTENT_TYPE = "application/x-web-app-manifest+json";
 
 let worker, remoteSimulator;
 let deviceConnected, adbReady, debuggerReady;
+let receiptType = null;
 
 let simulator = module.exports = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIObserver,
@@ -305,6 +307,25 @@ let simulator = module.exports = {
     File.mkpath(tempWebappDir);
     console.log("Created " + tempWebappDir);
 
+    let onInstall = function onInstall(res) {
+      console.debug("webappsActor install app reply: ",
+      JSON.stringify(res));
+      if (typeof next === "function") {
+        // detect success/error and report to the "next" callback
+        if (res.error) {
+          next(res.error + ": " + res.message, config);
+        } else {
+          next(null, config);
+        }
+      }
+    };
+
+    let appInfo = {
+      appId: config.xkey,
+      appType: null,
+      appReceipt: null
+    };
+
     if (config.type == "local") {
       // Archive source folder to target folder
       let sourceDir = id.replace(/[\/\\][^\/\\]*$/, "");
@@ -336,18 +357,26 @@ let simulator = module.exports = {
               }
               return;
             }
-            simulator.remoteSimulator.install(config.xkey, null, function(res) {
-              console.debug("webappsActor install packaged app reply: ",
-                            JSON.stringify(res));
-              if (typeof next === "function") {
-                // detect success/error and report to the "next" callback
-                if (res.error) {
-                  next(res.error + ": " + res.message, config);
-                } else {
-                  next(null, config);
-                }
-              }
-            });
+
+            // If a receipt type, then we need to fetch the receipt before
+            // install.
+            if (receiptType) {
+              let receiptParams = {
+                // The API rejects any URL that is not HTTP:// or HTTPS://
+                // The API rejects any URL without a suffix
+                manifest_url: 'http://' + config.xkey + '.simulator',
+                receipt_type: receiptType
+              };
+              receiptType = null;
+              simulator.fetchReceipt(receiptParams, function(err, receipt) {
+                if (err) return next(err, config);
+                appInfo.appReceipt = receipt;
+                simulator.remoteSimulator.install(appInfo, onInstall);
+              });
+            } else {
+              simulator.remoteSimulator.install(appInfo, onInstall);
+            }
+
           });
         }
       });
@@ -412,18 +441,24 @@ let simulator = module.exports = {
                   return;
                 }
                 console.log("Requesting webappsActor to install hosted app: ",config.xkey);
-                simulator.remoteSimulator.install(config.xkey, null, function(res) {
-                  console.debug("webappsActor install hosted app reply: ",
-                                JSON.stringify(res));
-                  if (next) {
-                    // detect success/error and report to the "next" callback
-                    if (res.error) {
-                      next(res.error + ": "+res.message, config);
-                    } else {
-                      next(null, config);
-                    }
-                  }
-                });
+
+                // If a receipt type, we need to fetch the receipt before
+                // install.
+                if (receiptType) {
+                  let receiptParams = {
+                    manifest_url: config.origin,
+                    receipt_type: receiptType
+                  };
+                  receiptType = null;
+                  simulator.fetchReceipt(receiptParams, function(err, receipt) {
+                    if (err) return next(err, config);
+                    appInfo.appReceipt = receipt;
+                    simulator.remoteSimulator.install(appInfo, onInstall);
+                  });
+                } else {
+                  simulator.remoteSimulator.install(appInfo, onInstall);
+                }
+
               });
             }); // END writeAsync metadataFile
         }); // END writeAsync manifest.webapp
@@ -432,6 +467,38 @@ let simulator = module.exports = {
     if (this.worker) {
       this.sendListApps();
     }
+  },
+
+  fetchReceipt: function fetchReceipt(params, cb) {
+    console.log("Fetching test receipt from marketplace",
+      JSON.stringify(params));
+    Request({
+      url: TEST_RECEIPT_URL,
+      content: params,
+      onComplete: function(response) {
+        const INVALID_MESSAGE = "INVALID_RECEIPT";
+        console.log("request complete");
+        if (response.status === 400 && "error_message" in response.json) {
+          console.log("Bad request made to test receipt server: " +
+            JSON.stringify(response.json.error_message));
+          return cb(INVALID_MESSAGE, null);
+        }
+        if (response.status !== 201) {
+          console.log("Unexpected status code " + response.status);
+          return cb(INVALID_MESSAGE, null);
+        }
+        if (!response.json) {
+          console.log("Expected JSON response.");
+          return cb(INVALID_MESSAGE, null);
+        }
+        if (!('receipt' in response.json)) {
+          console.log("Expected receipt field in test receipt response");
+          return cb(INVALID_MESSAGE, null);
+        }
+        console.log("Received receipt: " + response.json.receipt);
+        cb(null, response.json.receipt);
+      },
+    }).post();
   },
 
   removeApp: function(id) {
@@ -580,7 +647,7 @@ let simulator = module.exports = {
       onComplete: function (response) {
         if (response.status != 200) {
           simulator.error("Unexpected status code " + response.status);
-          return
+          return;
         }
         if (!response.json) {
           simulator.error("Expected JSON response.");
@@ -1107,6 +1174,7 @@ let simulator = module.exports = {
   onMessage: function onMessage(message) {
     console.log("Simulator.onMessage " + message.name);
     let app = null;
+    let params = null;
     switch (message.name) {
       case "openConnectDevtools":
         simulator.openConnectDevtools();
@@ -1115,10 +1183,14 @@ let simulator = module.exports = {
         simulator.postIsRunning();
         break;
       case "addAppByDirectory":
+        // packaged apps
+        receiptType = message.receiptType;
         simulator.addAppByDirectory();
         break;
       case "addAppByTab":
-        simulator.addAppByTabUrl(message.url);
+        // hosted and generated apps
+        receiptType = message.receiptType;
+        simulator.addAppByTabUrl(message.url, false);
         break;
       case "listApps":
         if (message.flush) {
