@@ -1174,7 +1174,6 @@ let simulator = module.exports = {
   onMessage: function onMessage(message) {
     console.log("Simulator.onMessage " + message.name);
     let app = null;
-    let params = null;
     switch (message.name) {
       case "openConnectDevtools":
         simulator.openConnectDevtools();
