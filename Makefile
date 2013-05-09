@@ -139,8 +139,10 @@ clean:
 profile:
 	cp build/override-prefs.js gaia/build/custom-prefs.js
 	cp build/override-settings.json gaia/build/custom-settings.json
-	NOFTU=1 GAIA_APP_SRCDIRS=apps make -C gaia
+	BROWSER=1 NOFTU=1 GAIA_APP_SRCDIRS=apps make -C gaia
 	python build/override-webapps.py
+	cd gaia/profile/extensions/desktop-helper/ && zip -r ../desktop-helper\@gaiamobile.org.xpi *
+	cd gaia/profile/extensions/activities/ && zip -r ../activities\@gaiamobile.org.xpi *
 	rm -rf gaia/profile/startupCache
 	rm -rf addon/template
 	mkdir -p addon/template
