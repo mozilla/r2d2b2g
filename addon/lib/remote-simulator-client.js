@@ -178,7 +178,7 @@ const RemoteSimulatorClient = Class({
 
       // on b2g instance exit, reset tracked process, remoteDebuggerPort and
       // shuttingDown flag, then finally emit an exit event
-      done: (function(result) {       
+      done: (function(result) {
         console.log(this.b2gFilename + " terminated with " + result.exitCode);
         this.process = null;
         // NOTE: reset old allocated remoteDebuggerPort
@@ -402,6 +402,9 @@ const RemoteSimulatorClient = Class({
     if (this._defaultApp != null) {
       args.push("--runapp", this._defaultApp);
     }
+
+    // Ignore eventual zombie instances of b2g that are left over
+    args.push("-no-remote");
 
     return args;
   },
