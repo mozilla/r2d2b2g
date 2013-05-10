@@ -148,7 +148,7 @@ profile:
 	cp addon-sdk/app-extension/bootstrap.js addon/template/
 	cp addon-sdk/app-extension/install.rdf addon/template/
 	mkdir -p addon/template/profile/extensions
-	cd prosthesis && zip -r b2g-prosthesis\@mozilla.org.xpi content components defaults locale modules skin chrome.manifest install.rdf
+	cd prosthesis && zip -r b2g-prosthesis\@mozilla.org.xpi content components defaults locale modules chrome.manifest install.rdf
 	mv prosthesis/b2g-prosthesis@mozilla.org.xpi addon/template/profile/extensions
 
 # The 'prosthesis' target was folded into the 'profile' target, so it is just
