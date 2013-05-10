@@ -131,9 +131,9 @@ build: profile b2g adb
 clean:
 	rm -rf addon/data/$(B2G_PLATFORM)
 	rm -rf addon/template
-	rm gaia/build/custom-prefs.js
-	rm gaia/build/custom-settings.json
-	rm $(ADB_PACKAGE)
+	rm -f gaia/build/custom-prefs.js
+	rm -f gaia/build/custom-settings.json
+	rm -f $(ADB_PACKAGE)
 	make -C gaia clean
 
 profile:
