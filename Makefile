@@ -166,7 +166,9 @@ adb:
 	mkdir -p addon/data/$(B2G_PLATFORM)
 	cd addon/data/$(B2G_PLATFORM) && rm -rf adb $(ADB_BINARIES)
 	mkdir addon/data/$(B2G_PLATFORM)/adb
-	$(DOWNLOAD_CMD) $(ADB_URL)
+	if [ ! -f $(ADB_PACKAGE) ]; then \
+	  $(DOWNLOAD_CMD) $(ADB_URL); \
+	fi;
 	unzip $(ADB_PACKAGE) -d addon/data/$(B2G_PLATFORM)/adb
 
 locales:
