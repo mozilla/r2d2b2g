@@ -691,3 +691,11 @@ a.button {
     opacity: 1;
     pointer-events: all;
 }
+
+.appIcon {
+    width: 50px;
+    height: 50px;
+    float: left;
+    margin-right: 15px;
+    margin-top: 5px;
+}

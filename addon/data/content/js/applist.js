@@ -56,7 +56,18 @@ var AppList = (function() {
             app.prettyLastUpdate = timedelta(app.lastUpdate);
         }
         app.prettyType = Simulator.APP_TYPES[app.type];
+        
+        var iconPath = "default.png";
+        if (app.icon) {
+            iconPath = app.id.substring(0, app.id.lastIndexOf("/")) + app.icon;
 
+            //use the file protocol for local apps
+            if (app.type === "local") {
+                iconPath = "file://" + iconPath;
+            }
+        }
+
+        app.iconPath = iconPath;
         var appEl = $(appTemplate.render(app).trim());
 
         // FIXME: Make an actual list, add a template engine
