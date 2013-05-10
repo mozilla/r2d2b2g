@@ -185,10 +185,12 @@ help:
 	@echo 'Targets:'
 	@echo "  build: [default] build, download, install everything;\n"\
 	"         combines the profile, b2g, and adb make targets"
+	@echo '  clean: remove files created during the build process'
 	@echo '  profile: make the Gaia profile and its prosthesis addon'
 	@echo '  b2g: download and install B2G'
 	@echo '  adb: download and install ADB'
+	@echo '  locales: pull/update l10n repositories for specified locales'
 	@echo '  run: start Firefox with the addon installed into a new profile'
 	@echo '  package: package the addon into a XPI'
-	@echo '  clean: remove files created during the build process'
+	@echo '  test: run automated tests'
 	@echo '  help: show this message'
