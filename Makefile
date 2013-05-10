@@ -158,11 +158,11 @@ prosthesis: profile
 b2g:
 	python build/make-b2g.py $(B2G_TYPE_ARG) $(B2G_PLATFORM_ARG) $(B2G_ID_ARG) $(B2G_URL_ARG)
 
+# We used to store the binaries in the B2G_PLATFORM/ directory, whereas
+# now we store them in B2G_PLATFORM/adb/, which happens to be the same
+# as the names of the executables on Mac and Linux; so we need to remove
+# the executables from B2G_PLATFORM/ before creating B2G_PLATFORM/adb/.
 adb:
-	# We used to store the binaries in the B2G_PLATFORM/ directory, whereas
-	# now we store them in B2G_PLATFORM/adb/, which happens to be the same
-	# as the names of the executables on Mac and Linux; so we need to remove
-	# the executables from B2G_PLATFORM/ before creating B2G_PLATFORM/adb/.
 	mkdir -p addon/data/$(B2G_PLATFORM)
 	cd addon/data/$(B2G_PLATFORM) && rm -rf adb $(ADB_BINARIES)
 	mkdir addon/data/$(B2G_PLATFORM)/adb
