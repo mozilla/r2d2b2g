@@ -135,6 +135,7 @@ clean:
 	rm -f gaia/build/custom-settings.json
 	rm -f $(ADB_PACKAGE)
 	make -C gaia clean
+	python build/make-b2g.py $(B2G_TYPE_ARG) $(B2G_PLATFORM_ARG) $(B2G_ID_ARG) $(B2G_URL_ARG) --clean
 
 profile:
 	cp build/override-prefs.js gaia/build/custom-prefs.js
