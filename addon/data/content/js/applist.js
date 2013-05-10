@@ -59,7 +59,12 @@ var AppList = (function() {
         
         var iconPath = "default.png";
         if (app.icon) {
-            iconPath = "file://" + app.id.substring(0, app.id.lastIndexOf("/")) + app.icon;
+            iconPath = app.id.substring(0, app.id.lastIndexOf("/")) + app.icon;
+
+            //use the file protocol for local apps
+            if (app.type === "local") {
+                iconPath = "file://" + iconPath;
+            }
         }
 
         app.iconPath = iconPath;
