@@ -126,7 +126,7 @@ ifneq ($(strip $(LOCALES_FILE)),)
   endif
 endif
 
-build: profile prosthesis b2g adb
+build: profile b2g adb
 
 clean:
 	rm -rf addon/data/$(B2G_PLATFORM)
@@ -147,11 +147,13 @@ profile:
 	mv gaia/profile addon/template/
 	cp addon-sdk/app-extension/bootstrap.js addon/template/
 	cp addon-sdk/app-extension/install.rdf addon/template/
-
-prosthesis: profile
 	mkdir -p addon/template/profile/extensions
 	cd prosthesis && zip -r b2g-prosthesis\@mozilla.org.xpi content components defaults locale modules skin chrome.manifest install.rdf
 	mv prosthesis/b2g-prosthesis@mozilla.org.xpi addon/template/profile/extensions
+
+# The 'prosthesis' target was folded into the 'profile' target, so it is just
+# an alias to that target now.
+prosthesis: profile
 
 b2g:
 	python build/make-b2g.py $(B2G_TYPE_ARG) $(B2G_PLATFORM_ARG) $(B2G_ID_ARG) $(B2G_URL_ARG)
@@ -182,9 +184,8 @@ test:
 help:
 	@echo 'Targets:'
 	@echo "  build: [default] build, download, install everything;\n"\
-	"         combines the profile, prosthesis, b2g, and adb make targets"
-	@echo '  profile: make the Gaia profile'
-	@echo '  prosthesis: make the prosthesis addon that enhances B2G'
+	"         combines the profile, b2g, and adb make targets"
+	@echo '  profile: make the Gaia profile and its prosthesis addon'
 	@echo '  b2g: download and install B2G'
 	@echo '  adb: download and install ADB'
 	@echo '  run: start Firefox with the addon installed into a new profile'
