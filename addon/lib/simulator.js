@@ -149,7 +149,7 @@ let simulator = module.exports = {
       apps[manifestFile] = {
         type: "local",
         xkey: UUID.uuid().toString().slice(1, -1),
-        receipts: null,
+        receipt: null,
       };
       console.log("Registered App " + JSON.stringify(apps[manifestFile]));
 
@@ -169,7 +169,7 @@ let simulator = module.exports = {
           if (err || !receipt) {
             console.error(err || "No receipt");
           } else {
-            apps[manifestFile].receipts = receipt;
+            apps[manifestFile].receipt = receipt;
             self.updateApp(manifestFile, next);
           }
         });
@@ -337,7 +337,7 @@ let simulator = module.exports = {
     let appInfo = {
       appId: config.xkey,
       appType: null,
-      appReceipt: config.receipts,
+      appReceipt: config.receipt,
     };
 
     if (config.type == "local") {
@@ -633,14 +633,14 @@ let simulator = module.exports = {
       webapp: webapp,
       installOrigin: origin,
       generated: true,
-      receipts: null,
+      receipt: null,
     };
     if (receiptType && receiptType !== "none") {
       this.fetchReceipt(origin, receiptType, function (err, receipt) {
         if (err || !receipt) {
           console.error(err || "No receipt");
         } else {
-          addManifestArgs.receipts = receipt;
+          addManifestArgs.receipt = receipt;
           self.addManifest(addManifestArgs);
         }
       });
@@ -649,7 +649,7 @@ let simulator = module.exports = {
     }
   },
 
-  addManifestUrl: function(manifestUrl, receipts) {
+  addManifestUrl: function(manifestUrl, receipt) {
     console.log("Simulator.addManifestUrl " + manifestUrl);
 
     Request({
@@ -678,7 +678,7 @@ let simulator = module.exports = {
         simulator.addManifest({
           manifestUrl: manifestUrl,
           webapp: response.json,
-          receipts: receipts,
+          receipt: receipt,
         });
       }
     }).get();
@@ -717,7 +717,7 @@ let simulator = module.exports = {
     }).get();
   },
 
-  addManifest: function({ manifestUrl, webapp, installOrigin, generated, receipts }) {
+  addManifest: function({ manifestUrl, webapp, installOrigin, generated, receipt }) {
     console.log("Simulator.addManifest " + manifestUrl);
     manifestUrl = URL.URL(manifestUrl.toString());
     let origin = manifestUrl.toString().substring(0, manifestUrl.toString().lastIndexOf(manifestUrl.path));
@@ -745,7 +745,7 @@ let simulator = module.exports = {
       origin: origin,
       host: manifestUrl.host,
       installOrigin: installOrigin,
-      receipts: receipts,
+      receipt: receipt,
     }
     console.log("Registered App " + JSON.stringify(apps[id], null, 2));
 
