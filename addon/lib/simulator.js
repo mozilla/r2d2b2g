@@ -369,7 +369,9 @@ let simulator = module.exports = {
               };
               receiptType = null;
               simulator.fetchReceipt(receiptParams, function(err, receipt) {
-                if (err) return next(err, config);
+                if (err) {
+                  return next(err, config);
+                }
                 appInfo.appReceipt = receipt;
                 simulator.remoteSimulator.install(appInfo, onInstall);
               });
@@ -451,7 +453,9 @@ let simulator = module.exports = {
                   };
                   receiptType = null;
                   simulator.fetchReceipt(receiptParams, function(err, receipt) {
-                    if (err) return next(err, config);
+                    if (err) {
+                      return next(err, config);
+                    }
                     appInfo.appReceipt = receipt;
                     simulator.remoteSimulator.install(appInfo, onInstall);
                   });
@@ -477,7 +481,6 @@ let simulator = module.exports = {
       content: params,
       onComplete: function(response) {
         const INVALID_MESSAGE = "INVALID_RECEIPT";
-        console.log("request complete");
         if (response.status === 400 && "error_message" in response.json) {
           console.log("Bad request made to test receipt server: " +
             JSON.stringify(response.json.error_message));
