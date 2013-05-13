@@ -162,22 +162,21 @@ const RemoteSimulatorClient = Class({
         });
       }
     });  
-    
-    
-    
+
     let environment;
-    if(Runtime.OS=="Linux") {
-      environment=["TMPDIR="+Services.dirsvc.get("TmpD",Ci.nsIFile).path,];
-      if("DISPLAY" in Environment){
-	environment.push("DISPLAY="+Environment.DISPLAY);
+    if (Runtime.OS == "Linux") {
+      environment = ["TMPDIR=" + Services.dirsvc.get("TmpD",Ci.nsIFile).path];
+      if ("DISPLAY" in Environment) {
+        environment.push("DISPLAY=" + Environment.DISPLAY);
       }
     }
-    
+
     // spawn a b2g instance
     this.process = Subprocess.call({
       command: b2gExecutable,
       arguments: this.b2gArguments,
-      environment:environment,
+      environment: environment,
+
       // emit stdout event
       stdout: (function(data) {
         emit(this, "stdout", data);
