@@ -7,10 +7,12 @@
 
 const { Cc, Ci, Cu, ChromeWorker } = require("chrome");
 
+Cu.import("resource://gre/modules/Services.jsm");
+
 const { EventTarget } = require("sdk/event/target");
 const { emit, off } = require("sdk/event/core");
 const { Class } = require("sdk/core/heritage");
-
+const Environment = require("sdk/system/environment").env;
 const Runtime = require("runtime");
 const Self = require("self");
 const URL = require("url");
@@ -159,13 +161,23 @@ const RemoteSimulatorClient = Class({
           arguments: ["-e", 'tell application "' + path + '" to activate'],
         });
       }
-    });    
-
+    });  
+    
+    
+    
+    let environment;
+    if(Runtime.OS=="Linux") {
+      environment=["TMPDIR="+Services.dirsvc.get("TmpD",Ci.nsIFile).path,];
+      if("DISPLAY" in Environment){
+	environment.push("DISPLAY="+Environment.DISPLAY);
+      }
+    }
+    
     // spawn a b2g instance
     this.process = Subprocess.call({
       command: b2gExecutable,
       arguments: this.b2gArguments,
-
+      environment:environment,
       // emit stdout event
       stdout: (function(data) {
         emit(this, "stdout", data);
