@@ -182,7 +182,7 @@ var Simulator = {
   },
 
   // Once UI is added, this method should parse the receipt type
-  // receipt type can be: ok, expired, invalid, or refunded
+  // receipt type can be: ok, expired, invalid, refunded, none
   getReceiptType: function() {
     return "ok";
   },
