@@ -57,20 +57,18 @@ var AppList = (function() {
         }
         app.prettyType = Simulator.APP_TYPES[app.type];
         
-        //use a default icon
+        // use a default icon
         var iconPath = "default.png";
 
         if (app.icon) {
             if (app.icon.indexOf("data:image/") === 0) {
-                //set the src to the data uri
+                // set the src to the data uri
                 iconPath = app.icon;
-            }
-            else if (app.type === "hosted") {
-                //hosted app icon is relative to the app origin
+            } else if (app.type === "hosted") {
+                // hosted app icon is relative to the app origin
                 iconPath = app.origin + app.icon;
-            } 
-            else if (app.type === "local") {
-                //use the file protocol for local apps
+            } else if (app.type === "local") {
+                // use the file protocol for local apps
                 iconPath = "file://" + app.id.substring(0, app.id.lastIndexOf("/")) + app.icon;
             }
         }
