@@ -587,13 +587,17 @@ let simulator = module.exports = {
           return;
         }
         if (!response.json.name || !response.json.description) {
-          simulator.error("Missing mandatory property (name or description)");
+          simulator.error("Missing mandatory property (name or description) " +
+                          "in webapp manifest");
           return;
         }
 
         let contentType = response.headers["Content-Type"];
-        if (contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
-          console.warn("Unexpected Content-Type: " + contentType + ".");
+        if (!contentType) {
+          console.warn("Webapp manifest is served without any content type.");
+        } else if (contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
+          console.warn("Webapp manifest is served with an invalid content " +
+                       "type: " + contentType + ".");
         }
 
         console.log("Fetched manifest " + JSON.stringify(response.json, null, 2));
@@ -616,7 +620,9 @@ let simulator = module.exports = {
           err = "Expected JSON response";
         } else {
           let contentType = response.headers["Content-Type"];
-          if (contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
+          if (!contentType) {
+            console.warn("No Content-Type for webapp manifest");
+          } else if (contentType && contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
             console.warn("Unexpected Content-Type " + contentType);
           }
         }
@@ -710,7 +716,9 @@ let simulator = module.exports = {
           } else {
             app.manifest = response.json;
             let contentType = response.headers["Content-Type"];
-            if (contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
+            if (!contentType) {
+              error = "No Content-type for webapp manifest.";
+            } else if (contentType && contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
               error = "Unexpected Content-Type: '" + contentType + "'.";
             }
           }
