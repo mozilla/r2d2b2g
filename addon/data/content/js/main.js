@@ -242,7 +242,7 @@ var Simulator = {
                     entry.addClass("invalid-manifest");
                     var errorsEl = $("<ul class='app-validation-errors'>");
                     errors.forEach(function (msg) {
-                      errorsEl.append($("<li>").html(msg));
+                      errorsEl.append($("<li>").append($("<pre>").text(msg)));
                     });
                     listContainerEl.append($("<li>").
                                            text("Errors:").
@@ -253,7 +253,7 @@ var Simulator = {
                     entry.addClass("warning-manifest");
                     var warningsEl = $("<ul class='app-validation-warnings'>");
                     warnings.forEach(function (msg) {
-                      warningsEl.append($("<li>").html(msg));
+                      warningsEl.append($("<li>").append($("<pre>").text(msg)));
                     });
                     listContainerEl.append($("<li>").
                                            text("Warnings:").
