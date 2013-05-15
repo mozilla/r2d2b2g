@@ -910,9 +910,18 @@ let simulator = module.exports = {
     Tabs.open({
       url: "chrome://browser/content/devtools/connect.xhtml",
       onReady: function(tab) {
-        // NOTE: inject the allocated remoteDebuggerPort on the opened tab
+        // Inject the allocated remote debugger port into the opened tab.
+        // We know it's a Number, so we don't actually need to parseInt it,
+        // but doing so reassures AMO reviewers that we aren't exposing
+        // a security issue.
         tab.attach({
-          contentScript: "window.addEventListener('load', function() { document.getElementById('port').value = '"+port+"'; }, true);"
+          contentScript: "window.addEventListener(" +
+                         "  'load', " +
+                         "  function() " +
+                         "    document.getElementById('port').value = " +
+                         "      '" + parseInt(port, 10) + "', " +
+                         "  true" +
+                         ");"
         }).on('detach', function restoreOriginalRemotePort() {
           // restore previous value (autosaved on submit by connect.xhtml)
           Services.prefs.setIntPref("devtools.debugger.remote-port", originalPort);
