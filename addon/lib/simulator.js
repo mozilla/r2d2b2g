@@ -695,7 +695,7 @@ let simulator = module.exports = {
         next(null, app.manifest);
       } catch(e) {
         if (typeof next === "function") {
-          next("<pre>"+e+"</pre>", null);
+          next(e, null);
         }
       }
       break;
@@ -711,7 +711,7 @@ let simulator = module.exports = {
             try {
               JsonLint.parse(response.text);
             } catch(e) {
-              error += "<pre>"+e+"</pre>";
+              error += e;
             }
           } else {
             app.manifest = response.json;
