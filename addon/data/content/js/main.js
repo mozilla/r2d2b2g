@@ -181,10 +181,9 @@ var Simulator = {
     window.postMessage({ name: "openConnectDevtools" }, "*");
   },
 
-  // Once UI is added, this method should parse the receipt type
   // receipt type can be: ok, expired, invalid, refunded, none
   getReceiptType: function() {
-    return "ok";
+    return $('#receipt_type').val();
   },
 };
 
