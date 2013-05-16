@@ -23,6 +23,7 @@ const JsonLint = require("jsonlint/jsonlint");
 const ADB = require("adb");
 const Promise = require("sdk/core/promise");
 const Runtime = require("runtime");
+const Validator = require("./validator");
 
 // The b2gremote debugger module that installs apps to devices.
 const Debugger = require("debugger");
@@ -763,6 +764,15 @@ let simulator = module.exports = {
     // NOTE: add errors/warnings for WebAPIs not supported by the simulator
     simulator._validateWebAPIs(app.validation.errors, app.validation.warnings,
                                app.manifest);
+
+    // Appcache checks
+    if (["generated", "hosted"].indexOf(app.type) !== -1) {
+      // Only verify appcache for hosted apps
+      Validator.validateAppCache(app.validation.errors, app.validation.warnings,
+                                 app.manifest, app.origin);
+    } else if ("appcache_path" in app.manifest) {
+      app.validation.warnings.push("Packaged apps don't support appcache");
+    }
 
     if (["generated", "hosted"].indexOf(app.type) !== -1 &&
         ["certified", "privileged"].indexOf(app.manifest.type) !== -1) {
