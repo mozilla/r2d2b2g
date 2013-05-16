@@ -90,6 +90,7 @@
                     {% endif %}
                 </div>
                 <h4>
+                    <img class="appIcon" src="{{ iconPath }}" />
                     {{ name }}<small>{{ 'has been removed' if removed else prettyType }}</small>
                 </h4>
                 <p>
@@ -123,7 +124,7 @@
                                 Errors:
                                 <ul class='app-validation-errors'>
                                     {% for msg in errors %}
-                                        <li>{{ msg }}</li>
+                                        <li><pre>{{ msg | escape }}</pre></li>
                                     {% endfor %}
                                 </ul>
                             {% endif %}
@@ -131,7 +132,7 @@
                                 Warnings:
                                 <ul class='app-validation-warnings'>
                                     {% for msg in warnings %}
-                                        <li>{{ msg }}</li>
+                                        <li><pre>{{ msg | escape }}</pre></li>
                                     {% endfor %}
                                 </ul>
                             {% endif %}

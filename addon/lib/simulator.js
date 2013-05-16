@@ -23,6 +23,7 @@ const JsonLint = require("jsonlint/jsonlint");
 const ADB = require("adb");
 const Promise = require("sdk/core/promise");
 const Runtime = require("runtime");
+const Validator = require("./validator");
 
 // The b2gremote debugger module that installs apps to devices.
 const Debugger = require("debugger");
@@ -664,13 +665,17 @@ let simulator = module.exports = {
           return;
         }
         if (!response.json.name || !response.json.description) {
-          simulator.error("Missing mandatory property (name or description)");
+          simulator.error("Missing mandatory property (name or description) " +
+                          "in webapp manifest");
           return;
         }
 
         let contentType = response.headers["Content-Type"];
-        if (contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
-          console.warn("Unexpected Content-Type: " + contentType + ".");
+        if (!contentType) {
+          console.warn("Webapp manifest is served without any content type.");
+        } else if (contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
+          console.warn("Webapp manifest is served with an invalid content " +
+                       "type: " + contentType + ".");
         }
 
         console.log("Fetched manifest " + JSON.stringify(response.json, null, 2));
@@ -697,7 +702,9 @@ let simulator = module.exports = {
           err = "Expected JSON response";
         } else {
           let contentType = response.headers["Content-Type"];
-          if (contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
+          if (!contentType) {
+            console.warn("No Content-Type for webapp manifest");
+          } else if (contentType && contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
             console.warn("Unexpected Content-Type " + contentType);
           }
         }
@@ -771,7 +778,7 @@ let simulator = module.exports = {
         next(null, app.manifest);
       } catch(e) {
         if (typeof next === "function") {
-          next("<pre>"+e+"</pre>", null);
+          next(e, null);
         }
       }
       break;
@@ -787,12 +794,14 @@ let simulator = module.exports = {
             try {
               JsonLint.parse(response.text);
             } catch(e) {
-              error += "<pre>"+e+"</pre>";
+              error += e;
             }
           } else {
             app.manifest = response.json;
             let contentType = response.headers["Content-Type"];
-            if (contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
+            if (!contentType) {
+              error = "No Content-type for webapp manifest.";
+            } else if (contentType && contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
               error = "Unexpected Content-Type: '" + contentType + "'.";
             }
           }
@@ -837,6 +846,15 @@ let simulator = module.exports = {
     // NOTE: add errors/warnings for WebAPIs not supported by the simulator
     simulator._validateWebAPIs(app.validation.errors, app.validation.warnings,
                                app.manifest);
+
+    // Appcache checks
+    if (["generated", "hosted"].indexOf(app.type) !== -1) {
+      // Only verify appcache for hosted apps
+      Validator.validateAppCache(app.validation.errors, app.validation.warnings,
+                                 app.manifest, app.origin);
+    } else if ("appcache_path" in app.manifest) {
+      app.validation.warnings.push("Packaged apps don't support appcache");
+    }
 
     if (["generated", "hosted"].indexOf(app.type) !== -1 &&
         ["certified", "privileged"].indexOf(app.manifest.type) !== -1) {
@@ -992,9 +1010,18 @@ let simulator = module.exports = {
     Tabs.open({
       url: "chrome://browser/content/devtools/connect.xhtml",
       onReady: function(tab) {
-        // NOTE: inject the allocated remoteDebuggerPort on the opened tab
+        // Inject the allocated remote debugger port into the opened tab.
+        // We know it's a Number, so we don't actually need to parseInt it,
+        // but doing so reassures AMO reviewers that we aren't exposing
+        // a security issue.
         tab.attach({
-          contentScript: "window.addEventListener('load', function() { document.getElementById('port').value = '"+port+"'; }, true);"
+          contentScript: "window.addEventListener(" +
+                         "  'load', " +
+                         "  function() " +
+                         "    document.getElementById('port').value = " +
+                         "      '" + parseInt(port, 10) + "', " +
+                         "  true" +
+                         ");"
         }).on('detach', function restoreOriginalRemotePort() {
           // restore previous value (autosaved on submit by connect.xhtml)
           Services.prefs.setIntPref("devtools.debugger.remote-port", originalPort);

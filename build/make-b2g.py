@@ -32,6 +32,10 @@ parser.add_option('--platform', '-p',
                   metavar='PLATFORM',
                   help='the platform of the build; '
                        'default: the current platform')
+parser.add_option("--clean",
+                  action="store_true",
+                  dest="clean",
+                  help='remove previously downloaded package')
 
 # Option group for nightly builds.
 group = OptionGroup(parser, "nightly builds",
@@ -120,19 +124,17 @@ elif options.type == 'specific':
 else:
   raise NotImplementedError('type %s not supported' % options.type)
 
-print "Initiating B2G download."
-build.download()
-
-
-# Install B2G Desktop to addon's data directory.
 installer = os.path.abspath(build.target)
 
-# Remove the existing installation, then install.
-platformdir = os.path.join(datadir, platform)
-shutil.rmtree(os.path.join(platformdir, installdirname), True)
-mozinstall.install(installer, platformdir)
+if options.clean:
+  if os.path.isfile(installer):
+    print "Removing B2G package."
+    os.remove(installer)
 
-
-# Clean up.
-
-#shutil.rmtree(tmpdir)
+else:
+  print "Initiating B2G download."
+  build.download()
+  # Remove the existing installation, then install.
+  platformdir = os.path.join(datadir, platform)
+  shutil.rmtree(os.path.join(platformdir, installdirname), True)
+  mozinstall.install(installer, platformdir)
