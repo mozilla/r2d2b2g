@@ -68,7 +68,7 @@
         </article>
 
         <script type="text/template" id="app-template">
-            <li class="app {{ 'removed' if removed }}" data-id="{{ id }}">
+            <li class="app {{ 'removed' if removed }}" data-id="{{ id | escape }}">
                 <div class="options">
                     {% if removed %}
                         <button class="action" data-action="undo">Undo</button>
@@ -80,11 +80,11 @@
                     {% endif %}
                 </div>
                 <h4>
-                    <img class="appIcon" src="{{ iconPath }}" />
-                    {{ name }}<small>{{ 'has been removed' if removed else prettyType }}</small>
+                    <img class="appIcon" src="{{ iconPath | escape }}" />
+                    {{ name | escape }}<small>{{ 'has been removed' if removed else prettyType }}</small>
                 </h4>
                 <p>
-                    <a title="{{ id }}" href="#">Open Location</a> <span>({{ id }})</span>
+                    <a title="{{ id | escape }}" href="#">Open Location</a> <span>({{ id | escape }})</span>
                 </p>
                 <p>
                     Last updated: {{ prettyLastUpdate or 'never' }}
