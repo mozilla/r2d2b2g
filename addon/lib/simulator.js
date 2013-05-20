@@ -168,6 +168,8 @@ let simulator = module.exports = {
         let self = this;
         this.fetchReceipt(manifestURL, receiptType, function(err, receipt) {
           if (err || !receipt) {
+            delete apps[manifestFile];
+            simulator.error("Error retrieving receipt. Please try adding the app again.");
             console.error(err || "No receipt");
           } else {
             apps[manifestFile].receipt = receipt;
@@ -597,8 +599,9 @@ let simulator = module.exports = {
             simulator.addAppByTabUrl(tabUrl, true, receiptType);
           } else {
             if (receiptType && receiptType !== "none") {
-              simulator.fetchReceipt(origin, receiptType, function (err, receipt) {
+              simulator.fetchReceipt(origin, receiptType, function(err, receipt) {
                 if (err || !receipt) {
+                  simulator.error("Error retrieving receipt. Please try adding the app again.");
                   console.error(err || "No receipt");
                 } else {
                   simulator.addManifestUrl(tabUrl, receipt);
@@ -639,6 +642,7 @@ let simulator = module.exports = {
     if (receiptType && receiptType !== "none") {
       this.fetchReceipt(origin, receiptType, function (err, receipt) {
         if (err || !receipt) {
+          simulator.error("Error retrieving receipt. Please try adding the app again.");
           console.error(err || "No receipt");
         } else {
           addManifestArgs.receipt = receipt;
