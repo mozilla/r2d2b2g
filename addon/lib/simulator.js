@@ -163,9 +163,9 @@ let simulator = module.exports = {
         }
       };
       if (receiptType && receiptType !== "none") {
-        let manifest_url = "https://" + apps[manifestFile].xkey + ".simulator";
+        let manifestURL = "https://" + apps[manifestFile].xkey + ".simulator";
         let self = this;
-        this.fetchReceipt(manifest_url, receiptType, function(err, receipt) {
+        this.fetchReceipt(manifestURL, receiptType, function(err, receipt) {
           if (err || !receipt) {
             console.error(err || "No receipt");
           } else {
@@ -323,7 +323,7 @@ let simulator = module.exports = {
 
     let onInstall = function onInstall(res) {
       console.debug("webappsActor install app reply: ",
-      JSON.stringify(res));
+                    JSON.stringify(res));
       if (typeof next === "function") {
         // detect success/error and report to the "next" callback
         if (res.error) {
@@ -447,14 +447,14 @@ let simulator = module.exports = {
     }
   },
 
-  fetchReceipt: function fetchReceipt(manifest_url, receipt_type, cb) {
-    console.log("Fetching test receipt from marketplace",
-      JSON.stringify({ manifest_url: manifest_url, receipt_type: receipt_type }));
+  fetchReceipt: function fetchReceipt(manifestURL, receiptType, cb) {
+    console.log("Fetching " + receiptType + " test receipt for " + manifestURL);
     Request({
       url: TEST_RECEIPT_URL,
       content: {
-        manifest_url: manifest_url,
-        receipt_type: receipt_type,
+        // request params use undescore case
+        manifest_url: manifestURL,
+        receipt_type: receiptType,
       },
       onComplete: function(response) {
         const INVALID_MESSAGE = "INVALID_RECEIPT";
@@ -581,7 +581,6 @@ let simulator = module.exports = {
     let found = false;
     let tab = null;
     let title = null;
-    let self = this;
     for each (tab in Tabs) {
       if (tab.url == tabUrl) {
         found = true;
@@ -597,7 +596,7 @@ let simulator = module.exports = {
             simulator.addAppByTabUrl(tabUrl, true, receiptType);
           } else {
             if (receiptType && receiptType !== "none") {
-              self.fetchReceipt(origin, receiptType, function (err, receipt) {
+              simulator.fetchReceipt(origin, receiptType, function (err, receipt) {
                 if (err || !receipt) {
                   console.error(err || "No receipt");
                 } else {
@@ -641,7 +640,7 @@ let simulator = module.exports = {
           console.error(err || "No receipt");
         } else {
           addManifestArgs.receipt = receipt;
-          self.addManifest(addManifestArgs);
+          simulator.addManifest(addManifestArgs);
         }
       });
     } else {
