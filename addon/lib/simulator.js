@@ -150,6 +150,7 @@ let simulator = module.exports = {
         type: "local",
         xkey: UUID.uuid().toString().slice(1, -1),
         receipt: null,
+        receiptType: receiptType,
       };
       console.log("Registered App " + JSON.stringify(apps[manifestFile]));
 
@@ -633,6 +634,7 @@ let simulator = module.exports = {
       installOrigin: origin,
       generated: true,
       receipt: null,
+      receiptType: receiptType,
     };
     if (receiptType && receiptType !== "none") {
       this.fetchReceipt(origin, receiptType, function (err, receipt) {
