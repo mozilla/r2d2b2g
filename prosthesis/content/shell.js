@@ -46,6 +46,15 @@ document.getElementById("rotateButton").addEventListener("click", function() {
           "chrome,dialog,menubar,centerscreen,modal",
           { wrappedJSObject: params });
 
+        if (params.result == "cancel") {
+          return;
+        }
+
+        // Ensure the provider has been constructed so it receives notifications
+        // about geolocation updates.
+        Cc["@mozilla.org/geolocation/provider;1"].
+        getService(Ci.nsIGeolocationProvider);
+
         if (params.useCurrent && !useCurrent) {
           debug("Current coordinates requested in shell, notifying Simulator");
           Services.obs.notifyObservers(null, "r2d2b2g:geolocation-start", null);
