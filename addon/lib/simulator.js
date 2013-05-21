@@ -10,6 +10,7 @@ const { Cc, Ci, Cr, Cu } = require("chrome");
 const Self = require("self");
 const URL = require("url");
 const Tabs = require("tabs");
+const Windows = require("sdk/windows").browserWindows;
 const UUID = require("sdk/util/uuid");
 const File = require("file");
 const Prefs = require("preferences-service");
@@ -990,7 +991,7 @@ let simulator = module.exports = {
       }
     }
 
-    Tabs.open({
+    Windows.activeWindow.tabs.open({
       url: url
     });
   },
