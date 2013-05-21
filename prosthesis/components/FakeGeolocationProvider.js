@@ -60,33 +60,31 @@ function FakeGeoPositionProvider() {
   this.started = false;
   this.callback = null;
 
-  Services.obs.addObserver((function (message) {
-    dump("Provider received update\n");
-    this.position = new FakeGeoPositionObject(
-      message.wrappedJSObject.lat,
-      message.wrappedJSObject.lon
-    );
+  Services.obs.addObserver((function onGeolocationUpdate(message) {
+    let { lat, lon } = message.wrappedJSObject;
+    dump("FakeGeoPositionProvider received update " + lat + "x" + lon + "\n");
+    this.position = new FakeGeoPositionObject(lat, lon);
+    if (this.callback) {
+      this.callback.update(this.position);
+    }
   }).bind(this), "r2d2b2g:geolocation-update", false);
 }
 
 FakeGeoPositionProvider.prototype = {
   classID:          Components.ID("{a93105f2-8169-4790-a455-4701ce867aa8}"),
   QueryInterface:   XPCOMUtils.generateQI([Ci.nsIGeolocationProvider,
-                                           Ci.nsIFakeListener,
-                                           Ci.nsITimerCallback]),
+                                           Ci.nsIFakeListener]),
   startup:  function() {
     if (this.started) {
       return;
     }
 
     this.started = true;
-    this.walk();
-    this.updateTimer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
-    this.updateTimer.initWithCallback(this, 1000, this.updateTimer.TYPE_REPEATING_SLACK);
   },
 
   watch: function(c) {
     this.callback = c;
+    this.callback.update(this.position);
   },
 
   shutdown: function() {
@@ -100,16 +98,6 @@ FakeGeoPositionProvider.prototype = {
 
   // Needed to implement the nsIGeolocationProvider interface
   setHighAccuracy: function(enable) {},
-
-  walk: function() {
-    if (this.callback) {
-      this.callback.update(this.position);
-    }
-  },
-
-  notify: function(timer) {
-    this.walk();
-  },
 
 };
 
