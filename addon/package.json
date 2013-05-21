@@ -20,6 +20,9 @@
     "Soumen Ganguly (https://github.com/SoumenG)",
     "Victor Bjelkholm (https://github.com/VictorBjelkholm)"
   ],
+  "permissions": {
+    "private-browsing": true
+  },
   "license": "MPL 2.0",
   "unpack": true,
   "dependencies": ["gcli",
