@@ -456,7 +456,7 @@ let simulator = module.exports = {
     Request({
       url: TEST_RECEIPT_URL,
       content: {
-        // request params use undescore case
+        // request params use underscore case
         manifest_url: manifestURL,
         receipt_type: receiptType,
       },
