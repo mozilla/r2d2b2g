@@ -52,6 +52,16 @@
                 </ul>
                 <ul class="list-actions">
                     <li>
+                        <label for="receipt_type">Receipt Type:</label>
+                        <select name="receipt_type" id="receipt_type">
+                            <option value="none" selected>None</option>
+                            <option value="ok">Valid</option>
+                            <option value="expired">Expired</option>
+                            <option value="invalid">Invalid</option>
+                            <option value="refunded">Refunded</option>
+                        </select>
+                    </li>
+                    <li>
                         <button id="action-add-directory" title="Select the manifest.webapp file from your app directory." onclick="Simulator.addAppByDirectory()">Add Directory</button>
                     </li>
                     <li>
