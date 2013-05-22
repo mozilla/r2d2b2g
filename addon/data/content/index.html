@@ -56,7 +56,9 @@
                         <select name="receipt_type" id="receipt_type">
                             <option value="none" selected>None</option>
                             <option value="ok">Valid</option>
-                            <option value="expired">Expired</option>
+                            <!-- Expired receipts are still valid until
+                                 bug 757226 is patched. See Issue #497. -->
+                            <!--<option value="expired">Expired</option>-->
                             <option value="invalid">Invalid</option>
                             <option value="refunded">Refunded</option>
                         </select>
