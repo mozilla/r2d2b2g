@@ -56,48 +56,47 @@ FakeGeoPosition.prototype = {
 function FakeGeolocationProvider() {
   // Default the initial custom coordinates to Mozilla's SF office.
   this.position = new FakeGeoPosition(37.78937, -122.38912);
-  this.updateTimer = null;
-  this.started = false;
-  this.callback = null;
+  this.watcher = null;
 
   Services.obs.addObserver((function onGeolocationUpdate(message) {
     let { lat, lon } = message.wrappedJSObject;
     dump("FakeGeolocationProvider received update " + lat + "x" + lon + "\n");
     this.position = new FakeGeoPosition(lat, lon);
-    if (this.callback) {
-      this.callback.update(this.position);
-    }
+    this.update();
   }).bind(this), "r2d2b2g:geolocation-update", false);
 }
 
 FakeGeolocationProvider.prototype = {
   classID:          Components.ID("{a93105f2-8169-4790-a455-4701ce867aa8}"),
   QueryInterface:   XPCOMUtils.generateQI([Ci.nsIGeolocationProvider]),
-  startup:  function() {
-    if (this.started) {
-      return;
-    }
 
-    this.started = true;
+  // startup and setHighAccuracy both need to be defined to implement
+  // the nsIGeolocationProvider interface, even though we don't actually
+  // implement them.
+  startup: function() {},
+  setHighAccuracy: function(enable) {},
+
+  watch: function(callback) {
+    this.watcher = callback;
+
+    // Update the watcher with the most recent position as soon as possible.
+    // We have to do this after a timeout because the nsGeolocation watcher
+    // doesn't expect an update until after this function returns, so it won't
+    // receive one until then.
+    Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer).initWithCallback(
+      (function() this.update()).bind(this), 0, Ci.nsITimer.TYPE_ONE_SHOT
+    );
   },
 
-  watch: function(c) {
-    this.callback = c;
-    this.callback.update(this.position);
+  update: function() {
+    if (this.watcher) {
+      this.watcher.update(this.position);
+    }
   },
 
   shutdown: function() {
-    if (this.updateTimer) {
-      this.updateTimer.cancel();
-      this.updateTimer = null;
-    }
-    this.callback = null;
-    this.started = false;
+    this.watcher = null;
   },
-
-  // Needed to implement the nsIGeolocationProvider interface
-  setHighAccuracy: function(enable) {},
-
 };
 
 this.NSGetFactory = XPCOMUtils.generateNSGetFactory([FakeGeolocationProvider]);
