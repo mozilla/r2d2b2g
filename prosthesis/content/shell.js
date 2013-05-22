@@ -33,15 +33,6 @@ document.getElementById("rotateButton").addEventListener("click", function() {
   let latitude = 37.78937,
       longitude = -122.38912,
       useCurrent = false,
-      sendCoords = function sendCoords() {
-        debug("Custom coordinates specified in shell, updating provider");
-        Services.obs.notifyObservers({
-          wrappedJSObject: {
-            lat: latitude,
-            lon: longitude,
-          }
-        }, "r2d2b2g:geolocation-update", null);
-      },
       openWin = function openWin() {
         let params = {
           lat: latitude,
@@ -55,16 +46,45 @@ document.getElementById("rotateButton").addEventListener("click", function() {
           "chrome,dialog,menubar,centerscreen,modal",
           { wrappedJSObject: params });
 
-        useCurrent = params.useCurrent;
-        if (useCurrent) {
+        if (params.result == "cancel") {
+          return;
+        }
+
+        // Ensure the provider has been constructed so it receives notifications
+        // about geolocation updates.
+        Cc["@mozilla.org/geolocation/provider;1"].
+        getService(Ci.nsIGeolocationProvider);
+
+        if (params.useCurrent && !useCurrent) {
           debug("Current coordinates requested in shell, notifying Simulator");
           Services.obs.notifyObservers(null, "r2d2b2g:geolocation-start", null);
-        } else {
-          latitude = params.lat;
-          longitude = params.lon;
-          // Send custom coordinates to FakeGeolocation
-          sendCoords();
+        } else if (!params.useCurrent) {
+          debug("custom coordinates requested in shell");
+
+          // If params.useCurrent is false, but useCurrent is true, then
+          // the user is changing from current to custom coordinates, so tell
+          // Firefox to stop watching geolocation.
+          if (useCurrent) {
+            debug("current coordinates previously requested");
+            Services.obs.notifyObservers(null, "r2d2b2g:geolocation-stop",
+                                         null);
+          }
+
+          // If the custom coords have changed, or the user has just changed
+          // from current to custom coords, then notify the provider.
+          if (latitude != params.lat || longitude != params.lon || useCurrent) {
+            debug("Custom coordinates specified in shell, updating provider");
+            latitude = params.lat;
+            longitude = params.lon;
+            Services.obs.notifyObservers({
+              wrappedJSObject: {
+                lat: latitude,
+                lon: longitude,
+              }
+            }, "r2d2b2g:geolocation-update", null);
+          }
         }
+        useCurrent = params.useCurrent;
       };
 
   document.getElementById("geolocationButton")

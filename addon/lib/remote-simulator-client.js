@@ -27,8 +27,11 @@ const PingbackServer = require("pingback-server");
 // import debuggerSocketConnect and DebuggerClient
 const dbgClient = Cu.import("resource://gre/modules/devtools/dbg-client.jsm");
 
-// add an unsolicited notification for geolocation
+const Geolocation = Cc["@mozilla.org/geolocation;1"].getService(Ci.nsISupports);
+
+// add unsolicited notifications
 dbgClient.UnsolicitedNotifications.geolocationStart = "geolocationStart";
+dbgClient.UnsolicitedNotifications.geolocationStop = "geolocationStop";
 dbgClient.UnsolicitedNotifications.appUpdateRequest = "appUpdateRequest";
 
 // Log subprocess error and debug messages to the console.  This logs messages
@@ -227,10 +230,13 @@ const RemoteSimulatorClient = Class({
 
     client.addListener("closed", (function () {
       emit(this, "clientClosed", {client: client});
+      this._stopGeolocation();
     }).bind(this));
 
+    client.addListener("geolocationStart", this.onGeolocationStart.bind(this));
+    client.addListener("geolocationStop", this.onGeolocationStop.bind(this));
+
     this._registerAppUpdateRequest(client);
-    this._registerGeolocationStart(client);
 
     client.connect((function () {
       emit(this, "clientConnected", {client: client});
@@ -244,27 +250,41 @@ const RemoteSimulatorClient = Class({
     }).bind(this));
   },
 
-  _registerGeolocationStart: function(client) {
-    client.addListener("geolocationStart", (function() {
-      console.log("Firefox received geolocation request");
-      let onsuccess = (function success(position) {
-        console.log("Firefox sending geolocation response");
-        this._remote.client.request({
-          to: this._remote.simulator,
-          message: {
-            lat: position.coords.latitude,
-            lon: position.coords.longitude,
-          },
-          type: "geolocationUpdate"
-        });
-      }).bind(this);
+  _geolocationID: null,
 
-      let geolocation = Cc["@mozilla.org/geolocation;1"].
-                        getService(Ci.nsISupports);
-      geolocation.getCurrentPosition(onsuccess, function error() {
-        console.error("error getting current position");
+  onGeolocationStart: function onGeolocationStart() {
+    console.log("Firefox received geolocation start request");
+
+    let onSuccess = (function onSuccess(position) {
+      console.log("Firefox sending geolocation response");
+
+      this._remote.client.request({
+        to: this._remote.simulator,
+        message: {
+          lat: position.coords.latitude,
+          lon: position.coords.longitude,
+        },
+        type: "geolocationUpdate"
       });
-    }).bind(this));
+    }).bind(this);
+
+    let onError = function onError(error) {
+      console.error("geolocation error " + error.code + ": " + error.message);
+    };
+
+    this._geolocationID = Geolocation.watchPosition(onSuccess, onError);
+  },
+
+  onGeolocationStop: function onGeolocationStop() {
+    console.log("Firefox received geolocation stop request");
+    this._stopGeolocation();
+  },
+
+  _stopGeolocation: function _stopGeolocation() {
+    if (this._geolocationID) {
+      Geolocation.clearWatch(this._geolocationID);
+      this._geolocationID = null;
+    }
   },
 
   // send a getBuildID request to the remote simulator actor
