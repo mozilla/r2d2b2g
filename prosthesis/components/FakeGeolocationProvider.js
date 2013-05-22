@@ -80,9 +80,9 @@ FakeGeolocationProvider.prototype = {
     this.watcher = callback;
 
     // Update the watcher with the most recent position as soon as possible.
-    // We have to do this after a timeout because the nsGeolocation watcher
-    // doesn't expect an update until after this function returns, so it won't
-    // receive one until then.
+    // We have to do this after a timeout because the nsGeolocationService
+    // watcher doesn't expect an update until after this function returns,
+    // so it won't receive one until then.
     Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer).initWithCallback(
       (function() this.update()).bind(this), 0, Ci.nsITimer.TYPE_ONE_SHOT
     );
