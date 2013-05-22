@@ -56,7 +56,7 @@ function runRequest(mode, target) {
   let source = request(target)
   let { xhr, url, content, contentType, headers, overrideMimeType } = source;
 
-  let isGetOrHead = function(mode) mode == "GET" || mode == "HEAD";
+  let isGetOrHead = (mode == "GET" || mode == "HEAD");
 
   // If this request has already been used, then we can't reuse it.
   // Throw an error.
@@ -69,7 +69,7 @@ function runRequest(mode, target) {
   // to the URL before opening the request.
   let data = stringify(content);
   // If the URL already has ? in it, then we want to just use &
-  if (isGetOrHead(mode) && data)
+  if (isGetOrHead && data)
     url = url + (/\?/.test(url) ? "&" : "?") + data;
 
   // open the request
@@ -100,7 +100,7 @@ function runRequest(mode, target) {
 
   // actually send the request.
   // We don't want to send data on GET or HEAD requests.
-  xhr.send(!isGetOrHead(mode) ? data : null);
+  xhr.send(!isGetOrHead ? data : null);
 }
 
 const Request = Class({
