@@ -22,7 +22,7 @@ const Cu = Components.utils;
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 
-function FakeGeoCoordsObject(lat, lon, acc, alt, altacc) {
+function FakeGeoPositionCoords(lat, lon, acc, alt, altacc) {
   this.latitude = lat;
   this.longitude = lon;
   this.accuracy = acc;
@@ -30,50 +30,49 @@ function FakeGeoCoordsObject(lat, lon, acc, alt, altacc) {
   this.altitudeAccuracy = altacc;
 }
 
-FakeGeoCoordsObject.prototype = {
+FakeGeoPositionCoords.prototype = {
   QueryInterface:  XPCOMUtils.generateQI([Ci.nsIDOMGeoPositionCoords]),
 
   classInfo: XPCOMUtils.generateCI({interfaces: [Ci.nsIDOMGeoPositionCoords],
                                     flags: Ci.nsIClassInfo.DOM_OBJECT,
-                                    classDescription: "wifi geo position coords object"}),
+                                    classDescription: "FakeGeoPositionCoords"}),
 };
 
-function FakeGeoPositionObject(lat, lng) {
-  this.coords = new FakeGeoCoordsObject(lat, lng, 1, 0, 0);
+function FakeGeoPosition(lat, lon) {
+  this.coords = new FakeGeoPositionCoords(lat, lon, 1, 0, 0);
   this.address = null;
   this.timestamp = Date.now();
 }
 
-FakeGeoPositionObject.prototype = {
+FakeGeoPosition.prototype = {
   QueryInterface:   XPCOMUtils.generateQI([Ci.nsIDOMGeoPosition]),
 
   // Class Info is required to be able to pass objects back into the DOM.
   classInfo: XPCOMUtils.generateCI({interfaces: [Ci.nsIDOMGeoPosition],
                                     flags: Ci.nsIClassInfo.DOM_OBJECT,
-                                    classDescription: "fake geo location position object"}),
+                                    classDescription: "FakeGeoPosition"}),
 };
 
-function FakeGeoPositionProvider() {
+function FakeGeolocationProvider() {
   // Default the initial custom coordinates to Mozilla's SF office.
-  this.position = new FakeGeoPositionObject(37.78937, -122.38912);
+  this.position = new FakeGeoPosition(37.78937, -122.38912);
   this.updateTimer = null;
   this.started = false;
   this.callback = null;
 
   Services.obs.addObserver((function onGeolocationUpdate(message) {
     let { lat, lon } = message.wrappedJSObject;
-    dump("FakeGeoPositionProvider received update " + lat + "x" + lon + "\n");
-    this.position = new FakeGeoPositionObject(lat, lon);
+    dump("FakeGeolocationProvider received update " + lat + "x" + lon + "\n");
+    this.position = new FakeGeoPosition(lat, lon);
     if (this.callback) {
       this.callback.update(this.position);
     }
   }).bind(this), "r2d2b2g:geolocation-update", false);
 }
 
-FakeGeoPositionProvider.prototype = {
+FakeGeolocationProvider.prototype = {
   classID:          Components.ID("{a93105f2-8169-4790-a455-4701ce867aa8}"),
-  QueryInterface:   XPCOMUtils.generateQI([Ci.nsIGeolocationProvider,
-                                           Ci.nsIFakeListener]),
+  QueryInterface:   XPCOMUtils.generateQI([Ci.nsIGeolocationProvider]),
   startup:  function() {
     if (this.started) {
       return;
@@ -101,4 +100,4 @@ FakeGeoPositionProvider.prototype = {
 
 };
 
-this.NSGetFactory = XPCOMUtils.generateNSGetFactory([FakeGeoPositionProvider]);
+this.NSGetFactory = XPCOMUtils.generateNSGetFactory([FakeGeolocationProvider]);
