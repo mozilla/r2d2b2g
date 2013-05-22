@@ -6,7 +6,7 @@
 3. cd into your cloned fork `cd r2d2b2g`
 4. set r2d2b2g/master as upstream `git remote add --track master upstream
 https://github.com/mozilla/r2d2b2g.git`
-5. initialize submodules `git submodule init && git submodule update`
+5. initialize submodules `git submodule update --init`
 6. make `make`
 7. Run it! `make run`
 

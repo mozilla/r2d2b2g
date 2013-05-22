@@ -10,10 +10,11 @@ const { Cc, Ci, Cr, Cu } = require("chrome");
 const Self = require("self");
 const URL = require("url");
 const Tabs = require("tabs");
+const Windows = require("sdk/windows").browserWindows;
 const UUID = require("sdk/util/uuid");
 const File = require("file");
 const Prefs = require("preferences-service");
-const Request = require('request').Request;
+const Request = require('./request').Request;
 const SStorage = require("simple-storage");
 const WindowUtils = require("window/utils");
 const Timer = require("timer");
@@ -23,6 +24,7 @@ const JsonLint = require("jsonlint/jsonlint");
 const ADB = require("adb");
 const Promise = require("sdk/core/promise");
 const Runtime = require("runtime");
+const Validator = require("./validator");
 
 // The b2gremote debugger module that installs apps to devices.
 const Debugger = require("debugger");
@@ -32,6 +34,7 @@ const DEBUGGER_PORT = 6000;
 
 const { rootURI: ROOT_URI } = require('@loader/options');
 const PROFILE_URL = ROOT_URI + "profile/";
+const TEST_RECEIPT_URL = "https://marketplace.firefox.com/api/v1/receipts/test/";
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
@@ -129,7 +132,7 @@ let simulator = module.exports = {
 
   get contentScript() Self.data.url("content-script.js"),
 
-  addAppByDirectory: function() {
+  addAppByDirectory: function(receiptType) {
     console.log("Simulator.addAppByDirectory");
 
     let win = Services.wm.getMostRecentWindow("navigator:browser");
@@ -147,11 +150,13 @@ let simulator = module.exports = {
       let apps = simulator.apps;
       apps[manifestFile] = {
         type: "local",
-        xkey: null,
-      }
+        xkey: UUID.uuid().toString().slice(1, -1),
+        receipt: null,
+        receiptType: receiptType,
+      };
       console.log("Registered App " + JSON.stringify(apps[manifestFile]));
 
-      this.updateApp(manifestFile, function next(error, app) {
+      let next = function next(error, app) {
         // Update the Dashboard to reflect changes to the record and run the app
         // if the update succeeded.  Otherwise, it isn't necessary to notify
         // the user about the error, as it'll show up in the validation results.
@@ -159,7 +164,23 @@ let simulator = module.exports = {
         if (!error) {
           simulator.runApp(app);
         }
-      });
+      };
+      if (receiptType && receiptType !== "none") {
+        let manifestURL = "https://" + apps[manifestFile].xkey + ".simulator";
+        let self = this;
+        this.fetchReceipt(manifestURL, receiptType, function(err, receipt) {
+          if (err || !receipt) {
+            delete apps[manifestFile];
+            simulator.error("Error retrieving receipt. Please try adding the app again.");
+            console.error(err || "No receipt");
+          } else {
+            apps[manifestFile].receipt = receipt;
+            self.updateApp(manifestFile, next);
+          }
+        });
+      } else {
+        this.updateApp(manifestFile, next);
+      }
     }
   },
 
@@ -305,6 +326,25 @@ let simulator = module.exports = {
     File.mkpath(tempWebappDir);
     console.log("Created " + tempWebappDir);
 
+    let onInstall = function onInstall(res) {
+      console.debug("webappsActor install app reply: ",
+                    JSON.stringify(res));
+      if (typeof next === "function") {
+        // detect success/error and report to the "next" callback
+        if (res.error) {
+          next(res.error + ": " + res.message, config);
+        } else {
+          next(null, config);
+        }
+      }
+    };
+
+    let appInfo = {
+      appId: config.xkey,
+      appType: null,
+      appReceipt: config.receipt,
+    };
+
     if (config.type == "local") {
       // Archive source folder to target folder
       let sourceDir = id.replace(/[\/\\][^\/\\]*$/, "");
@@ -336,18 +376,7 @@ let simulator = module.exports = {
               }
               return;
             }
-            simulator.remoteSimulator.install(config.xkey, null, function(res) {
-              console.debug("webappsActor install packaged app reply: ",
-                            JSON.stringify(res));
-              if (typeof next === "function") {
-                // detect success/error and report to the "next" callback
-                if (res.error) {
-                  next(res.error + ": " + res.message, config);
-                } else {
-                  next(null, config);
-                }
-              }
-            });
+            simulator.remoteSimulator.install(appInfo, onInstall);
           });
         }
       });
@@ -412,18 +441,7 @@ let simulator = module.exports = {
                   return;
                 }
                 console.log("Requesting webappsActor to install hosted app: ",config.xkey);
-                simulator.remoteSimulator.install(config.xkey, null, function(res) {
-                  console.debug("webappsActor install hosted app reply: ",
-                                JSON.stringify(res));
-                  if (next) {
-                    // detect success/error and report to the "next" callback
-                    if (res.error) {
-                      next(res.error + ": "+res.message, config);
-                    } else {
-                      next(null, config);
-                    }
-                  }
-                });
+                simulator.remoteSimulator.install(appInfo, onInstall);
               });
             }); // END writeAsync metadataFile
         }); // END writeAsync manifest.webapp
@@ -432,6 +450,40 @@ let simulator = module.exports = {
     if (this.worker) {
       this.sendListApps();
     }
+  },
+
+  fetchReceipt: function fetchReceipt(manifestURL, receiptType, cb) {
+    console.log("Fetching " + receiptType + " test receipt for " + manifestURL);
+    Request({
+      url: TEST_RECEIPT_URL,
+      content: {
+        // request params use underscore case
+        manifest_url: manifestURL,
+        receipt_type: receiptType,
+      },
+      onComplete: function(response) {
+        const INVALID_MESSAGE = "INVALID_RECEIPT";
+        if (response.status === 400 && "error_message" in response.json) {
+          console.log("Bad request made to test receipt server: " +
+            JSON.stringify(response.json.error_message));
+          return cb(INVALID_MESSAGE, null);
+        }
+        if (response.status !== 201) {
+          console.log("Unexpected status code " + response.status);
+          return cb(INVALID_MESSAGE, null);
+        }
+        if (!response.json) {
+          console.log("Expected JSON response.");
+          return cb(INVALID_MESSAGE, null);
+        }
+        if (!('receipt' in response.json)) {
+          console.log("Expected receipt field in test receipt response");
+          return cb(INVALID_MESSAGE, null);
+        }
+        console.log("Received receipt: " + response.json.receipt);
+        cb(null, response.json.receipt);
+      },
+    }).post();
   },
 
   removeApp: function(id) {
@@ -521,15 +573,16 @@ let simulator = module.exports = {
    */
   addActiveTab: function() {
     console.log("Simulator.addActiveTab");
-    this.addAppByTabUrl(Tabs.activeTab.url);
+    this.addAppByTabUrl(Tabs.activeTab.url, false);
   },
 
   /**
    * Installs the web page in the active tab as if it was an app.
    */
-  addAppByTabUrl: function(tabUrl, force) {
+  addAppByTabUrl: function(tabUrl, force, receiptType) {
     console.log("Simulator.addAppByTabUrl " + tabUrl);
     let url = URL.URL(tabUrl);
+    let origin = url.toString().substring(0, url.lastIndexOf(url.path));
     let found = false;
     let tab = null;
     let title = null;
@@ -545,9 +598,20 @@ let simulator = module.exports = {
       if (!force) {
         this.validateUrl(tabUrl, function(err) {
           if (err) {
-            simulator.addAppByTabUrl(tabUrl, true);
+            simulator.addAppByTabUrl(tabUrl, true, receiptType);
           } else {
-            simulator.addManifestUrl(tabUrl);
+            if (receiptType && receiptType !== "none") {
+              simulator.fetchReceipt(origin, receiptType, function(err, receipt) {
+                if (err || !receipt) {
+                  simulator.error("Error retrieving receipt. Please try adding the app again.");
+                  console.error(err || "No receipt");
+                } else {
+                  simulator.addManifestUrl(tabUrl, receipt);
+                }
+              });
+            } else {
+              simulator.addManifestUrl(tabUrl);
+            }
           }
         });
         return;
@@ -555,7 +619,6 @@ let simulator = module.exports = {
     } else {
       title = tab.title || url.host;
     }
-    let origin = url.toString().substring(0, url.lastIndexOf(url.path));
 
     let manifestUrl = URL.URL(origin + "/" + "manifest.webapp");
     let webapp = {
@@ -565,14 +628,35 @@ let simulator = module.exports = {
       launch_path: url.path || '/',
       icons: {
         "16": "/favicon.ico"
-      }
+      },
     };
     console.log("Generated manifest " + JSON.stringify(webapp, null, 2));
     // Possible icon? 'http://www.google.com/s2/favicons?domain=' + url.host
-    this.addManifest(manifestUrl, webapp, origin, true);
+
+    let addManifestArgs = {
+      manifestUrl: manifestUrl,
+      webapp: webapp,
+      installOrigin: origin,
+      generated: true,
+      receipt: null,
+      receiptType: receiptType,
+    };
+    if (receiptType && receiptType !== "none") {
+      this.fetchReceipt(origin, receiptType, function (err, receipt) {
+        if (err || !receipt) {
+          simulator.error("Error retrieving receipt. Please try adding the app again.");
+          console.error(err || "No receipt");
+        } else {
+          addManifestArgs.receipt = receipt;
+          simulator.addManifest(addManifestArgs);
+        }
+      });
+    } else {
+      this.addManifest(addManifestArgs);
+    }
   },
 
-  addManifestUrl: function(manifestUrl) {
+  addManifestUrl: function(manifestUrl, receipt) {
     console.log("Simulator.addManifestUrl " + manifestUrl);
 
     Request({
@@ -580,25 +664,33 @@ let simulator = module.exports = {
       onComplete: function (response) {
         if (response.status != 200) {
           simulator.error("Unexpected status code " + response.status);
-          return
+          return;
         }
         if (!response.json) {
           simulator.error("Expected JSON response.");
           return;
         }
         if (!response.json.name || !response.json.description) {
-          simulator.error("Missing mandatory property (name or description)");
+          simulator.error("Missing mandatory property (name or description) " +
+                          "in webapp manifest");
           return;
         }
 
         let contentType = response.headers["Content-Type"];
-        if (contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
-          console.warn("Unexpected Content-Type: " + contentType + ".");
+        if (!contentType) {
+          console.warn("Webapp manifest is served without any content type.");
+        } else if (contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
+          console.warn("Webapp manifest is served with an invalid content " +
+                       "type: " + contentType + ".");
         }
 
         console.log("Fetched manifest " + JSON.stringify(response.json, null, 2));
 
-        simulator.addManifest(manifestUrl, response.json);
+        simulator.addManifest({
+          manifestUrl: manifestUrl,
+          webapp: response.json,
+          receipt: receipt,
+        });
       }
     }).get();
   },
@@ -612,12 +704,12 @@ let simulator = module.exports = {
         var err = null;
         if (response.status != 200) {
           err = "Unexpected status code " + response.status;
-        } else if (!response.json) {
-          err = "Expected JSON response";
         } else {
           let contentType = response.headers["Content-Type"];
-          if (contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
-            console.warn("Unexpected Content-Type " + contentType);
+          if (!contentType) {
+            err = "No Content-Type for webapp manifest";
+          } else if (contentType && contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
+            err = "Unexpected Content-Type " + contentType;
           }
         }
 
@@ -633,10 +725,10 @@ let simulator = module.exports = {
           });
         }
       }
-    }).get();
+    }).head();
   },
 
-  addManifest: function(manifestUrl, webapp, installOrigin, generated) {
+  addManifest: function({ manifestUrl, webapp, installOrigin, generated, receipt }) {
     console.log("Simulator.addManifest " + manifestUrl);
     manifestUrl = URL.URL(manifestUrl.toString());
     let origin = manifestUrl.toString().substring(0, manifestUrl.toString().lastIndexOf(manifestUrl.path));
@@ -664,6 +756,7 @@ let simulator = module.exports = {
       origin: origin,
       host: manifestUrl.host,
       installOrigin: installOrigin,
+      receipt: receipt,
     }
     console.log("Registered App " + JSON.stringify(apps[id], null, 2));
 
@@ -689,7 +782,7 @@ let simulator = module.exports = {
         next(null, app.manifest);
       } catch(e) {
         if (typeof next === "function") {
-          next("<pre>"+e+"</pre>", null);
+          next(e, null);
         }
       }
       break;
@@ -705,12 +798,14 @@ let simulator = module.exports = {
             try {
               JsonLint.parse(response.text);
             } catch(e) {
-              error += "<pre>"+e+"</pre>";
+              error += e;
             }
           } else {
             app.manifest = response.json;
             let contentType = response.headers["Content-Type"];
-            if (contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
+            if (!contentType) {
+              error = "No Content-type for webapp manifest.";
+            } else if (contentType && contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
               error = "Unexpected Content-Type: '" + contentType + "'.";
             }
           }
@@ -755,6 +850,15 @@ let simulator = module.exports = {
     // NOTE: add errors/warnings for WebAPIs not supported by the simulator
     simulator._validateWebAPIs(app.validation.errors, app.validation.warnings,
                                app.manifest);
+
+    // Appcache checks
+    if (["generated", "hosted"].indexOf(app.type) !== -1) {
+      // Only verify appcache for hosted apps
+      Validator.validateAppCache(app.validation.errors, app.validation.warnings,
+                                 app.manifest, app.origin);
+    } else if ("appcache_path" in app.manifest) {
+      app.validation.warnings.push("Packaged apps don't support appcache");
+    }
 
     if (["generated", "hosted"].indexOf(app.type) !== -1 &&
         ["certified", "privileged"].indexOf(app.manifest.type) !== -1) {
@@ -885,7 +989,7 @@ let simulator = module.exports = {
       }
     }
 
-    Tabs.open({
+    Windows.activeWindow.tabs.open({
       url: url
     });
   },
@@ -910,9 +1014,18 @@ let simulator = module.exports = {
     Tabs.open({
       url: "chrome://browser/content/devtools/connect.xhtml",
       onReady: function(tab) {
-        // NOTE: inject the allocated remoteDebuggerPort on the opened tab
+        // Inject the allocated remote debugger port into the opened tab.
+        // We know it's a Number, so we don't actually need to parseInt it,
+        // but doing so reassures AMO reviewers that we aren't exposing
+        // a security issue.
         tab.attach({
-          contentScript: "window.addEventListener('load', function() { document.getElementById('port').value = '"+port+"'; }, true);"
+          contentScript: "window.addEventListener(" +
+                         "  'load', " +
+                         "  function() " +
+                         "    document.getElementById('port').value = " +
+                         "      '" + parseInt(port, 10) + "', " +
+                         "  true" +
+                         ");"
         }).on('detach', function restoreOriginalRemotePort() {
           // restore previous value (autosaved on submit by connect.xhtml)
           Services.prefs.setIntPref("devtools.debugger.remote-port", originalPort);
@@ -1115,10 +1228,12 @@ let simulator = module.exports = {
         simulator.postIsRunning();
         break;
       case "addAppByDirectory":
-        simulator.addAppByDirectory();
+        // packaged apps
+        simulator.addAppByDirectory(message.receiptType);
         break;
       case "addAppByTab":
-        simulator.addAppByTabUrl(message.url);
+        // hosted and generated apps
+        simulator.addAppByTabUrl(message.url, false, message.receiptType);
         break;
       case "listApps":
         if (message.flush) {

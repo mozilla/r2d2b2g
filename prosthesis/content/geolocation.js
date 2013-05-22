@@ -21,8 +21,12 @@ window.addEventListener("DOMContentLoaded", function() {
         windowParams.lat = latitudeEle.value;
         windowParams.lon = longitudeEle.value;
         windowParams.useCurrent = tempUseCurrent;
+        windowParams.result = "accept";
         window.close();
       };
+      cancel = function () {
+        windowParams.result = "cancel";
+      }
 
   setTextBoxes(windowParams.useCurrent);
   custom.parentElement.selectedItem =
@@ -33,4 +37,5 @@ window.addEventListener("DOMContentLoaded", function() {
   current.addEventListener("command", setTextBoxes.bind(this, true));
   custom.addEventListener("command", setTextBoxes.bind(this, false));
   window.addEventListener("dialogaccept", accept);
+  window.addEventListener("dialogcancel", cancel);
 });

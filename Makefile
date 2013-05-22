@@ -1,4 +1,4 @@
-.PHONY: build clean profile prosthesis b2g adb locales run package help
+.PHONY: build clean profile prosthesis b2g adb locales run package test help
 
 -include local.mk
 
@@ -53,14 +53,14 @@ B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/
 # Platform-specific Defines
 ifeq (win32, $(B2G_PLATFORM))
   # The URL of the specific B2G build.
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-05-08.en-US.win32.zip
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-05-22.en-US.win32.zip
 
   ADB_PACKAGE = adb-1.0.31-windows.zip
   ADB_BINARIES = adb.exe AdbWinApi.dll AdbWinUsbApi.dll
   BIN_SUFFIX = .exe
 else
 ifeq (mac64, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-05-08.en-US.mac64.dmg
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-05-22.en-US.mac64.dmg
 
   ADB_PACKAGE = adb-1.0.31-mac.zip
   ADB_BINARIES = adb
@@ -68,10 +68,10 @@ ifeq (mac64, $(B2G_PLATFORM))
   DOWNLOAD_CMD = /usr/bin/curl -O
 else
 ifeq (linux64, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-05-08.en-US.linux-x86_64.tar.bz2
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-05-22.en-US.linux-x86_64.tar.bz2
 else
 ifeq (linux, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-05-08.en-US.linux-i686.tar.bz2
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-05-22.en-US.linux-i686.tar.bz2
 endif
 endif
 
@@ -126,15 +126,16 @@ ifneq ($(strip $(LOCALES_FILE)),)
   endif
 endif
 
-build: profile prosthesis b2g adb
+build: profile b2g adb
 
 clean:
 	rm -rf addon/data/$(B2G_PLATFORM)
 	rm -rf addon/template
-	rm gaia/build/custom-prefs.js
-	rm gaia/build/custom-settings.json
-	rm $(ADB_PACKAGE)
+	rm -f gaia/build/custom-prefs.js
+	rm -f gaia/build/custom-settings.json
+	rm -f $(ADB_PACKAGE)
 	make -C gaia clean
+	python build/make-b2g.py $(B2G_TYPE_ARG) $(B2G_PLATFORM_ARG) $(B2G_ID_ARG) $(B2G_URL_ARG) --clean
 
 profile:
 	cp build/override-prefs.js gaia/build/custom-prefs.js
@@ -149,24 +150,28 @@ profile:
 	mv gaia/profile addon/template/
 	cp addon-sdk/app-extension/bootstrap.js addon/template/
 	cp addon-sdk/app-extension/install.rdf addon/template/
-
-prosthesis: profile
 	mkdir -p addon/template/profile/extensions
-	cd prosthesis && zip -r b2g-prosthesis\@mozilla.org.xpi content components defaults locale modules skin chrome.manifest install.rdf
+	cd prosthesis && zip -r b2g-prosthesis\@mozilla.org.xpi content components defaults locale modules chrome.manifest install.rdf
 	mv prosthesis/b2g-prosthesis@mozilla.org.xpi addon/template/profile/extensions
+
+# The 'prosthesis' target was folded into the 'profile' target, so it is just
+# an alias to that target now.
+prosthesis: profile
 
 b2g:
 	python build/make-b2g.py $(B2G_TYPE_ARG) $(B2G_PLATFORM_ARG) $(B2G_ID_ARG) $(B2G_URL_ARG)
 
+# We used to store the binaries in the B2G_PLATFORM/ directory, whereas
+# now we store them in B2G_PLATFORM/adb/, which happens to be the same
+# as the names of the executables on Mac and Linux; so we need to remove
+# the executables from B2G_PLATFORM/ before creating B2G_PLATFORM/adb/.
 adb:
-	# We used to store the binaries in the B2G_PLATFORM/ directory, whereas
-	# now we store them in B2G_PLATFORM/adb/, which happens to be the same
-	# as the names of the executables on Mac and Linux; so we need to remove
-	# the executables from B2G_PLATFORM/ before creating B2G_PLATFORM/adb/.
 	mkdir -p addon/data/$(B2G_PLATFORM)
 	cd addon/data/$(B2G_PLATFORM) && rm -rf adb $(ADB_BINARIES)
 	mkdir addon/data/$(B2G_PLATFORM)/adb
-	$(DOWNLOAD_CMD) $(ADB_URL)
+	if [ ! -f $(ADB_PACKAGE) ]; then \
+	  $(DOWNLOAD_CMD) $(ADB_URL); \
+	fi;
 	unzip $(ADB_PACKAGE) -d addon/data/$(B2G_PLATFORM)/adb
 
 locales:
@@ -184,12 +189,13 @@ test:
 help:
 	@echo 'Targets:'
 	@echo "  build: [default] build, download, install everything;\n"\
-	"         combines the profile, prosthesis, b2g, and adb make targets"
-	@echo '  profile: make the Gaia profile'
-	@echo '  prosthesis: make the prosthesis addon that enhances B2G'
+	"         combines the profile, b2g, and adb make targets"
+	@echo '  clean: remove files created during the build process'
+	@echo '  profile: make the Gaia profile and its prosthesis addon'
 	@echo '  b2g: download and install B2G'
 	@echo '  adb: download and install ADB'
+	@echo '  locales: pull/update l10n repositories for specified locales'
 	@echo '  run: start Firefox with the addon installed into a new profile'
 	@echo '  package: package the addon into a XPI'
-	@echo '  clean: remove files created during the build process'
+	@echo '  test: run automated tests'
 	@echo '  help: show this message'
