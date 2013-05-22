@@ -18,7 +18,8 @@ let SimulatorActor = function SimulatorActor(aConnection) {
 
   Services.obs.addObserver(this, "r2d2b2g:app-update", false);
   Services.obs.addObserver(this, "r2d2b2g:geolocation-start", false);
-}
+  Services.obs.addObserver(this, "r2d2b2g:geolocation-stop", false);
+};
 
 SimulatorActor.prototype = {
   actorPrefix: "simulator",
@@ -30,6 +31,9 @@ SimulatorActor.prototype = {
         break;
       case "r2d2b2g:geolocation-start":
         this.geolocationStart();
+        break;
+      case "r2d2b2g:geolocation-stop":
+        this.geolocationStop();
         break;
     }
   },
@@ -45,10 +49,18 @@ SimulatorActor.prototype = {
   },
 
   geolocationStart: function() {
-    this.debug("Simulator requesting current geolocation coordinates");
+    this.debug("Simulator requesting to start watching geolocation");
     this._connection.send({
       from: this.actorID,
       type: "geolocationStart"
+    });
+  },
+
+  geolocationStop: function() {
+    this.debug("Simulator requesting to stop watching geolocation");
+    this._connection.send({
+      from: this.actorID,
+      type: "geolocationStop"
     });
   },
 
