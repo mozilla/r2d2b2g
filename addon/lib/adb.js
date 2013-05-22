@@ -11,7 +11,7 @@
 // then it's a JavaScript Module.
 const COMMONJS = ("require" in this);
 
-let components;
+let components, subprocess, file, env;
 if (COMMONJS) {
   components = require("chrome").components;
 } else {
@@ -21,6 +21,30 @@ let Cc = components.classes;
 let Ci = components.interfaces;
 let Cu = components.utils;
 
+if (COMMONJS) {
+  subprocess = require("subprocess");
+  file = require("file");
+  env = require("api-utils/environment").env;
+} else {
+  Cu.import("chrome://b2g-remote/content/subprocess.jsm");
+  let { Loader, Require } =
+    Cu.import('resource://gre/modules/commonjs/toolkit/loader.js').Loader;
+
+  let loader = Loader({
+    paths: {
+      '': 'resource://gre/modules/commonjs/sdk/'
+    },
+    globals: { },
+    modules: { }
+  });
+
+  // This variable needs to be named something other than require or else
+  // the addon-sdk loader gets confused
+  let require_ = Require(loader);
+
+  file = require_("io/file");
+  env = require_("system/environment").env;
+}
 Cu.import("resource://gre/modules/Services.jsm");
 
 // When loaded as a CommonJS module, get the TextEncoder and TextDecoder
@@ -53,8 +77,13 @@ function debug(aStr) {
 }
 
 let ready = false;
+let didRunInitially = false;
+const psRegexNix = /.*? \d+ .*? .*? \d+\s+\d+ .*? .*? .*? .*? adb .*fork\-server/;
+const psRegexWin = /adb.exe.*/;
 
 this.ADB = {
+  get didRunInitially() didRunInitially,
+  set didRunInitially(newVal) { didRunInitially = newVal },
   get ready() ready,
   set ready(newVal) { ready = newVal },
 
@@ -113,25 +142,40 @@ this.ADB = {
   // We startup by launching adb in server mode, and setting
   // the tcp socket preference to |true|
   start: function adb_start() {
-    let process = Cc["@mozilla.org/process/util;1"]
-                    .createInstance(Ci.nsIProcess);
-    process.init(this._adb);
-    let params = ["start-server"];
-    let self = this;
-    process.runAsync(params, params.length, {
-      observe: function(aSubject, aTopic, aData) {
-        switch(aTopic) {
-          case "process-finished":
-            Services.prefs.setBoolPref("dom.mozTCPSocket.enabled", true);
-            Services.obs.notifyObservers(null, "adb-ready", null);
-            self.ready = true;
-            break;
-          case "process-failed":
-            self.ready = false;
-            break;
-         }
-       }
-    }, false);
+    let onSuccessfulStart = function onSuccessfulStart() {
+      Services.prefs.setBoolPref("dom.mozTCPSocket.enabled", true);
+      Services.obs.notifyObservers(null, "adb-ready", null);
+      self.ready = true;
+    };
+    this._isAdbRunning().then(
+      (function onSuccess(isAdbRunning) {
+        if (isAdbRunning) {
+          this.didRunInitially = false;
+          debug("Found ADB process running, not restarting");
+          onSuccessfulStart();
+          return;
+        }
+        debug("Didn't find ADB process running, restarting");
+
+        this.didRunInitially = true;
+        let process = Cc["@mozilla.org/process/util;1"]
+                        .createInstance(Ci.nsIProcess);
+        process.init(this._adb);
+        let params = ["start-server"];
+        let self = this;
+        process.runAsync(params, params.length, {
+          observe: function(aSubject, aTopic, aData) {
+            switch(aTopic) {
+              case "process-finished":
+                onSuccessfulStart();
+                break;
+              case "process-failed":
+                self.ready = false;
+                break;
+             }
+           }
+        }, false);
+      }).bind(this));
   },
 
   /**
@@ -179,6 +223,55 @@ this.ADB = {
         }
       }, false);
     }
+  },
+
+  _isAdbRunning: function() {
+    let deferred = Promise.defer();
+
+    let ps, args;
+    let platform = Services.appinfo.OS;
+    if (platform === "WINNT") {
+      ps = "C:\\windows\\system32\\tasklist.exe";
+      args = [];
+    } else {
+      args = ["aux"];
+      let psCommand = "psi";
+
+      let paths = env.PATH.split(':');
+      let len = paths.length;
+      for (let i = 0; i < len; i++) {
+        let fullyQualified = file.join(paths[i], psCommand);
+        if (file.exists(fullyQualified)) {
+          ps = fullyQualified;
+          break;
+        }
+      }
+      if (!ps) {
+        debug("Error: a task list executable not found on filesystem");
+        deferred.resolve(false); // default to restart adb
+        return deferred.promise;
+      }
+    }
+
+    let buffer = [];
+
+    subprocess.call({
+      command: ps,
+      arguments: args,
+      stdout: function(data) {
+        buffer.push(data);
+      },
+      done: function() {
+        let lines = buffer.join('').split('\n');
+        let regex = (platform === "WINNT") ? psRegexWin : psRegexNix;
+        let isAdbRunning = lines.some(function(line) {
+          return regex.test(line);
+        });
+        deferred.resolve(isAdbRunning);
+      }
+    });
+
+    return deferred.promise;
   },
 
   // Creates a socket connected to the adb instance.
