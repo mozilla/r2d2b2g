@@ -14,7 +14,7 @@ const Windows = require("sdk/windows").browserWindows;
 const UUID = require("sdk/util/uuid");
 const File = require("file");
 const Prefs = require("preferences-service");
-const Request = require('request').Request;
+const Request = require('./request').Request;
 const SStorage = require("simple-storage");
 const WindowUtils = require("window/utils");
 const Timer = require("timer");
@@ -704,14 +704,12 @@ let simulator = module.exports = {
         var err = null;
         if (response.status != 200) {
           err = "Unexpected status code " + response.status;
-        } else if (!response.json) {
-          err = "Expected JSON response";
         } else {
           let contentType = response.headers["Content-Type"];
           if (!contentType) {
-            console.warn("No Content-Type for webapp manifest");
+            err = "No Content-Type for webapp manifest";
           } else if (contentType && contentType.split(";")[0].trim() != MANIFEST_CONTENT_TYPE) {
-            console.warn("Unexpected Content-Type " + contentType);
+            err = "Unexpected Content-Type " + contentType;
           }
         }
 
@@ -727,7 +725,7 @@ let simulator = module.exports = {
           });
         }
       }
-    }).get();
+    }).head();
   },
 
   addManifest: function({ manifestUrl, webapp, installOrigin, generated, receipt }) {
