@@ -95,8 +95,8 @@ function simulatorAppUpdate() {
   let wm = shell.contentBrowser.contentWindow.wrappedJSObject.
            WindowManager;
 
+  debug("request app reinstall");
   let origin = wm.getCurrentDisplayedApp().origin;
-
   Services.obs.notifyObservers({
     wrappedJSObject: {
       origin: origin,

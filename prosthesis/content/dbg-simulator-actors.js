@@ -159,6 +159,8 @@ SimulatorActor.prototype = {
         }
       },
       tryAppReloadByOrigin: function(origin, cb) {
+        debug("RUNAPP: clear all appCache entries");
+        Services.cache.evictEntries(Ci.nsICache.STORE_OFFLINE);
         debug("RUNAPP: tryAppReloadByOrigin - " + origin);
         try {
           if (WindowManager.getRunningApps()[origin] &&
