@@ -130,7 +130,6 @@ SimulatorScreen.prototype = {
     let globalScreen = GlobalSimulatorScreen;
 
     let nodePrincipal = this.nodePrincipal = aWindow.document.nodePrincipal;
-    let origin = nodePrincipal.origin;
 
     let els = Cc["@mozilla.org/eventlistenerservice;1"].
               getService(Ci.nsIEventListenerService);
@@ -203,16 +202,19 @@ SimulatorScreen.prototype = {
       },
 
       mozLockOrientation: function(orientation) {
-        if (nodePrincipal.appStatus == nodePrincipal.APP_STATUS_NOT_INSTALLED &&
+        // WORKAROUND: regression on "b2g-18.0.2013-05-22":
+        //      gaia system app nodePrincipal.appStatus = 0
+        if (nodePrincipal.origin != "app://system.gaiamobile.org" &&
+            nodePrincipal.appStatus == nodePrincipal.APP_STATUS_NOT_INSTALLED &&
             !aWindow.document.mozFullScreen) {
           // NOTE: refused lock because app is not installed and
           // it's not in fullscreen mode
-          Cu.reportError("deny mozLockOrientation:", origin,
+          Cu.reportError("deny mozLockOrientation:", nodePrincipal.origin,
                 "is not installed or in fullscreen mode.");
           return false;
         }
 
-        debug("mozLockOrientation:", orientation, "from", origin);
+        debug("mozLockOrientation:", orientation, "from", nodePrincipal.origin);
         let changed = orientation !== globalScreen.mozOrientation;
 
         if (orientation.match(/^portrait/)) {
