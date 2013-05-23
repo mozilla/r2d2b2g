@@ -44,12 +44,17 @@
   <commandset id="mainCommandSet">
     <command id="quitSimulatorCmd" oncommand="goQuitApplication()"/>
     <command id="refreshAppCmd" oncommand="simulatorAppUpdate()"/>
+    <command id="refreshAppAndClearAppCacheCmd" oncommand="simulatorAppUpdate(true)"/>
   </commandset>
   <keyset id="mainKeyset">
     <key id="refreshAppKey"
          modifiers="accel"
          key="&refreshAppKey.key;"
          command="refreshAppCmd"/>
+    <key id="refreshAppAndClearAppCacheKey"
+         modifiers="shift accel"
+         key="&refreshAppKey.key;"
+         command="refreshAppAndClearAppCacheCmd"/>
   </keyset>
   <menubar id="mainMenubar">
     <menu id="appMenu" label="&appMenu.label;" accesskey="&appMenu.accesskey;">
@@ -59,6 +64,11 @@
                   key="refreshAppKey"
                   accesskey="&refreshAppItem.accesskey;"
                   command="refreshAppCmd"/>
+        <menuitem id="refreshAppItem"
+                  label="&refreshAppAndClearAppCacheItem.label;"
+                  key="refreshAppAndClearAppCacheKey"
+                  accesskey="&refreshAppAndClearAppCacheItem.accesskey;"
+                  command="refreshAppAndClearAppCacheCmd"/>
       </menupopup>
     </menu>
   </menubar>

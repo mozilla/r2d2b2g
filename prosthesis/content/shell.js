@@ -91,16 +91,44 @@ document.getElementById("rotateButton").addEventListener("click", function() {
           .addEventListener("click", openWin);
 }
 
-function simulatorAppUpdate() {
+function simulatorAppUpdate(clearAppCache) {
   let wm = shell.contentBrowser.contentWindow.wrappedJSObject.
            WindowManager;
-
-  debug("request app reinstall");
   let origin = wm.getCurrentDisplayedApp().origin;
+  let appId = DOMApplicationRegistry._appId(origin);
+
+  if (clearAppCache) {
+    debug("clear all associated appCache entries: " + origin);
+    simulatorClearAppCache(appId);
+  }
+
+  debug("request app reinstall:" + origin);
   Services.obs.notifyObservers({
     wrappedJSObject: {
       origin: origin,
       appId: DOMApplicationRegistry._appId(origin)
     }
   }, "r2d2b2g:app-update", null);
+}
+
+function simulatorClearAppCache(appId) {
+    let localId = DOMApplicationRegistry.webapps[appId].localId;
+
+    if (!localId) {
+        return;
+    }
+
+    try {
+        let cacheService = Cc["@mozilla.org/network/application-cache-service;1"].
+            getService(Ci.nsIApplicationCacheService);
+        cacheService.discardByAppId(localId, false);
+    } catch(e) {
+        // NOTE: currently cacheService.discardByAppId always raise an expection
+        // even if it's working correctly (and cache entries are refreshed on app
+        // window reload)
+        // EXCEPTION on localId NNNN: [Exception... "Component returned failure code: 0x8000ffff \
+        // (NS_ERROR_UNEXPECTED) [nsIApplicationCacheService.discardByAppId]" \
+        // nsresult: "0x8000ffff (NS_ERROR_UNEXPECTED)" ...
+        // debug("EXCEPTION on localId " + localId + ": " + e);
+    }
 }
