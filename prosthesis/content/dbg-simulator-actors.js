@@ -102,10 +102,16 @@ SimulatorActor.prototype = {
     let appId = aRequest.appId;
 
     if (!DOMApplicationRegistry.webapps[appId]) {
-      return { success: false, error: 'app-not-installed', message: 'App not installed.'}
+      return { success: false, error: 'app-not-installed', message: 'App not installed.'};
     }
 
     let appOrigin = DOMApplicationRegistry.webapps[appId].origin;
+    let localId = DOMApplicationRegistry.webapps[appId].localId;
+
+    if (localId) {
+      debug("RUNAPP: clear all associated appCache entries");
+      DOMApplicationRegistry._clearPrivateData(localId, false);
+    }
 
     let debug = this.debug.bind(this);
 
@@ -159,8 +165,6 @@ SimulatorActor.prototype = {
         }
       },
       tryAppReloadByOrigin: function(origin, cb) {
-        debug("RUNAPP: clear all appCache entries");
-        Services.cache.evictEntries(Ci.nsICache.STORE_OFFLINE);
         debug("RUNAPP: tryAppReloadByOrigin - " + origin);
         try {
           if (WindowManager.getRunningApps()[origin] &&
