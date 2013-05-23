@@ -16,7 +16,6 @@ const { EventTarget } = require("sdk/event/target");
 const { Class } = require("sdk/core/heritage");
 const { XMLHttpRequest } = require("sdk/net/xhr");
 const apiUtils = require("sdk/deprecated/api-utils");
-const { isValidURI } = require("url.js");
 
 const response = ns();
 const request = ns();
@@ -25,9 +24,8 @@ const request = ns();
 // reuse it.
 const { validateOptions, validateSingleOption } = new OptionsValidator({
   url: {
-    // Also converts a URL instance to string, bug 857902
-    map: function (url) url.toString(),
-    ok: isValidURI
+    //XXXzpao should probably verify that url is a valid url as well
+    is:  ["string"]
   },
   headers: {
     map: function (v) v || {},
@@ -74,8 +72,6 @@ function runRequest(mode, target) {
 
   // open the request
   xhr.open(mode, url);
-
-  xhr.forceAllowThirdPartyCookie();
 
   // request header must be set after open, but before send
   xhr.setRequestHeader("Content-Type", contentType);
