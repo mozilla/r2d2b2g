@@ -845,10 +845,13 @@ let simulator = module.exports = {
 
     // NOTE: add errors/warnings for name and icons manifest attributes
     //       and updates name and icon attributes on the registered app object
-    simulator._validateNameIcons(app.validation.errors, app.validation.warnings,
-                                 app.manifest, app);
-    // NOTE: add errors/warnings for WebAPIs not supported by the simulator
-    simulator._validateWebAPIs(app.validation.errors, app.validation.warnings,
+    Validator.validateNameIcons(app.validation.errors, app.validation.warnings,
+                                app.manifest, app);
+    Validator.validatePermissions(app.validation.errors, app.validation.warnings,
+                                  app.manifest);
+    Validator.validateType(app.validation.errors, app.validation.warnings,
+                           app.manifest, app);
+    Validator.validateManifest(app.validation.errors, app.validation.warnings,
                                app.manifest);
 
     // Appcache checks
@@ -860,101 +863,13 @@ let simulator = module.exports = {
       app.validation.warnings.push("Packaged apps don't support appcache");
     }
 
-    if (["generated", "hosted"].indexOf(app.type) !== -1 &&
-        ["certified", "privileged"].indexOf(app.manifest.type) !== -1) {
-      app.validation.errors.push("Hosted App can't be type '" + app.manifest.type + "'.");
-      if (typeof next === "function") {
-        // NOTE: blocking error
-        next(Error("Invalid Manifest."), app);
-        return;
-      }
-    } else {
-      app.validation.running = true;
-      simulator.run(function (error) {
-        // on error running b2g-desktop, reports error and exits
-        if (error) {
-          if (typeof next === "function") {
-            app.validation.errors.push("Unable to complete manifest validation: " +
-                                       error);
-            next(Error("Unable to complete manifest validation."), app);
-          }
-          return;
-        }
-
-        simulator.remoteSimulator.validateManifest(app.manifest, function (reply) {
-          app.validation.running = false;
-          console.debug("VALIDATE REPLY: ", JSON.stringify(reply, null, 2));
-          if (reply.error) {
-            app.validation.errors.push("Unable to complete manifest validation: " +
-                                       reply.error);
-            next(Error("Unable to complete manifest validation."), app);
-            return;
-          }
-          if (!reply.success && reply.errors && reply.errors.length > 0) {
-            // concatenate validation errors as warnings (non-blocking errors)
-            app.validation.warnings = app.validation.warnings.
-              concat(reply.errors);
-          }
-          // check if there's any validation error
-          if (typeof next === "function") {
-            if (app.validation.errors.length === 0) {
-              next(null, app);
-            } else {
-              next(Error("Invalid Manifest."), app);
-            }
-          }
-        });
-      });
-    }
-  },
-
-  _validateNameIcons: function(errors, warnings, manifest, app) {
-      if (!manifest.name) {
-        errors.push("Missing mandatory 'name' in Manifest.");
-      }
-
-      if (!manifest.icons || Object.keys(manifest.icons).length == 0) {
-        warnings.push("Missing 'icons' in Manifest.");
+    // check if there's any validation error
+    if (typeof next === "function") {
+      if (app.validation.errors.length === 0) {
+        next(null, app);
       } else {
-        // update registered app icon
-        let size = Object.keys(manifest.icons).sort(function(a, b) b - a)[0] || null;
-        if (size) {
-          app.icon = manifest.icons[size];
-        }
-
-        // NOTE: add warnins if 128x128 icon is missing
-        if (! manifest.icons["128"]) {
-          warnings.push("app submission to the Marketplace needs at least an 128 icon");
-        }
+        next(Error("Invalid Manifest."), app);
       }
-
-      // update name visible in the dashboard
-      app.name = manifest.name;
-  },
-
-  _validateWebAPIs: function(errors, warnings, manifest) {
-    // certified app are not fully supported on the simulator
-    if (manifest.type === "certified") {
-      warnings.push("'certified' apps are not fully supported on the Simulator");
-    }
-
-    if (!manifest.permissions) {
-      return warnings;
-    }
-
-    let permissions = Object.keys(manifest.permissions);
-    let formatMessage = function (apiName) {
-      return "WebAPI '"+ apiName + "' is not currently supported on the Simulator";
-    };
-
-    // WebSMS is not currently supported on the simulator
-    if (permissions.indexOf("sms") > -1) {
-      warnings.push(formatMessage("WebSMS"));
-    }
-
-    // WebTelephony is not currently supported on the simulator
-    if (permissions.indexOf("telephony") > -1) {
-      warnings.push(formatMessage("WebTelephony"));
     }
   },
 
