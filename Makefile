@@ -142,8 +142,8 @@ profile:
 	cp build/override-settings.json gaia/build/custom-settings.json
 	NOFTU=1 GAIA_APP_SRCDIRS=apps make -C gaia
 	python build/override-webapps.py
-	cd gaia/tools/extensions/desktop-helper/ && zip -r ../desktop-helper\@gaiamobile.org.xpi *
-	cd gaia/tools/extensions/activities/ && zip -r ../activities\@gaiamobile.org.xpi *
+	cd gaia/tools/extensions/desktop-helper/ && zip -r ../../../profile/extensions/desktop-helper\@gaiamobile.org.xpi *
+	cd gaia/tools/extensions/activities/ && zip -r ../../../profile/extensions/activities\@gaiamobile.org.xpi *
 	rm -rf gaia/profile/startupCache
 	rm -rf addon/template
 	mkdir -p addon/template
