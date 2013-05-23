@@ -106,15 +106,12 @@ SimulatorActor.prototype = {
     }
 
     let appOrigin = DOMApplicationRegistry.webapps[appId].origin;
-    let localId = DOMApplicationRegistry.webapps[appId].localId;
 
     let debug = this.debug.bind(this);
 
     let runnable = {
       run: function() {
         try {
-          runnable.cleanAppCache();
-
           runnable.waitHomescreenReady(function () {
             runnable.tryAppReloadByOrigin(appOrigin, function () {
               runnable.findAppByOrigin(appOrigin, function (e, app) {
@@ -135,26 +132,6 @@ SimulatorActor.prototype = {
           });
         } catch(e) {
           debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
-        }
-      },
-      cleanAppCache: function() {
-        if (!localId) {
-          return;
-        }
-
-        debug("RUNAPP: clear all associated appCache entries");
-        try {
-          let cacheService = Cc["@mozilla.org/network/application-cache-service;1"].
-          getService(Ci.nsIApplicationCacheService);
-          cacheService.discardByAppId(localId, false);
-        } catch(e) {
-          // NOTE: currently cacheService.discardByAppId always raise an expection
-          // even if it's working correctly (and cache entries are refreshed on app
-          // window reload)
-          // EXCEPTION on localId NNNN: [Exception... "Component returned failure code: 0x8000ffff \
-          // (NS_ERROR_UNEXPECTED) [nsIApplicationCacheService.discardByAppId]" \
-          // nsresult: "0x8000ffff (NS_ERROR_UNEXPECTED)" ...
-          // debug("EXCEPTION on localId " + localId + ": " + e);
         }
       },
       waitHomescreenReady: function(cb) {
