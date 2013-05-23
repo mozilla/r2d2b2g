@@ -221,83 +221,6 @@ SimulatorActor.prototype = {
     };
   },
 
-  onValidateManifest: function(aRequest) {
-    this.debug("simulator actor received 'validateManifest' command: " + JSON.stringify(aRequest));
-    let manifest = aRequest.manifest;
-    let appType = manifest.type || "web";
-
-    let errors = [];
-
-    if (["web", "privileged", "certified"].indexOf(appType) === -1) {
-      errors.push("Unknown app type: '" + appType + "'.");
-    }
-
-    let utils = {};
-    Cu.import("resource://gre/modules/AppsUtils.jsm", utils);
-    let valid = utils.AppsUtils.checkManifest(manifest, {});
-
-    if (!valid) {
-      errors.push("This app can't be installed on a production device "+
-                  "(AppsUtils.checkManifest return false).");
-    }
-
-    if (manifest.permissions) {
-      this._validateManifestPermissions(appType, manifest.permissions, errors);
-    }
-
-    if (errors.length > 0) {
-      return {
-        success: false,
-        errors: errors
-      };
-    }
-
-    return {
-      success: true
-    };
-  },
-
-  _validateManifestPermissions: function(appType, permissions, errors) {
-    let utils = {};
-    Cu.import("resource://gre/modules/PermissionsTable.jsm", utils);
-
-    let permissionsNames = Object.keys(permissions);
-
-    let appStatus;
-    // NOTE: If it isn't certified or privileged, it's appStatus "app"
-    // https://hg.mozilla.org/releases/mozilla-b2g18/file/d9278721eea1/dom/apps/src/PermissionsTable.jsm#l413
-    if (["privileged", "certified"].indexOf(appType) === -1) {
-      appStatus = "app";
-    } else {
-      appStatus = appType;
-    }
-
-    permissionsNames.forEach(function(pname) {
-      let permission = utils.PermissionsTable[pname];
-
-      if (permission) {
-        let permissionAction = permission[appStatus];
-        if (!permissionAction) {
-          errors.push("Ignored permission '" + pname + "' (invalid type '" + appType + "').");
-        } else if (permissionAction === Ci.nsIPermissionManager.DENY_ACTION) {
-          errors.push("Denied permission '" + pname + "' for type '" + appType + "'.");
-        } else {
-          let access = permissions[pname].access;
-          try {
-            if (access && utils.expandPermissions(pname, access).length === 0) {
-              errors.push("Invalid access '" + access + "' in permission '" + pname + "'.");
-            }
-          } catch(e) {
-            this.debug(["EXCEPTION:", e, e.fileName, e.lineNumber].join(' '));
-            errors.push("Invalid access '" + paccess + "' in permission '" + pname + "'.");
-          }
-        }
-      } else {
-        errors.push("Unknown permission '" + pname + "'.");
-      }
-    });
-  },
-
   onUninstallApp: function(aRequest) {
     this.debug("simulator actor received 'uninstallApp' command: " + aRequest.appId);
     let window = this.simulatorWindow;
@@ -384,7 +307,6 @@ SimulatorActor.prototype.requestTypes = {
   "getBuildID": SimulatorActor.prototype.onGetBuildID,
   "runApp": SimulatorActor.prototype.onRunApp,
   "uninstallApp": SimulatorActor.prototype.onUninstallApp,
-  "validateManifest": SimulatorActor.prototype.onValidateManifest,
   "showNotification": SimulatorActor.prototype.onShowNotification,
   "geolocationUpdate": SimulatorActor.prototype.onGeolocationUpdate,
 };

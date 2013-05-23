@@ -5,15 +5,16 @@
 
 const { Ci, Cu, Cr } = require("chrome");
 
-const AppsUtils = Cu.import("resource://gre/modules/AppsUtils.jsm");
+const { AppsUtils, ManifestHelper } = Cu.import("resource://gre/modules/AppsUtils.jsm");
 const { Services } = Cu.import("resource://gre/modules/Services.jsm");
+const { PermissionsTable, expandPermissions } = Cu.import("resource://gre/modules/PermissionsTable.jsm");
 const { defer } = require('sdk/core/promise');
 
 exports.validateAppCache = function(errors, warnings, rawManifest, origin) {
   let deferred = defer();
 
   // Use ManifestHelper to normalize and retrieve the absolute appcache URI
-  let manifest = new AppsUtils.ManifestHelper(rawManifest, origin);
+  let manifest = new ManifestHelper(rawManifest, origin);
   if (!manifest.appcache_path) {
     deferred.resolve();
     return deferred.promise;
@@ -101,3 +102,107 @@ ChannelListener.prototype = {
     throw Cr.NS_ERROR_NO_INTERFACE;
   }
 };
+
+
+exports.validateNameIcons = function(errors, warnings, manifest, app) {
+  if (!manifest.name) {
+    errors.push("Missing mandatory 'name' in Manifest.");
+  }
+  // update name visible in the dashboard
+  app.name = manifest.name;
+
+  if (!manifest.icons || Object.keys(manifest.icons).length == 0) {
+    warnings.push("Missing 'icons' in Manifest.");
+  } else {
+    // update registered app icon
+    let size = Object.keys(manifest.icons).sort(function(a, b) b - a)[0] || null;
+    if (size) {
+      app.icon = manifest.icons[size];
+    }
+
+    // NOTE: add warnings if 128x128 icon is missing
+    if (!manifest.icons["128"]) {
+      warnings.push("app submission to the Marketplace needs at least an 128 icon");
+    }
+  }
+}
+
+exports.validateManifest = function (errors, warnings, manifest) {
+  let valid = AppsUtils.checkManifest(manifest, {});
+
+  if (!valid) {
+    errors.push("This app can't be installed on a production device "+
+                "(AppsUtils.checkManifest return false).");
+  }
+}
+
+exports.validateType = function (errors, warnings, manifest, app) {
+  let appType = manifest.type || "web";
+  if (["web", "privileged", "certified"].indexOf(appType) === -1) {
+    errors.push("Unknown app type: '" + appType + "'.");
+  } else if (["generated", "hosted"].indexOf(app.type) !== -1 &&
+             ["certified", "privileged"].indexOf(manifest.type) !== -1) {
+    errors.push("Hosted App can't be type '" + manifest.type + "'.");
+  }
+
+  // certified app are not fully supported on the simulator
+  if (manifest.type === "certified") {
+    warnings.push("'certified' apps are not fully supported on the Simulator.");
+  }
+}
+
+exports.validatePermissions = function(errors, warnings, manifest) {
+  if (!manifest.permissions) {
+    return;
+  }
+
+  let permissionsNames = Object.keys(manifest.permissions);
+
+  let formatMessage = function (apiName) {
+    return "WebAPI '"+ apiName + "' is not currently supported on the Simulator";
+  };
+
+  // WebSMS is not currently supported on the simulator
+  if (permissionsNames.indexOf("sms") > -1) {
+    warnings.push(formatMessage("WebSMS"));
+  }
+
+  // WebTelephony is not currently supported on the simulator
+  if (permissionsNames.indexOf("telephony") > -1) {
+    warnings.push(formatMessage("WebTelephony"));
+  }
+
+  let appType = manifest.type || "web";
+  let appStatus;
+  // NOTE: If it isn't certified or privileged, it's appStatus "app"
+  // https://hg.mozilla.org/releases/mozilla-b2g18/file/d9278721eea1/dom/apps/src/PermissionsTable.jsm#l413
+  if (["privileged", "certified"].indexOf(appType) === -1) {
+    appStatus = "app";
+  } else {
+    appStatus = appType;
+  }
+
+  permissionsNames.forEach(function(name) {
+    let permission = PermissionsTable[name];
+
+    if (permission) {
+      let permissionAction = permission[appStatus];
+      if (!permissionAction) {
+        errors.push("Ignored permission '" + name + "' (invalid app type '" + appType + "').");
+      } else if (permissionAction === Ci.nsIPermissionManager.DENY_ACTION) {
+        errors.push("Denied permission '" + name + "' for app type '" + appType + "'.");
+      } else {
+        let access = manifest.permissions[name].access;
+        try {
+          if (access && expandPermissions(name, access).length === 0) {
+            errors.push("Invalid access '" + access + "' in permission '" + name + "'.");
+          }
+        } catch(e) {
+          errors.push("Invalid access '" + access + "' in permission '" + name + "'.");
+        }
+      }
+    } else {
+      errors.push("Unknown permission '" + name + "'.");
+    }
+  });
+}
