@@ -25,7 +25,3 @@
 <!ENTITY refreshAppItem.label                      "Refresh">
 <!ENTITY refreshAppItem.accesskey                  "R">
 <!ENTITY refreshAppKey.key                         "R">
-
-<!ENTITY refreshAppAndClearAppCacheItem.label                      "Refresh and Clear AppCache">
-<!ENTITY refreshAppAndClearAppCacheItem.accesskey                  "C">
-<!ENTITY refreshAppAndClearAppCacheItem.key                         "R">

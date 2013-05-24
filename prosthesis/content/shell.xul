@@ -64,11 +64,6 @@
                   key="refreshAppKey"
                   accesskey="&refreshAppItem.accesskey;"
                   command="refreshAppCmd"/>
-        <menuitem id="refreshAppItem"
-                  label="&refreshAppAndClearAppCacheItem.label;"
-                  key="refreshAppAndClearAppCacheKey"
-                  accesskey="&refreshAppAndClearAppCacheItem.accesskey;"
-                  command="refreshAppAndClearAppCacheCmd"/>
       </menupopup>
     </menu>
   </menubar>
