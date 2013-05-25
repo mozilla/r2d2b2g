@@ -275,7 +275,7 @@ WebappsActor.prototype = {
 
       if (missing) {
         try {
-          aDir.remove(true);
+          appDir.remove(true);
         } catch(e) {}
         return { error: "badParameterType",
                  message: "hosted app file is missing" }
