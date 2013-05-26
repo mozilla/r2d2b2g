@@ -23,6 +23,7 @@ const { rootURI: ROOT_URI } = require('@loader/options');
 const PROFILE_URL = ROOT_URI + "profile/";
 
 const PingbackServer = require("pingback-server");
+const Scratchpad = require("remote-scratchpad");
 
 // import debuggerSocketConnect and DebuggerClient
 const dbgClient = Cu.import("resource://gre/modules/devtools/dbg-client.jsm");
@@ -97,7 +98,8 @@ const RemoteSimulatorClient = Class({
           tabs: reply.tabs,
           selected: reply.selected,
           simulator: reply.simulatorActor,
-          webapps: reply.simulatorWebappsActor
+          webapps: reply.simulatorWebappsActor,
+          scratchpad: reply.scratchpadActor
         });
       }).bind(this));
     });
@@ -334,6 +336,23 @@ const RemoteSimulatorClient = Class({
                                 },
                                 onResponse);
   },
+
+  // BEGIN remote scratchpad helpers
+  openScratchpad: function() {
+    return Scratchpad({open: this.openScratchpad.bind(this),
+                       client: this});
+  },
+
+  evalInSandbox: function(text, context, uniqueName, onResponse) {
+    this._remote.client.request({to: this._remote.scratchpad,
+                                 context: context,
+                                 uniqueName: uniqueName,
+                                 text: text,
+                                 type: "evalInSandbox"},
+                                onResponse);
+  },
+
+  // END remote scratchpad helpers
 
   // send a ping request to the remote simulator actor
   ping: function(onResponse) {

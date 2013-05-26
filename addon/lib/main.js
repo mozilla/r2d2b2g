@@ -188,6 +188,15 @@ Gcli.addCommand({
   },
 });
 
+Gcli.addCommand({
+  name: "firefoxos scratchpad",
+  description: "...",
+  params: [],
+  exec: function(args, context) {
+    Simulator.remoteSimulator.openScratchpad();
+  },
+});
+
 let PermissionSettings;
 try {
   PermissionSettings =
