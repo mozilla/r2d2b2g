@@ -1088,7 +1088,8 @@ let simulator = module.exports = {
         });
 
         if (!foundAppKey) {
-          simulator.remoteSimulator.showNotification("App not updated (not found)");
+          console.log("Sending appNotFound: " + appId);
+          simulator.remoteSimulator.appNotFound(appId);
         }
 
         simulator.updateApp(foundAppKey, function next(error, app) {

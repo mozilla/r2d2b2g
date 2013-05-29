@@ -93,13 +93,11 @@ SimulatorActor.prototype = {
     };
   },
 
-  onRunApp: function(aRequest) {
-    this.debug("simulator actor received a 'runApp' command:" + aRequest.appId);
+  _runApp: function(appId) {
     let window = this.simulatorWindow;
     let homescreen = XPCNativeWrapper.unwrap(this.homescreenWindow);
     let WindowManager = homescreen.WindowManager;
     let DOMApplicationRegistry = window.DOMApplicationRegistry;
-    let appId = aRequest.appId;
 
     if (!DOMApplicationRegistry.webapps[appId]) {
       return { success: false, error: 'app-not-installed', message: 'App not installed.'};
@@ -215,6 +213,14 @@ SimulatorActor.prototype = {
 
     Services.tm.currentThread.dispatch(runnable,
                                        Ci.nsIThread.DISPATCH_NORMAL);
+  },
+
+  onRunApp: function(aRequest) {
+    this.debug("simulator actor received a 'runApp' command:" + aRequest.appId);
+    let appId = aRequest.appId;
+
+    this._runApp(appId);
+
     return {
       message: "runApp request received: " + appOrigin,
       success: true
@@ -261,10 +267,117 @@ SimulatorActor.prototype = {
     };
   },
 
+  // ensure that an app can be installed by examining the Content-Type
+  // header returned by HEAD request to the manifestURL
+  _ensureInstallable: function(manifestURL, cbs) {
+    const MANIFEST_REGEX = /Content\-Type: application\/x\-web\-app\-manifest\+json/;
+
+    var httpreq = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
+      .createInstance();
+    httpreq.open('HEAD', manifestURL, true);
+    httpreq.send('');
+    httpreq.onreadystatechange = function() {
+      let rawHeaders = httpreq.getAllResponseHeaders() || "";
+
+      if (httpreq.readyState !== 4) {
+        return;
+      }
+
+      if (MANIFEST_REGEX.test(rawHeaders)) {
+        cbs.onGoodContentType();
+      } else {
+        cbs.onBadContentType();
+      }
+    };
+  },
+
+  onAppNotFound: function(aRequest) {
+    let appId = aRequest.appId;
+    let window = this.simulatorWindow;
+    let DOMApplicationRegistry = window.DOMApplicationRegistry;
+    let app = DOMApplicationRegistry.webapps[appId];
+
+    if (!app) {
+      this._displayNotification("App not updated (not found)");
+      return {};
+    }
+
+    let manifestURL = app.manifestURL;
+    let origin = app.origin;
+    if (!origin || !manifestURL) {
+      this._displayNotification("App not updated (not found)");
+      return {};
+    }
+
+    let actor = this;
+    let debug = this.debug.bind(this);
+    this._ensureInstallable(manifestURL, {
+
+      onBadContentType: function() {
+        debug("incorrect content-type");
+        actor._displayNotification("App not updated (not found)");
+      },
+
+      onGoodContentType: function() {
+        // Uninstall
+        try {
+          let mgmt = window.navigator.mozApps.mgmt;
+          let req = mgmt.uninstall({origin: origin});
+          req.onerror = function () {
+            actor._displayNotification("App not updated (uninstallation failed)");
+          }
+          req.onsuccess = function () {
+            // Purge app cache
+            try {
+              // This seems to legitamtely fail
+              // (not actually flush the cache) if an app is:
+              //    1. Installed from the dashboard
+              //    2. Removed from the dashboard
+              //    3. Installed from outside of the dash
+              //    4. (then refreshed to get to this call)
+              Components.classes
+                ["@mozilla.org/network/application-cache-service;1"]
+                .getService(Components.interfaces.nsIApplicationCacheService)
+                .discardByAppId(appId, false);
+            } catch(e) {
+              // This error is always thrown even if cacheService.discardByAppId
+              // is working. See:
+              // https://github.com/mozilla/r2d2b2g/pull/556#issuecomment-18351200
+            }
+
+            // Re-install
+            let req_ = window.navigator.mozApps.install(manifestURL);
+            req_.onerror = function () {
+              debug("install request error:" + this.error.name);
+              actor._displayNotification("App not updated (installation failed)");
+            };
+            req_.onsuccess = function () {
+              debug("Refresh successful");
+              let appId_ = DOMApplicationRegistry._appId(this.result.origin);
+              actor._runApp.call(actor, appId_);
+            };
+          };
+        } catch(e) {
+          actor._displayNotification("App not updated (uninstallation failed)");
+          Cu.reportError(e);
+        }
+      }
+   });
+
+    return {
+      message: "appNotFound received",
+      success: true
+    };
+  },
+
+  _displayNotification: function(message) {
+    let window = this.simulatorWindow;
+    window.AlertsHelper.showNotification(null, "Simulator", message);
+  },
+
   onShowNotification: function (aRequest) {
     this.debug("simulator actor received a 'showNotification' command");
-    let window = this.simulatorWindow;
-    window.AlertsHelper.showNotification(null, "Simulator", aRequest.userMessage);
+    this._displayNotification(aRequest.userMessage);
 
     return {
       message: "showNotification request received",
@@ -308,6 +421,7 @@ SimulatorActor.prototype.requestTypes = {
   "getBuildID": SimulatorActor.prototype.onGetBuildID,
   "runApp": SimulatorActor.prototype.onRunApp,
   "uninstallApp": SimulatorActor.prototype.onUninstallApp,
+  "appNotFound": SimulatorActor.prototype.onAppNotFound,
   "showNotification": SimulatorActor.prototype.onShowNotification,
   "geolocationUpdate": SimulatorActor.prototype.onGeolocationUpdate,
 };
