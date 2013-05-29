@@ -102,7 +102,7 @@ SimulatorActor.prototype = {
     let appId = aRequest.appId;
 
     if (!DOMApplicationRegistry.webapps[appId]) {
-      return { success: false, error: 'app-not-installed', message: 'App not installed.'}
+      return { success: false, error: 'app-not-installed', message: 'App not installed.'};
     }
 
     let appOrigin = DOMApplicationRegistry.webapps[appId].origin;
