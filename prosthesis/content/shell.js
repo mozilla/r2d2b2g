@@ -112,23 +112,22 @@ function simulatorAppUpdate(clearAppCache) {
 }
 
 function simulatorClearAppCache(appId) {
-    let localId = DOMApplicationRegistry.webapps[appId].localId;
+  let localId = DOMApplicationRegistry.webapps[appId].localId;
 
-    if (!localId) {
-        return;
-    }
+  if (!localId) {
+    return;
+  }
 
-    try {
-        let cacheService = Cc["@mozilla.org/network/application-cache-service;1"].
-            getService(Ci.nsIApplicationCacheService);
-        cacheService.discardByAppId(localId, false);
-    } catch(e) {
-        // NOTE: currently cacheService.discardByAppId always raise an expection
-        // even if it's working correctly (and cache entries are refreshed on app
-        // window reload)
-        // EXCEPTION on localId NNNN: [Exception... "Component returned failure code: 0x8000ffff \
-        // (NS_ERROR_UNEXPECTED) [nsIApplicationCacheService.discardByAppId]" \
-        // nsresult: "0x8000ffff (NS_ERROR_UNEXPECTED)" ...
-        // debug("EXCEPTION on localId " + localId + ": " + e);
-    }
+  try {
+    Cc["@mozilla.org/network/application-cache-service;1"].
+      getService(Ci.nsIApplicationCacheService).discardByAppId(localId, false);
+  } catch(e) {
+    // NOTE: currently cacheService.discardByAppId always raise an expection
+    // even if it's working correctly (and cache entries are refreshed on app
+    // window reload)
+    // EXCEPTION on localId NNNN: [Exception... "Component returned failure code: 0x8000ffff \
+    // (NS_ERROR_UNEXPECTED) [nsIApplicationCacheService.discardByAppId]" \
+    // nsresult: "0x8000ffff (NS_ERROR_UNEXPECTED)" ...
+    // debug("EXCEPTION on localId " + localId + ": " + e);
+  }
 }
