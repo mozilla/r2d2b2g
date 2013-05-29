@@ -81,7 +81,7 @@ let simulator = module.exports = {
       // before worker.detach, after which the main module calls sendListTabs(),
       // which tries to message the worker, by which time it's already frozen
       // and throws an exception.
-      worker = null;
+      this.worker = null;
     }
   },
 
@@ -166,16 +166,16 @@ let simulator = module.exports = {
         }
       };
       if (receiptType && receiptType !== "none") {
-        let manifestURL = "https://" + apps[manifestFile].xkey + ".simulator";
-        let self = this;
+        let app = apps[manifestFile];
+        let manifestURL = simulator.receiptManifestURL(app.type, app.xkey);
         this.fetchReceipt(manifestURL, receiptType, function(err, receipt) {
           if (err || !receipt) {
             delete apps[manifestFile];
             simulator.error("Error retrieving receipt. Please try adding the app again.");
             console.error(err || "No receipt");
           } else {
-            apps[manifestFile].receipt = receipt;
-            self.updateApp(manifestFile, next);
+            app.receipt = receipt;
+            simulator.updateApp(manifestFile, next);
           }
         });
       } else {
@@ -449,6 +449,36 @@ let simulator = module.exports = {
 
     if (this.worker) {
       this.sendListApps();
+    }
+  },
+
+  receiptManifestURL: function receiptManifestURL(appType, appOrigin) {
+    return appType === "local" ? "https://" + appOrigin + ".simulator" : appOrigin;
+  },
+
+  updateReceiptType: function updateReceiptType(appId, receiptType) {
+    let app = simulator.apps[appId];
+    let manifestURL = simulator.receiptManifestURL(app.type,
+                                                   app.origin || app.xkey);
+    let next = function next() {
+      simulator.sendListApps();
+      simulator.runApp(app);
+    };
+
+    if (receiptType === "none") {
+      app.receipt = null;
+      app.receiptType = receiptType;
+      simulator._updateApp(appId, simulator.sendListApps.bind(this));
+    } else {
+      simulator.fetchReceipt(manifestURL, receiptType, function fetched(err, receipt) {
+        if (err || !receipt) {
+          console.error(err || "No receipt");
+        } else {
+          app.receipt = receipt;
+          app.receiptType = receiptType;
+          simulator._updateApp(appId, simulator.sendListApps.bind(this));
+        }
+      }.bind(this));
     }
   },
 
@@ -896,7 +926,7 @@ let simulator = module.exports = {
     });
   },
 
-  openTab: function(url, lax) {
+  openTab: function(url, lax, cb) {
     for each (var tab in Tabs) {
       if (tab.url === url || (lax && tab.url.indexOf(url) === 0)) {
         tab.activate();
@@ -904,17 +934,20 @@ let simulator = module.exports = {
       }
     }
 
-    Windows.activeWindow.tabs.open({
-      url: url
-    });
+    let openArgs = { url: url };
+    if (typeof cb === "function") {
+      openArgs.onReady = cb;
+    }
+    Windows.activeWindow.tabs.open(openArgs);
   },
 
-  openHelperTab: function() {
+  openHelperTab: function(cb) {
     // Ensure opening only one simulator page
-    if (this.worker)
+    if (this.worker) {
       this.worker.tab.activate();
-    else
-      this.openTab(simulator.contentPage, true);
+    } else {
+      this.openTab(simulator.contentPage, true, cb);
+    }
   },
 
   closeHelperTab: function closeHelperTab() {
@@ -1228,6 +1261,13 @@ let simulator = module.exports = {
         break;
       case "pushAppToDevice":
         simulator.pushAppToDevice(message.id);
+        break;
+      case "updateReceiptType":
+        if (message.id && message.receiptType && (message.id in simulator.apps)) {
+          simulator.updateReceiptType(message.id, message.receiptType);
+        } else {
+          console.log("Simulator failed to update receipt type");
+        }
         break;
     }
   },

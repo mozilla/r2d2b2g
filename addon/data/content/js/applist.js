@@ -50,7 +50,7 @@ var AppList = (function() {
         app.id = id;
         var validationResult = 'OK';
         if (app.validation.errors.length > 0) {
-            validationResult = ''
+            validationResult = '';
         }
         if (app.lastUpdate) {
             app.prettyLastUpdate = timedelta(app.lastUpdate);
