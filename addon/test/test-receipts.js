@@ -57,14 +57,12 @@ function appFirstListed({ target, event, onInstall, onUpdate, equal }) {
 
 function updateReceipt(window) {
   return function() {
-    window.setTimeout(function () {
-      console.log("sending updateReceiptType");
-      window.postMessage({
-        name: "updateReceiptType",
-        id: MOCK_MANIFEST_URL,
-        receiptType: updatedReceiptType
-      }, "*");
-    }, 0);
+    console.log("sending updateReceiptType");
+    window.postMessage({
+      name: "updateReceiptType",
+      id: MOCK_MANIFEST_URL,
+      receiptType: updatedReceiptType
+    }, "*");
   }
 }
 
