@@ -297,6 +297,8 @@ SimulatorActor.prototype = {
     let DOMApplicationRegistry = window.DOMApplicationRegistry;
     let app = DOMApplicationRegistry.webapps[appId];
 
+    this.debug("AppNotFound: " + appId);
+
     if (!app) {
       this._displayNotification("App not updated (not found)");
       return {};

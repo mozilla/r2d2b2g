@@ -1088,7 +1088,6 @@ let simulator = module.exports = {
         });
 
         if (!foundAppKey) {
-          console.log("Sending appNotFound: " + appId);
           simulator.remoteSimulator.appNotFound(appId);
         }
 
