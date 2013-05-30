@@ -102,7 +102,7 @@ SimulatorActor.prototype = {
     let appId = aRequest.appId;
 
     if (!DOMApplicationRegistry.webapps[appId]) {
-      return { success: false, error: 'app-not-installed', message: 'App not installed.'}
+      return { success: false, error: 'app-not-installed', message: 'App not installed.'};
     }
 
     let appOrigin = DOMApplicationRegistry.webapps[appId].origin;
@@ -235,16 +235,17 @@ SimulatorActor.prototype = {
 
     this.debug("uninstalling app by origin:"+appOrigin);
 
+    let debug = this.debug.bind(this);
     let runnable = {
       run: function() {
         try {
           let mgmt = window.navigator.mozApps.mgmt;
           let req = mgmt.uninstall({origin: appOrigin});
           req.onsuccess = function () {
-            this.debug("uninstallApp success: " + req.result);
+            debug("uninstallApp success: " + req.result);
           }
           req.onerror = function () {
-            this.debug("uninstallApp error: " + req.error.name);
+            debug("uninstallApp error: " + req.error.name);
           }
         } catch(e) {
           Cu.reportError(e);
