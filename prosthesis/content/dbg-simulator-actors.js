@@ -4,7 +4,12 @@
 
 "use strict";
 
-Components.utils.import("resource://gre/modules/Services.jsm");
+let Cu = Components.utils;
+let Cc = Components.classes;
+let Ci = Components.interfaces;
+
+Cu.import("resource://gre/modules/Services.jsm");
+let { AppsUtils } = Cu.import("resource://gre/modules/AppsUtils.jsm");
 
 /**
   * Creates a SimulatorActor. SimulatorActor provides remote access to the
@@ -269,24 +274,24 @@ SimulatorActor.prototype = {
 
   // ensure that an app can be installed by examining the Content-Type
   // header returned by HEAD request to the manifestURL
-  _ensureInstallable: function(manifestURL, cbs) {
-    const MANIFEST_REGEX = /Content\-Type: application\/x\-web\-app\-manifest\+json/;
+  _ensureInstallable: function(app, onBadContentType, onGoodContentType) {
+    let { manifestURL, origin, installOrigin } = app;
 
-    var httpreq = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
-      .createInstance();
-    httpreq.open('HEAD', manifestURL, true);
-    httpreq.send('');
-    httpreq.onreadystatechange = function() {
-      let rawHeaders = httpreq.getAllResponseHeaders() || "";
-
-      if (httpreq.readyState !== 4) {
+    let req = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance();
+    req.open('HEAD', manifestURL, true);
+    req.send('');
+    req.onreadystatechange = function() {
+      if (req.readyState !== 4) {
         return;
       }
 
-      if (MANIFEST_REGEX.test(rawHeaders)) {
-        cbs.onGoodContentType();
+      let contentType = req.getResponseHeader("content-type");
+
+      if (AppsUtils.checkManifestContentType(installOrigin, origin, contentType) &&
+          manifestURL.indexOf('http://') === 0) {
+        onGoodContentType();
       } else {
-        cbs.onBadContentType();
+        onBadContentType(contentType);
       }
     };
   },
@@ -296,80 +301,76 @@ SimulatorActor.prototype = {
     let window = this.simulatorWindow;
     let DOMApplicationRegistry = window.DOMApplicationRegistry;
     let app = DOMApplicationRegistry.webapps[appId];
+    let receivedResponse = {
+      message: "appNotFound received",
+      success: true
+    };
 
     this.debug("AppNotFound: " + appId);
 
     if (!app) {
       this._displayNotification("App not updated (not found)");
-      return {};
+      return receivedResponse;
     }
 
     let manifestURL = app.manifestURL;
     let origin = app.origin;
-    if (!origin || !manifestURL) {
+    let installOrigin = app.installOrigin;
+    if (!origin || !manifestURL || !installOrigin) {
       this._displayNotification("App not updated (not found)");
-      return {};
+      return receivedResponse;
     }
 
-    let actor = this;
-    let debug = this.debug.bind(this);
-    this._ensureInstallable(manifestURL, {
+    this._ensureInstallable(app,
 
-      onBadContentType: function() {
-        debug("incorrect content-type");
-        actor._displayNotification("App not updated (not found)");
-      },
+      (function onBadContentType(contentType) {
+        this.debug("bad content-type: " + contentType);
+        this._displayNotification(
+          "App not reinstallable (bad content-type " + contentType + ")");
+      }).bind(this),
 
-      onGoodContentType: function() {
+      (function onGoodContentType() {
         // Uninstall
-        try {
-          let mgmt = window.navigator.mozApps.mgmt;
-          let req = mgmt.uninstall({origin: origin});
-          req.onerror = function () {
-            actor._displayNotification("App not updated (uninstallation failed)");
-          }
-          req.onsuccess = function () {
-            // Purge app cache
-            try {
-              // This seems to legitamtely fail
-              // (not actually flush the cache) if an app is:
-              //    1. Installed from the dashboard
-              //    2. Removed from the dashboard
-              //    3. Installed from outside of the dash
-              //    4. (then refreshed to get to this call)
-              Components.classes
-                ["@mozilla.org/network/application-cache-service;1"]
-                .getService(Components.interfaces.nsIApplicationCacheService)
-                .discardByAppId(appId, false);
-            } catch(e) {
-              // This error is always thrown even if cacheService.discardByAppId
-              // is working. See:
-              // https://github.com/mozilla/r2d2b2g/pull/556#issuecomment-18351200
-            }
-
-            // Re-install
-            let req_ = window.navigator.mozApps.install(manifestURL);
-            req_.onerror = function () {
-              debug("install request error:" + this.error.name);
-              actor._displayNotification("App not updated (installation failed)");
-            };
-            req_.onsuccess = function () {
-              debug("Refresh successful");
-              let appId_ = DOMApplicationRegistry._appId(this.result.origin);
-              actor._runApp.call(actor, appId_);
-            };
-          };
-        } catch(e) {
+        let actor = this;
+        let mgmt = window.navigator.mozApps.mgmt;
+        let uninstallReq = mgmt.uninstall({origin: origin});
+        uninstallReq.onerror = function onerror() {
           actor._displayNotification("App not updated (uninstallation failed)");
-          Cu.reportError(e);
         }
-      }
-   });
+        uninstallReq.onsuccess = function onsuccess() {
+          // Purge app cache
+          try {
+            // This seems to legitamtely fail
+            // (not actually flush the cache) if an app is:
+            //    1. Installed from the dashboard
+            //    2. Removed from the dashboard
+            //    3. Installed from outside of the dash
+            //    4. (then refreshed to get to this call)
+            Cc["@mozilla.org/network/application-cache-service;1"].
+              getService(Ci.nsIApplicationCacheService).
+              discardByAppId(appId, false);
+          } catch(e) {
+            // This error is always thrown even if cacheService.discardByAppId
+            // is working. See:
+            // https://github.com/mozilla/r2d2b2g/pull/556#issuecomment-18351200
+          }
 
-    return {
-      message: "appNotFound received",
-      success: true
-    };
+          // Re-install
+          let installReq = window.navigator.mozApps.install(manifestURL);
+          installReq.onerror = function onerror() {
+            actor.debug("install request error:" + this.error.name);
+            actor._displayNotification("App not updated (installation failed)");
+          };
+          installReq.onsuccess = function onsuccess() {
+            actor.debug("Refresh successful");
+            let appId = DOMApplicationRegistry.appId(this.result.origin);
+            actor._runApp.call(actor, appId);
+          };
+        };
+      }).bind(this)
+    );
+
+    return receivedResponse;
   },
 
   _displayNotification: function(message) {
