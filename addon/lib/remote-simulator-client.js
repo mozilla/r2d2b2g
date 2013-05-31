@@ -18,11 +18,10 @@ const Self = require("self");
 const URL = require("url");
 const Subprocess = require("subprocess");
 const Prefs = require("preferences-service");
+const { setTimeout, clearTimeout } = require("sdk/timers");
 
 const { rootURI: ROOT_URI } = require('@loader/options');
 const PROFILE_URL = ROOT_URI + "profile/";
-
-const PingbackServer = require("pingback-server");
 
 // import debuggerSocketConnect and DebuggerClient
 const dbgClient = Cu.import("resource://gre/modules/devtools/dbg-client.jsm");
@@ -52,35 +51,21 @@ const RemoteSimulatorClient = Class({
     EventTarget.prototype.initialize.call(this, options);
     this._hookInternalEvents();
   },
+
+  // Flags for connection state
+  // TODO: remove them when bug 800447 is fixed.
+  _clientConnecting: false,
+  _clientConnected: false,
+
   // check if b2g is running and connected
   get isConnected() this._clientConnected,
   // check if b2g is running
   get isRunning() !!this.process,
-  // check if b2g exited without reach a ready state
-  get isExitedWithoutReady() { return !this.process && !this._pingbackCompleted; },
+  // check if the remote is connected and fully initialized
+  // (means that we can start using the client!)
+  get isReady() !!this._remote,
 
   _hookInternalEvents: function () {
-    // NOTE: remote all listeners (currently disabled cause this function
-    //       will be called only once)
-    //off(this);
-
-    // on pingbackTimeout, emit a high level "timeout" event
-    // and kill the stalled instance
-    this.once("pingbackTimeout", function() {
-      this._pingbackCompleted = false;
-      this._clientConnecting = false;
-      emit(this, "timeout", null);
-      this.kill();
-    });
-
-    // on pingbackCompleted, track a completed pingback and start
-    // debugger protocol connection
-    this.on("pingbackCompleted", function() {
-      console.debug("rsc.onPingbackCompleted");
-      this._pingbackCompleted = true;
-      this.connectDebuggerClient();
-    });
-
     // on clientConnected, register an handler to close current connection 
     // on kill and send a "listTabs" debug protocol request, finally
     // emit a clientReady event on "listTabs" reply
@@ -114,28 +99,45 @@ const RemoteSimulatorClient = Class({
     // an high level "disconnected" event
     this.on("clientClosed", function () {
       console.debug("rsc.onClientClosed");
-      this._clientConnected = false;
       this._clientConnecting = false;
-      this._remote = null;
-      emit(this, "disconnected", null);
+      if (!this._clientConnected && this.process) {
+        // If the connection was closed before connection succeed,
+        // and the process is still alive, the attempt was rejected or timed out.
+        // We should keep trying to connect until we reach our own timeout.
+        let timeout = this._timeout || 30000;
+        if (new Date().getTime() - this._startConnectingTime < timeout) {
+          this.connectDebuggerClient();
+        }
+        else {
+          emit(this, "timeout", null);
+          this.kill();
+        }
+      }
+      else {
+        this._remote = null;
+        if (this._clientConnected) {
+          this._clientConnected = false;
+          emit(this, "disconnected", null);
+        }
+      }
     });
 
     this.on("stdout", function onStdout(data) console.log(data.trim()));
     this.on("stderr", function onStderr(data) console.error(data.trim()));
   },
 
-  // run({defaultApp: "Appname", pingbackTimeout: 15000})
+  // run({defaultApp: "Appname", timeout: 15000})
   // will spawn a b2g instance, optionally run an application
   // and change pingback timeout interval
   run: function (options) {
     if (options) {
       this._defaultApp = options.defaultApp;
-      this._pingbackTimeout = options.pingbackTimeout;
+      this._timeout = options.timeout;
       delete options.defaultApp;
       delete options.pingbackTimeout;
     } else {
       this._defaultApp = null;
-      this._pingbackTimeout = null;
+      this._timeout = null;
     }
 
     // resolve b2g binaries path (raise exception if not found)
@@ -145,11 +147,6 @@ const RemoteSimulatorClient = Class({
     if (this.process != null) {
       this.process.kill();
     }
-
-    // reset _pingbackCompleted flag
-    this._pingbackCompleted = false;
-    // start pingback timeout handler
-    this._startPingbackTimeout();
 
     this.once("stdout", function () {
       if (Runtime.OS == "Darwin") {
@@ -197,10 +194,14 @@ const RemoteSimulatorClient = Class({
         this.process = null;
         // NOTE: reset old allocated remoteDebuggerPort
         this.remoteDebuggerPort = null;
+        this._clientConnecting = false;
         this.shuttingDown = false;
         emit(this, "exit", result.exitCode);
       }).bind(this)
-    });    
+    });
+
+    this._startConnectingTime = new Date().getTime();
+    this.connectDebuggerClient();
   },
 
   // request a b2g instance kill and optionally execute a callback on exit
@@ -225,10 +226,20 @@ const RemoteSimulatorClient = Class({
     this._clientConnecting = true;
 
     let transport = debuggerSocketConnect("127.0.0.1", this.remoteDebuggerPort);
+    // Unbrick some rare connection attempts that ends up facing a race.
+    // In such scenario, the connection isn't refused but input-stream-pump
+    // component used in DebuggerTransport never gets its onStartRequest/onStopRequest
+    // methods called.
+    // We cancel attempts taking more than 3seconds to achieve.
+    let timeout = setTimeout((function () {
+      console.log("Killing stuck connection");
+      client.close();
+    }).bind(this), 1000);
 
     let client = new DebuggerClient(transport);
 
     client.addListener("closed", (function () {
+      clearTimeout(timeout);
       emit(this, "clientClosed", {client: client});
       this._stopGeolocation();
     }).bind(this));
@@ -239,6 +250,7 @@ const RemoteSimulatorClient = Class({
     this._registerAppUpdateRequest(client);
 
     client.connect((function () {
+      clearTimeout(timeout);
       emit(this, "clientConnected", {client: client});
     }).bind(this));
   },
@@ -425,7 +437,6 @@ const RemoteSimulatorClient = Class({
 
     // NOTE: push dbgport option on the b2g-desktop commandline
     args.push("-dbgport", ""+this.remoteDebuggerPort);
-    args.push("-pbport", ""+this.pingbackServerPort);
     
     if (this.jsConsoleEnabled) {
       args.push("-jsconsole");
@@ -439,38 +450,6 @@ const RemoteSimulatorClient = Class({
     args.push("-no-remote");
 
     return args;
-  },
-
-  /* pingback helpers */
-  _startPingbackTimeout: function () {
-    if(!!this._pingbackServer) {
-      // NOTE: max wait time e.g. 15s
-      this._pingbackServer.startTimeout(this._pingbackTimeout || 15000);
-    }
-  },
-
-  _stopPingbackTimeout: function () {
-    if(!!this._pingbackServer) {
-      this._pingbackServer.stopTimeout();
-    }
-  },
-  get pingbackServerPort() {
-    if (!this._pingbackServer) {
-      this._pingbackServer = new PingbackServer({
-        onCompleted: (function() {
-          this._stopPingbackTimeout();
-          emit(this, "pingbackCompleted", null);
-        }).bind(this),
-        onTimeout: (function() {
-          emit(this, "pingbackTimeout", null);
-        }).bind(this),
-        onExit: (function() {
-          emit(this, "pingbackExit", null);
-        }).bind(this)
-      });
-      this._pingbackServer.start();
-    }
-    return this._pingbackServer.port;
   },
 
   // NOTE: find a port for remoteDebuggerPort if it's null or undefined
