@@ -105,7 +105,7 @@ const RemoteSimulatorClient = Class({
         // and the process is still alive, the attempt was rejected or timed out.
         // We should keep trying to connect until we reach our own timeout.
         let timeout = this._timeout || 30000;
-        if (new Date().getTime() - this._startConnectingTime < timeout) {
+        if (Date.now() - this._startConnectingTime < timeout) {
           this.connectDebuggerClient();
         }
         else {
@@ -200,7 +200,7 @@ const RemoteSimulatorClient = Class({
       }).bind(this)
     });
 
-    this._startConnectingTime = new Date().getTime();
+    this._startConnectingTime = Date.now();
     this.connectDebuggerClient();
   },
 
@@ -231,10 +231,10 @@ const RemoteSimulatorClient = Class({
     // component used in DebuggerTransport never gets its onStartRequest/onStopRequest
     // methods called.
     // We cancel attempts taking more than 3seconds to achieve.
-    let timeout = setTimeout((function () {
+    let timeout = setTimeout(function () {
       console.log("Killing stuck connection");
       client.close();
-    }).bind(this), 1000);
+    }, 1000);
 
     let client = new DebuggerClient(transport);
 
