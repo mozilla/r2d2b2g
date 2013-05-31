@@ -1011,7 +1011,11 @@ let simulator = module.exports = {
     // NOTE: if a b2g instance is already running send request
     //       or start a new instance and send request on ready
     if (this.isRunning) {
-      next();
+      if (this.remoteSimulator.isReady) {
+        next();
+      } else {
+        this.remoteSimulator.once("ready", next);
+      }
     } else {
       this.remoteSimulator.once("ready", function ready() {
         // once we reach ready we can disable needsUpdateAll
