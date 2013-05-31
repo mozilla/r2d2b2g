@@ -106,7 +106,7 @@ const RemoteSimulatorClient = Class({
         // We should keep trying to connect until we reach our own timeout.
         let timeout = this._timeout || 30000;
         if (Date.now() - this._startConnectingTime < timeout) {
-          this.connectDebuggerClient();
+          setTimeout(this.connectDebuggerClient.bind(this), 250);
         }
         else {
           emit(this, "timeout", null);
