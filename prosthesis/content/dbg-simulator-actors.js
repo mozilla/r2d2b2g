@@ -4,10 +4,6 @@
 
 "use strict";
 
-let Cu = Components.utils;
-let Cc = Components.classes;
-let Ci = Components.interfaces;
-
 Cu.import("resource://gre/modules/Services.jsm");
 let { AppsUtils } = Cu.import("resource://gre/modules/AppsUtils.jsm");
 
@@ -288,7 +284,7 @@ SimulatorActor.prototype = {
       let contentType = req.getResponseHeader("content-type");
 
       if (AppsUtils.checkManifestContentType(installOrigin, origin, contentType) &&
-          manifestURL.indexOf('http://') === 0) {
+          manifestURL.indexOf('app:') !== 0) {
         onGoodContentType();
       } else {
         onBadContentType(contentType);
@@ -340,7 +336,7 @@ SimulatorActor.prototype = {
         uninstallReq.onsuccess = function onsuccess() {
           // Purge app cache
           try {
-            // This seems to legitamtely fail
+            // This seems to legitimately fail
             // (not actually flush the cache) if an app is:
             //    1. Installed from the dashboard
             //    2. Removed from the dashboard
