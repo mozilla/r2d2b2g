@@ -4,7 +4,8 @@
 
 "use strict";
 
-Components.utils.import("resource://gre/modules/Services.jsm");
+Cu.import("resource://gre/modules/Services.jsm");
+let { AppsUtils } = Cu.import("resource://gre/modules/AppsUtils.jsm");
 
 /**
   * Creates a SimulatorActor. SimulatorActor provides remote access to the
@@ -93,13 +94,11 @@ SimulatorActor.prototype = {
     };
   },
 
-  onRunApp: function(aRequest) {
-    this.debug("simulator actor received a 'runApp' command:" + aRequest.appId);
+  _runApp: function(appId) {
     let window = this.simulatorWindow;
     let homescreen = XPCNativeWrapper.unwrap(this.homescreenWindow);
     let WindowManager = homescreen.WindowManager;
     let DOMApplicationRegistry = window.DOMApplicationRegistry;
-    let appId = aRequest.appId;
 
     if (!DOMApplicationRegistry.webapps[appId]) {
       return { success: false, error: 'app-not-installed', message: 'App not installed.'};
@@ -215,6 +214,14 @@ SimulatorActor.prototype = {
 
     Services.tm.currentThread.dispatch(runnable,
                                        Ci.nsIThread.DISPATCH_NORMAL);
+  },
+
+  onRunApp: function(aRequest) {
+    this.debug("simulator actor received a 'runApp' command:" + aRequest.appId);
+    let appId = aRequest.appId;
+
+    this._runApp(appId);
+
     return {
       message: "runApp request received: " + appOrigin,
       success: true
@@ -261,10 +268,115 @@ SimulatorActor.prototype = {
     };
   },
 
+  // ensure that an app can be installed by examining the Content-Type
+  // header returned by HEAD request to the manifestURL
+  _ensureInstallable: function(app, onBadContentType, onGoodContentType) {
+    let { manifestURL, origin, installOrigin } = app;
+
+    let req = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance();
+    req.open('HEAD', manifestURL, true);
+    req.send('');
+    req.onreadystatechange = function() {
+      if (req.readyState !== 4) {
+        return;
+      }
+
+      let contentType = req.getResponseHeader("content-type");
+
+      if (AppsUtils.checkManifestContentType(installOrigin, origin, contentType) &&
+          manifestURL.indexOf('app:') !== 0) {
+        onGoodContentType();
+      } else {
+        onBadContentType(contentType);
+      }
+    };
+  },
+
+  onAppNotFound: function(aRequest) {
+    let appId = aRequest.appId;
+    let window = this.simulatorWindow;
+    let DOMApplicationRegistry = window.DOMApplicationRegistry;
+    let app = DOMApplicationRegistry.webapps[appId];
+    let receivedResponse = {
+      message: "appNotFound received",
+      success: true
+    };
+
+    this.debug("AppNotFound: " + appId);
+
+    if (!app) {
+      this._displayNotification("App not updated (not found)");
+      return receivedResponse;
+    }
+
+    let manifestURL = app.manifestURL;
+    let origin = app.origin;
+    let installOrigin = app.installOrigin;
+    if (!origin || !manifestURL || !installOrigin) {
+      this._displayNotification("App not updated (not found)");
+      return receivedResponse;
+    }
+
+    this._ensureInstallable(app,
+
+      (function onBadContentType(contentType) {
+        this.debug("bad content-type: " + contentType);
+        this._displayNotification(
+          "App not reinstallable (bad content-type " + contentType + ")");
+      }).bind(this),
+
+      (function onGoodContentType() {
+        // Uninstall
+        let actor = this;
+        let mgmt = window.navigator.mozApps.mgmt;
+        let uninstallReq = mgmt.uninstall({origin: origin});
+        uninstallReq.onerror = function onerror() {
+          actor._displayNotification("App not updated (uninstallation failed)");
+        }
+        uninstallReq.onsuccess = function onsuccess() {
+          // Purge app cache
+          try {
+            // This seems to legitimately fail
+            // (not actually flush the cache) if an app is:
+            //    1. Installed from the dashboard
+            //    2. Removed from the dashboard
+            //    3. Installed from outside of the dash
+            //    4. (then refreshed to get to this call)
+            Cc["@mozilla.org/network/application-cache-service;1"].
+              getService(Ci.nsIApplicationCacheService).
+              discardByAppId(appId, false);
+          } catch(e) {
+            // This error is always thrown even if cacheService.discardByAppId
+            // is working. See:
+            // https://github.com/mozilla/r2d2b2g/pull/556#issuecomment-18351200
+          }
+
+          // Re-install
+          let installReq = window.navigator.mozApps.install(manifestURL);
+          installReq.onerror = function onerror() {
+            actor.debug("install request error:" + this.error.name);
+            actor._displayNotification("App not updated (installation failed)");
+          };
+          installReq.onsuccess = function onsuccess() {
+            actor.debug("Refresh successful");
+            let appId = DOMApplicationRegistry._appId(this.result.origin);
+            actor._runApp.call(actor, appId);
+          };
+        };
+      }).bind(this)
+    );
+
+    return receivedResponse;
+  },
+
+  _displayNotification: function(message) {
+    let window = this.simulatorWindow;
+    window.AlertsHelper.showNotification(null, "Simulator", message);
+  },
+
   onShowNotification: function (aRequest) {
     this.debug("simulator actor received a 'showNotification' command");
-    let window = this.simulatorWindow;
-    window.AlertsHelper.showNotification(null, "Simulator", aRequest.userMessage);
+    this._displayNotification(aRequest.userMessage);
 
     return {
       message: "showNotification request received",
@@ -308,6 +420,7 @@ SimulatorActor.prototype.requestTypes = {
   "getBuildID": SimulatorActor.prototype.onGetBuildID,
   "runApp": SimulatorActor.prototype.onRunApp,
   "uninstallApp": SimulatorActor.prototype.onUninstallApp,
+  "appNotFound": SimulatorActor.prototype.onAppNotFound,
   "showNotification": SimulatorActor.prototype.onShowNotification,
   "geolocationUpdate": SimulatorActor.prototype.onGeolocationUpdate,
 };
