@@ -359,7 +359,7 @@ SimulatorActor.prototype = {
           };
           installReq.onsuccess = function onsuccess() {
             actor.debug("Refresh successful");
-            let appId = DOMApplicationRegistry.appId(this.result.origin);
+            let appId = DOMApplicationRegistry._appId(this.result.origin);
             actor._runApp.call(actor, appId);
           };
         };
