@@ -86,7 +86,7 @@ exports["test receipt update"] = function receiptUpdate(assert, done) {
     srv.start(8099);
   } catch (e) {
     assert.ok(false, "Error binding to port 8099, did you forget to call " +
-                     "srv.stop?");
+                     "simulator.unload?");
     return done();
   }
 
