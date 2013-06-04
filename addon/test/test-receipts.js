@@ -31,7 +31,6 @@ function appFirstListed({ target, event, onInstall, onUpdate, equal }) {
   target.addEventListener(event, function onEvent(evt) {
     let message = evt.detail;
     if (message.name === "listApps") {
-      console.log("\n\n\n\n\n\nlistApps");
       let appList = message.list;
       console.log(JSON.stringify(appList));
       if (MOCK_MANIFEST_URL in appList) {
@@ -66,9 +65,15 @@ function updateReceipt(window) {
   }
 }
 
-function cleanUp(window, done) {
-  window.postMessage({ name: "toggle" }, "*");
-  done();
+function cleanUp({ srv, window, done, simulator }) {
+  return function clean() {
+    window.postMessage({ name: "toggle" }, "*");
+    simulator.unload();
+    srv.stop(function () {
+      window.close();
+      done();
+    });
+  };
 }
 
 exports["test receipt update"] = function receiptUpdate(assert, done) {
@@ -77,7 +82,13 @@ exports["test receipt update"] = function receiptUpdate(assert, done) {
   let srv = new nsHttpServer();
   srv.registerPathHandler("/test_app/webapp.manifest", manifestHandler);
   srv.registerPathHandler("/", indexHandler);
-  srv.start(8099);
+  try {
+    srv.start(8099);
+  } catch (e) {
+    assert.ok(false, "Error binding to port 8099, did you forget to call " +
+                     "srv.stop?");
+    return done();
+  }
 
   // Open the dashboard.
   simulator.openHelperTab(function onOpen(tab) {
@@ -89,7 +100,12 @@ exports["test receipt update"] = function receiptUpdate(assert, done) {
       target: document.documentElement,
       event: "addon-message",
       onInstall: updateReceipt(window),
-      onUpdate: cleanUp.bind(this, window, done),
+      onUpdate: cleanUp({
+        srv: srv,
+        window: window,
+        done: done,
+        simulator: simulator
+      }),
       equal: assert.equal.bind(assert)
     });
 
