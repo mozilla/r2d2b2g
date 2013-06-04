@@ -922,24 +922,38 @@ let simulator = module.exports = {
   },
 
   openTab: function(url, lax, cb) {
-    for each (var tab in Tabs) {
+    cb = cb || function () {};
+    for each (let tab in Tabs) {
       if (tab.url === url || (lax && tab.url.indexOf(url) === 0)) {
         tab.activate();
+        tab.attach({
+          onAttach: function attached(worker) {
+            worker.destroy();
+            cb(tab);
+          },
+        });
         return;
       }
     }
 
-    let openArgs = { url: url };
-    if (typeof cb === "function") {
-      openArgs.onReady = cb;
-    }
-    Windows.activeWindow.tabs.open(openArgs);
+    Windows.activeWindow.tabs.open({
+      url: url,
+      onReady: cb,
+    });
   },
 
   openHelperTab: function(cb) {
+    cb = cb || function () {};
     // Ensure opening only one simulator page
     if (this.worker) {
-      this.worker.tab.activate();
+      let tab = this.worker.tab;
+      tab.activate();
+      tab.attach({
+        onAttach: function attached(worker) {
+          worker.destroy();
+          cb(tab);
+        },
+      });
     } else {
       this.openTab(simulator.contentPage, true, cb);
     }
