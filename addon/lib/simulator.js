@@ -457,26 +457,21 @@ let simulator = module.exports = {
   },
 
   updateReceiptType: function updateReceiptType(appId, receiptType) {
-    let app = simulator.apps[appId];
-    let manifestURL = simulator.receiptManifestURL(app.type,
-                                                   app.origin || app.xkey);
-    let next = function next() {
-      simulator.sendListApps();
-      simulator.runApp(app);
-    };
-
+    let app = this.apps[appId];
+    let manifestURL = this.receiptManifestURL(app.type,
+                                              app.origin || app.xkey);
     if (receiptType === "none") {
       app.receipt = null;
       app.receiptType = receiptType;
-      simulator._updateApp(appId, simulator.sendListApps.bind(this));
+      this._updateApp(appId, this.sendListApps.bind(this));
     } else {
-      simulator.fetchReceipt(manifestURL, receiptType, function fetched(err, receipt) {
+      this.fetchReceipt(manifestURL, receiptType, function fetched(err, receipt) {
         if (err || !receipt) {
           console.error(err || "No receipt");
         } else {
           app.receipt = receipt;
           app.receiptType = receiptType;
-          simulator._updateApp(appId, simulator.sendListApps.bind(this));
+          this._updateApp(appId, this.sendListApps.bind(this));
         }
       }.bind(this));
     }
