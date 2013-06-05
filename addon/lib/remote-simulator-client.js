@@ -347,6 +347,14 @@ const RemoteSimulatorClient = Class({
                                 onResponse);
   },
 
+  appNotFound: function(appId, onResponse) {
+    this._remote.client.request({ to: this._remote.simulator,
+                                  type: "appNotFound",
+                                  appId: appId
+                                },
+                                onResponse);
+  },
+
   // send a ping request to the remote simulator actor
   ping: function(onResponse) {
     let remote = this._remote;
