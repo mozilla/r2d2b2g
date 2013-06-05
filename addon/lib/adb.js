@@ -39,7 +39,10 @@ if (COMMONJS) {
   });
 
   // This variable needs to be named something other than require or else
-  // the addon-sdk loader gets confused
+  // the addon-sdk loader gets confused. The addon-sdk throws a
+  // ModuleNotFoundError at addon build time. For example:
+  //
+  // ModuleNotFoundError: unable to satisfy: require(io/file) from...
   let require_ = Require(loader);
 
   file = require_("io/file");
