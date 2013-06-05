@@ -1,0 +1,1 @@
+user-pref("extensions.update.enabled", false);
