@@ -926,8 +926,11 @@ let simulator = module.exports = {
     for each (let tab in Tabs) {
       if (tab.url === url || (lax && tab.url.indexOf(url) === 0)) {
         tab.activate();
-        tab.attach({
-          onAttach: function attached(worker) {
+        // Hacky workaround to ensure the tab is ready before we call
+        // the callback.  Implement better approach after fixing SDK bug 879534!
+        let worker = tab.attach({
+          contentScript: "self.postMessage()",
+          onMessage: function() {
             worker.destroy();
             cb(tab);
           },
@@ -948,8 +951,11 @@ let simulator = module.exports = {
     if (this.worker) {
       let tab = this.worker.tab;
       tab.activate();
-      tab.attach({
-        onAttach: function attached(worker) {
+      // Hacky workaround to ensure the tab is ready before we call
+      // the callback.  Implement better approach after fixing SDK bug 879534!
+      let worker = tab.attach({
+        contentScript: "self.postMessage()",
+        onMessage: function() {
           worker.destroy();
           cb(tab);
         },
