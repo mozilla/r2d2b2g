@@ -235,7 +235,7 @@ this.ADB = {
       args = [];
     } else {
       args = ["aux"];
-      let psCommand = "psi";
+      let psCommand = "ps";
 
       let paths = env.PATH.split(':');
       let len = paths.length;
