@@ -924,10 +924,21 @@ let simulator = module.exports = {
   },
 
   openConnectDevtools: function() {
+    // We need to workaround existing devtools TabTarget.destroy code,
+    // that tries to close the client when the related toolbox is closed
+    // whereas we want to keep the client alive for other usages!
+    // http://hg.mozilla.org/mozilla-central/annotate/cfcce7c5eb74/browser/devtools/framework/target.js#l427
+    let clientProxy = new Proxy(this.remoteSimulator._remote.client, {
+      get: function (target, name) {
+        if (name == "close")
+          return function () {};
+        return target[name];
+      }
+    });
     // Open a remote toolbox to shell.xul
     let options = {
       form: this.remoteSimulator._rootActor,
-      client: this.remoteSimulator._remote.client,
+      client: clientProxy,
       chrome: true
     };
     let {gDevTools} = Cu.import("resource:///modules/devtools/gDevTools.jsm", {});
@@ -943,20 +954,18 @@ let simulator = module.exports = {
         // FF23
         devtools = Cu.import("resource:///modules/devtools/gDevTools.jsm", {}).devtools;
       }
-      let promise = devtools.TargetFactory.forRemoteTab(options).then((target) => {
+      let promise = devtools.TargetFactory.forRemoteTab(options).then(function (target) {
         gDevTools.showToolbox(target, "webconsole", devtools.Toolbox.HostType.WINDOW);
-      });
-      // Ensure not killing remote connection when user close the toolbox
-      // Depends on bug 875104
-      promise.then(function (toolbox) {
-        toolbox.keepTargetAlive = true;
       });
     } catch(e) {
       let TargetFactory = Cu.import("resource:///modules/devtools/Target.jsm", {}).TargetFactory;
       let Toolbox = Cu.import("resource:///modules/devtools/Toolbox.jsm", {}).Toolbox;
       if (TargetFactory.forRemote) {
         // FF21
-        let target = TargetFactory.forTab(options.form, options.client, options.chrome);
+        let target = TargetFactory.forRemote(options.form, options.client, options.chrome);
+        // XXX: For some unknown reason, the toolbox doesn't get unregistered
+        // on close. Workaround that by manually unregistering it.
+        gDevTools._toolboxes.delete(target);
         gDevTools.showToolbox(target, "webconsole", Toolbox.HostType.WINDOW);
       } else {
         // FF22
