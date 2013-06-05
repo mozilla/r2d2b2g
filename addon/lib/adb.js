@@ -145,11 +145,12 @@ this.ADB = {
   // We startup by launching adb in server mode, and setting
   // the tcp socket preference to |true|
   start: function adb_start() {
-    let onSuccessfulStart = function onSuccessfulStart() {
+    let onSuccessfulStart = (function onSuccessfulStart() {
       Services.prefs.setBoolPref("dom.mozTCPSocket.enabled", true);
       Services.obs.notifyObservers(null, "adb-ready", null);
-      self.ready = true;
-    };
+      this.ready = true;
+    }).bind(this);
+
     this._isAdbRunning().then(
       (function onSuccess(isAdbRunning) {
         if (isAdbRunning) {
