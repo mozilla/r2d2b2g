@@ -203,6 +203,7 @@ this.ADB = {
       process.run(true, params, params.length);
       debug("adb kill-server: " + process.exitValue);
       this.ready = false;
+      this.didRunInitially = false;
     }
     else {
       let self = this;
@@ -213,6 +214,7 @@ this.ADB = {
               debug("adb kill-server: " + process.exitValue);
               Services.obs.notifyObservers(null, "adb-killed", null);
               self.ready = false;
+              self.didRunInitially = false;
               break;
             case "process-failed":
               debug("adb kill-server failure: " + process.exitValue);
@@ -221,6 +223,7 @@ this.ADB = {
               // to use it later will try to restart it.
               Services.obs.notifyObservers(null, "adb-killed", null);
               self.ready = false;
+              self.didRunInitially = false;
               break;
           }
         }
