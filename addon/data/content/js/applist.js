@@ -56,7 +56,7 @@ var AppList = (function() {
             app.prettyLastUpdate = timedelta(app.lastUpdate);
         }
         app.prettyType = Simulator.APP_TYPES[app.type];
-        
+
         // use a default icon
         var iconPath = "default.png";
 
@@ -74,11 +74,23 @@ var AppList = (function() {
         }
 
         app.iconPath = iconPath;
+        app.receiptTypes = ['none', 'ok', 'expired', 'invalid', 'refunded'];
+
         var appEl = $(appTemplate.render(app).trim());
 
         // FIXME: Make an actual list, add a template engine
         listEl.append(appEl);
     }
+
+    listEl.on('change', '.receipt-type', function(e) {
+        var itemEl = $(this).parents('[data-id]');
+
+        if (!itemEl) return;
+
+        var id = itemEl.data('id');
+
+        window.postMessage({name: "updateReceiptType", id: id, receiptType: this.value}, "*");
+    });
 
     listEl.on('click', '.action', function(e) {
         var action = $(this).data('action');
