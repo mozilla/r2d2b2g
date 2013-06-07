@@ -69,14 +69,17 @@ ifeq (mac64, $(B2G_PLATFORM))
 else
 ifeq (linux64, $(B2G_PLATFORM))
   B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-06-06.en-US.linux-x86_64.tar.bz2
+
+  ADB_PACKAGE = adb-1.0.31-linux64.zip
+  ADB_BINARIES = adb
 else
 ifeq (linux, $(B2G_PLATFORM))
   B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-06-06.en-US.linux-i686.tar.bz2
-endif
-endif
 
   ADB_PACKAGE = adb-1.0.31-linux.zip
   ADB_BINARIES = adb
+endif
+endif
 endif
 endif
 
