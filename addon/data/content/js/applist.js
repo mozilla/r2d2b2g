@@ -74,7 +74,7 @@ var AppList = (function() {
         }
 
         app.iconPath = iconPath;
-        app.receiptTypes = ['none', 'ok', 'expired', 'invalid', 'refunded'];
+        app.receiptTypes = ['none', 'ok', 'invalid', 'refunded'];
 
         var appEl = $(appTemplate.render(app).trim());
 
