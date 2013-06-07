@@ -1,287 +1,11 @@
-/*
- * HTML5 Boilerplate
- *
- * What follows is the result of much research on cross-browser styling.
- * Credit left inline and big thanks to Nicolas Gallagher, Jonathan Neal,
- * Kroc Camen, and the H5BP dev community and team.
- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-/* ==========================================================================
-   Base styles: opinionated defaults
-   ========================================================================== */
-
-html,
-button,
-input,
-select,
-textarea {
-    color: #222;
+* {
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
 }
-
-body {
-    font-size: 1em;
-    line-height: 1.4;
-}
-
-/*
- * Remove text-shadow in selection highlight: h5bp.com/i
- * These selection declarations have to be separate.
- * Customize the background color to match your design.
- */
-
-::-moz-selection {
-    background: #b3d4fc;
-    text-shadow: none;
-}
-
-::selection {
-    background: #b3d4fc;
-    text-shadow: none;
-}
-
-/*
- * A better looking default horizontal rule
- */
-
-hr {
-    display: block;
-    height: 1px;
-    border: 0;
-    border-top: 1px solid #ccc;
-    margin: 1em 0;
-    padding: 0;
-}
-
-/*
- * Remove the gap between images and the bottom of their containers: h5bp.com/i/440
- */
-
-img {
-    vertical-align: middle;
-}
-
-/*
- * Remove default fieldset styles.
- */
-
-fieldset {
-    border: 0;
-    margin: 0;
-    padding: 0;
-}
-
-/*
- * Allow only vertical resizing of textareas.
- */
-
-textarea {
-    resize: vertical;
-}
-
-/* ==========================================================================
-   Chrome Frame prompt
-   ========================================================================== */
-
-.chromeframe {
-    margin: 0.2em 0;
-    background: #ccc;
-    color: #000;
-    padding: 0.2em 0;
-}
-
-/* ==========================================================================
-   Helper classes
-   ========================================================================== */
-
-/*
- * Image replacement
- */
-
-.ir {
-    background-color: transparent;
-    border: 0;
-    overflow: hidden;
-    /* IE 6/7 fallback */
-    *text-indent: -9999px;
-}
-
-.ir:before {
-    content: "";
-    display: block;
-    width: 0;
-    height: 100%;
-}
-
-/*
- * Hide from both screenreaders and browsers: h5bp.com/u
- */
-
-.hidden {
-    display: none !important;
-    visibility: hidden;
-}
-
-/*
- * Hide only visually, but have it available for screenreaders: h5bp.com/v
- */
-
-.visuallyhidden {
-    border: 0;
-    clip: rect(0 0 0 0);
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    padding: 0;
-    position: absolute;
-    width: 1px;
-}
-
-/*
- * Extends the .visuallyhidden class to allow the element to be focusable
- * when navigated to via the keyboard: h5bp.com/p
- */
-
-.visuallyhidden.focusable:active,
-.visuallyhidden.focusable:focus {
-    clip: auto;
-    height: auto;
-    margin: 0;
-    overflow: visible;
-    position: static;
-    width: auto;
-}
-
-/*
- * Hide visually and from screenreaders, but maintain layout
- */
-
-.invisible {
-    visibility: hidden;
-}
-
-/*
- * Clearfix: contain floats
- *
- * For modern browsers
- * 1. The space content is one way to avoid an Opera bug when the
- *    `contenteditable` attribute is included anywhere else in the document.
- *    Otherwise it causes space to appear at the top and bottom of elements
- *    that receive the `clearfix` class.
- * 2. The use of `table` rather than `block` is only necessary if using
- *    `:before` to contain the top-margins of child elements.
- */
-
-.clearfix:before,
-.clearfix:after {
-    content: " "; /* 1 */
-    display: table; /* 2 */
-}
-
-.clearfix:after {
-    clear: both;
-}
-
-/*
- * For IE 6/7 only
- * Include this rule to trigger hasLayout and contain floats.
- */
-
-.clearfix {
-    *zoom: 1;
-}
-
-/* ==========================================================================
-   EXAMPLE Media Queries for Responsive Design.
-   Theses examples override the primary ('mobile first') styles.
-   Modify as content requires.
-   ========================================================================== */
-
-@media only screen and (min-width: 35em) {
-    /* Style adjustments for viewports that meet the condition */
-}
-
-@media only screen and (-webkit-min-device-pixel-ratio: 1.5),
-       only screen and (min-resolution: 144dpi) {
-    /* Style adjustments for high resolution devices */
-}
-
-/* ==========================================================================
-   Print styles.
-   Inlined to avoid required HTTP connection: h5bp.com/r
-   ========================================================================== */
-
-@media print {
-    * {
-        background: transparent !important;
-        color: #000 !important; /* Black prints faster: h5bp.com/s */
-        box-shadow:none !important;
-        text-shadow: none !important;
-    }
-
-    a,
-    a:visited {
-        text-decoration: underline;
-    }
-
-    a[href]:after {
-        content: " (" attr(href) ")";
-    }
-
-    abbr[title]:after {
-        content: " (" attr(title) ")";
-    }
-
-    /*
-     * Don't show links for images, or javascript/internal links
-     */
-
-    .ir a:after,
-    a[href^="javascript:"]:after,
-    a[href^="#"]:after {
-        content: "";
-    }
-
-    pre,
-    blockquote {
-        border: 1px solid #999;
-        page-break-inside: avoid;
-    }
-
-    thead {
-        display: table-header-group; /* h5bp.com/t */
-    }
-
-    tr,
-    img {
-        page-break-inside: avoid;
-    }
-
-    img {
-        max-width: 100% !important;
-    }
-
-    @page {
-        margin: 0.5cm;
-    }
-
-    p,
-    h2,
-    h3 {
-        orphans: 3;
-        widows: 3;
-    }
-
-    h2,
-    h3 {
-        page-break-after: avoid;
-    }
-}
-
-
-/* ==========================================================================
-   Author's custom styles
-   ========================================================================== */
-
 
 html, body {
     width: 100%;
@@ -321,39 +45,61 @@ article {
     min-height: 384px;
     height: 100%;
 }
-header {
+#sidebar {
     width: 200px;
-    margin-right: 10px;
-    padding: 10px 10px;
+    margin: 0;
+    padding: 0;
     border-right: 1px solid #eee;
     background-color: #f5f5f5;
     text-align: right;
+    box-shadow: 0 0 ;
+}
+#sidebar .item {
+    padding: 20px 10px;
+    margin: 0;
+    display: block;
 }
 h1, h2 {
-    margin: 10px 0 15px;
-    padding: 10px 0;
     color: #4D4E53;
     font-weight: lighter;
     font-size: 1.5em;
 }
-h2 {
-    border-bottom: 1px solid #eee;
+h1 {
+    text-align: left;
+    position: relative;
+    width: 140px;
+    margin: 20px auto;
+    padding: 10px 0;
 }
-.beta {
-    position: absolute;
-    left: -20px;
-    top: 69px;
+.wordmark {
+    text-align: left;
+    display: block;
+    background-image: url('../ffos-wordmark.png');
+    background-size: 100% auto;
+    background-repeat: no-repeat;
+    height: 32px;
+    width: 140px;
+    text-indent: -9999px;
+}
+.badge, .badge:before, .badge:after {
     text-align: center;
-    transform-origin: 0 0;
-    transform: rotate(-45deg);
-    box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
-    background-color: rgba(255, 0, 0, 0.7);
-    padding: 1px 40px;
-    font-size: 16px;
-    font-weight: bolder;
+    display: block;
+    width: 32px;
+    height: 16px;
+    position: absolute;
     color: white;
+    text-indent: 2px;
+    font: bold 9px/16px Helvetica;
+    letter-spacing: 0.5px;
+    padding: 0 10px;
+    cursor: default;
+    text-decoration: none;
+    z-index: 1;
+    background: red;
+    transform: rotate(-30deg);
+    right: 13px;
+    bottom: 13px;
 }
-
 #help {
     float: right;
     color: #888;
@@ -363,7 +109,21 @@ h2 {
     color: #4D4E53;
 }
 
-article section {
+.badge:after, .badge:before {
+    content: "";
+    background: inherit;
+    position: absolute;
+    margin: 0;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    transform: skewX(40deg);
+}
+.badge:after {
+    transform: skewX(-40deg);
+}
+
+article > section {
     display: none;
     -moz-box-flex: 1;
     box-flex: 1;
@@ -428,7 +188,8 @@ figure {
     border-radius: 5px;
     display: inline-block;
     vertical-align: middle;
-    width: 98px;
+    width: 88px;
+    font-size: .8em;
     overflow: hidden;
     cursor: pointer;
     user-select: none;
@@ -485,14 +246,16 @@ figure {
     cursor: progress;
 }
 .list-actions {
+    font-size: .8em;
     margin: 0;
     padding: 10px 0 14px;
     list-style: none;
     display: block;
-    text-align: right;
+    display: -moz-box;
+    display: flex;
 }
 .list-actions li {
-    display: inline-block;
+    display: block;
     padding: 0 10px;
     margin: 0;
     border-left: 1px dotted #eee;
@@ -503,6 +266,9 @@ figure {
 .list-actions small {
     font-size: 0.8em;
     color: #888;
+}
+#receipt_type {
+    padding: 6px;
 }
 
 #apps-list {
@@ -599,7 +365,7 @@ figure {
     width: 220px;
 }
 button, input[type="url"], input[type="text"] {
-    font-size: 0.8em;
+    font-size: 0.8rem;
     color: #444;
     border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 5px;
@@ -625,7 +391,7 @@ button:hover:not(:disabled), .popover-wrap:hover button, a.button:hover {
     cursor: pointer;
 }
 a.button {
-    font-size: 0.8em;
+    font-size: 0.8rem;
     padding: 8px 12px;
 }
 .popover-wrap button {
@@ -680,8 +446,68 @@ a.button {
 }
 
 
+section header {
+    border-bottom: 1px solid #eee;
+}
+#add-project-dialog {
+    display: block;
+    overflow: hidden;
+    padding: 0;
+    margin-top: 1em;
+    float: right;
+    position: relative;
+    z-index: 1;
+}
+#dashboard {
+    padding: 0;
+}
+#dash-main {
+    padding: 10px;
+    position: relative;
+}
 
+/* New Project Dialog */
+#new-project {
+    font-size: 14px;
+    display: none;
+}
+#new-project section {
+    float: left;
+    width: 32%;
+    border: 1px solid black;
+    height: 250px;
+    padding: 10px 20px;
+    margin: 20px 0 0 1%;
+    position: relative;
+}
+#new-project h2 {
+    background: #eee;
+    padding: 15px 20px 10px;
+    margin: -10px -20px 10px;
+    border-bottom: 1px solid black;
+}
+#new-project p {
+    font-size: .9em;
+}
+#new-project label,
+#new-project button,
+#new-project select,
+#new-project input {
+    display: block;
+    width: 100%;
+    margin: 5px 0;
+}
+#new-project label {
+    font-weight: bold;
+    margin-top: 1em;
+}
+#new-project button.go {
+    position: absolute;
+    bottom: 10px;
+    width: -moz-calc(100% - 40px);
+}
 
+/* Device-related UI */
 .device-dependent {
     transition: .5s opacity;
     opacity: 0;

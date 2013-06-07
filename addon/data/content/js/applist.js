@@ -33,12 +33,15 @@ var AppList = (function() {
 
     function render() {
         listEl.empty();
-        if (!appIds.length) {
-            listEl.append('<li><em>No Apps added yet? Add some&hellip;</em></li>');
-        } else {
+
+        // $('#new-project').toggle(!appIds.length);
+        //listEl.toggle(!!appIds.length);
+        if (appIds.length) {
             for (var i=0; i<appIds.length; i++) {
                 renderSingle(appIds[i]);
             }
+        } else {
+            listEl.appendChild('<li><h3>No Apps Installed</h3></li>');
         }
     }
 
@@ -127,7 +130,8 @@ var AppList = (function() {
 
 
     return {
-        'update': update
+        'update': update,
+        'apps': apps
     };
 
 })();
