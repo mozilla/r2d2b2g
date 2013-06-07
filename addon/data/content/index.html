@@ -8,73 +8,81 @@
         <link rel="stylesheet" href="css/main.css">
     </head>
     <body>
-        <aside class="beta">Preview</aside>
         <article>
-            <header>
-                <h1><strong>Firefox</strong> OS Simulator</h1>
+            <header id="sidebar">
+                <h1><div class="wordmark">Firefox OS</div>
+                    Simulator
+                    <aside class="badge">Alpha</aside>
+                </h1>
 
-                <fieldset id="commands">
-                    <h5>
-                        Simulator
-                    </h5>
-                    <label class="toggle">
-                        <input type="checkbox" id="command-toggle" />
-                        <span class="toggles">
-                            <span class="toggle-on">Stopped</span>
-                            <span class="toggle-off">Running</span>
-                        </span>
-                    </label>
-                    <label class="commands-options">
-                        <input type="checkbox" id="commands-preference-jsconsole" />Console
-                    </label>
-                    <label class="commands-options" style="display: none">
-                        <div id="show-debugger-port">
-                          Remote Debugger Port:
-                          <span id="commands-preference-remote-debugger-port"></span>
-                        </div>
-                        <button id="open-connect-devtools" title="Connect Developer Tools&hellip;"
-                                onclick="Simulator.openConnectDevtools()">Connect&hellip;</button>
-                    </label>
-                    <label class="commands-options" style="display: none">
-                      Run:
-                      <span id="commands-preference-default-app"></span>
-                    </label>
-                </fieldset>
+                <div class="item">
+                    <fieldset id="commands">
+                        <h5>Simulator</h5>
+                        <label class="toggle">
+                            <input type="checkbox" id="command-toggle" />
+                            <span class="toggles">
+                                <span class="toggle-on">Stopped</span>
+                                <span class="toggle-off">Running</span>
+                            </span>
+                        </label>
+                        <label class="commands-options">
+                            <input type="checkbox" id="commands-preference-jsconsole" />Console
+                        </label>
+                        <label class="commands-options" style="display: none">
+                            <div id="show-debugger-port">
+                              Remote Debugger Port:
+                              <span id="commands-preference-remote-debugger-port"></span>
+                            </div>
+                            <button id="open-connect-devtools" title="Connect Developer Tools&hellip;"
+                                    onclick="Simulator.openConnectDevtools()">Connect&hellip;</button>
+                        </label>
+                        <label class="commands-options" style="display: none">
+                          Run:
+                          <span id="commands-preference-default-app"></span>
+                        </label>
+                    </fieldset>
+                </div>
+                <a id="help" class="item" href="https://developer.mozilla.org/en-US/docs/Tools/Firefox_OS_Simulator" target="_blank">Help</a>
                 <h5 id="device-status" class="device-dependent">
                     <img src="device.png" alt="Device"> Device connected.
                 </h5>
             </header>
 
             <section id="dashboard">
-                <a id="help" href="https://developer.mozilla.org/en-US/docs/Tools/Firefox_OS_Simulator" target="_blank">Help</a>
-                <h2>Dashboard</h2>
-                <ul id="apps-list">
-                </ul>
-                <ul class="list-actions">
-                    <li>
-                        <label for="receipt_type">Receipt Type:</label>
-                        <select name="receipt_type" id="receipt_type">
-                            <option value="none" selected>None</option>
-                            <option value="ok">Valid</option>
-                            <!-- Expired receipts are still valid until
-                                 bug 757226 is patched. See Issue #497. -->
-                            <!--<option value="expired">Expired</option>-->
-                            <option value="invalid">Invalid</option>
-                            <option value="refunded">Refunded</option>
-                        </select>
-                    </li>
-                    <li>
-                        <button id="action-add-directory" title="Select the manifest.webapp file from your app directory." onclick="Simulator.addAppByDirectory()">Add Directory</button>
-                    </li>
-                    <li>
-                        <form id="form-add-app" action="#">
-                            <input id="add-app-url" list="list-app-tabs" type="url" placeholder="URL for page or manifest.webapp" required pattern="https?://.+" />
-                            <datalist id="list-app-tabs"></datalist>
-                            <button id="action-add-page" title="A manifest will be generated for this page." disabled>Add URL</button>
-                            <button id="action-add-manifest" title="Only enabled when the manifest is valid (JSON and correct mime type)" disabled>Add Manifest</button>
-                        </form>
-                    </li>
-                </ul>
+                <section id="add-project-dialog">
+                    <ul class="list-actions">
+                        <li>
+                            <label for="receipt_type">Receipt Type:</label>
+                            <select name="receipt_type" id="receipt_type">
+                                <option value="none" selected>None</option>
+                                <option value="ok">Valid</option>
+                                <!-- Expired receipts are still valid until
+                                     bug 757226 is patched. See Issue #497. -->
+                                <!--<option value="expired">Expired</option>-->
+                                <option value="invalid">Invalid</option>
+                                <option value="refunded">Refunded</option>
+                            </select>
+                        </li>
+                        <li>
+                            <button id="action-add-directory" title="Select the manifest.webapp file from your app directory." onclick="Simulator.addAppByDirectory()">Add Directory</button>
+                        </li>
+                        <li>
+                            <form id="form-add-app" action="#">
+                                <input id="add-app-url" list="list-app-tabs" type="url" placeholder="URL for page or manifest.webapp" required pattern="https?://.+" />
+                                <datalist id="list-app-tabs"></datalist>
+                                <button id="action-add-page" title="A manifest will be generated for this page." disabled>Add URL</button>
+                                <button id="action-add-manifest" title="Only enabled when the manifest is valid (JSON and correct mime type)" disabled>Add Manifest</button>
+                            </form>
+                        </li>
+                    </ul>
+                </section>
+                <div id="dash-main">
+                    <header>
+                        <h2>Dashboard</h2>
+                    </header>
+                    <ul id="apps-list">
+                    </ul>
+                </div>
             </section>
 
         </article>

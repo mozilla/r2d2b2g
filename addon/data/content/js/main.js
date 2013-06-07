@@ -26,19 +26,19 @@ var Simulator = {
     });
 
     var currentUrl;
-    $('#add-app-url').on('keyup change input', function(evt) {
+    $('#add-app-url, #new-from-manifest').on('keyup change input', function(evt) {
       var url = $(this).val();
       if (url == currentUrl) {
         return;
       }
       currentUrl = url;
       var valid = this.checkValidity();
-      console.log(valid);
+      $('#add-app-url, #new-from-manifest').attr('data-valid', 'pending');
       $('#action-add-page, #action-add-manifest').prop('disabled', !valid);
       if (!valid) {
         return;
       }
-
+      console.log('submitting url for validation...');
       window.postMessage({name: "validateUrl", url: url}, "*");
     });
 
@@ -104,26 +104,31 @@ var Simulator = {
             }
             break;
           case "listTabs":
-            var container = $('#list-app-tabs'), items = [];
+            var datalist = $('#list-app-tabs').empty();
+            var tablist = $('#new-from-tab').empty();
+            tablist.append('<option selected>Select an open tab</option>');
             for (var url in message.list) {
-              items.push($('<option>').prop('value', url));
+              var el = $('<option>').prop('value', url).text(message.list[url]);
+              datalist.append(el);
+              tablist.append(el);
             }
-            container.empty().append(items);
             break;
           case "setPreference":
             $("#commands-preference-" + message.key).prop("checked", message.value);
             break;
           case "validateUrl":
             var set = $('#add-app-url').parents('form').removeClass('is-manifest');
-            if (!message.err) {
-              set.addClass('is-manifest');
-            } else {
+            $("#add-hosted-app").prop("disabled", !!message.err);
+            if (message.err) {
+              $('#new-from-manifest, #add-app-url').attr('data-valid', 'no');
               $('#add-app-url').prop('title', message.err);
+            } else {
+              set.addClass('is-manifest');
+              $('#new-from-manifest, #add-app-url').attr('data-valid', 'yes');
             }
             break;
           case "listApps":
             var defaultApp = message.defaultApp || null;
-            var container = $('#apps-list').empty();
 
             var defaultPref = $("#commands-preference-default-app");
             if (defaultApp) {
@@ -186,6 +191,16 @@ var Simulator = {
     return $('#receipt_type').val();
   },
 };
+
+var $addProjectDialog = $('#add-project-dialog');
+var $addProjectButton = $('#add-project');
+$addProjectButton.on('click', function() {
+  $addProjectDialog.toggleClass('open');
+  var isOpen = $addProjectDialog.hasClass('open');
+  $addProjectButton.toggleClass('open', isOpen);
+  var height = isOpen ? $addProjectDialog[0].scrollHeight : 0;
+  $addProjectDialog.css('height', height + 'px');
+});
 
 $(window).load(function() {
   Simulator.init();
