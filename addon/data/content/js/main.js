@@ -59,7 +59,7 @@ var Simulator = {
       window.postMessage({
         name: "addAppByTab",
         url: input.val().trim(),
-        receiptType: Simulator.getReceiptType(),
+        receiptType: Simulator.getReceiptType()
       }, "*");
       $("#form-add-app").get(0).reset();
     });

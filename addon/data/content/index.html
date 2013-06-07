@@ -82,6 +82,12 @@
         <script type="text/template" id="app-template">
             <li class="app {{ 'removed' if removed }}" data-id="{{ id | escape }}">
                 <div class="options">
+                    <label>Receipt Type</label>
+                    <select class="receipt-type">
+                        {% for type in receiptTypes %}
+                            <option value="{{ type }}" {{ 'selected' if receiptType == type else '' }}>{{ type }}</option>
+                        {% endfor %}
+                    </select>
                     {% if removed %}
                         <button class="action" data-action="undo">Undo</button>
                     {% else %}

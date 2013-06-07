@@ -633,7 +633,7 @@ let simulator = module.exports = {
                   simulator.error("Error retrieving receipt. Please try adding the app again.");
                   console.error(err || "No receipt");
                 } else {
-                  simulator.addManifestUrl(tabUrl, receipt);
+                  simulator.addManifestUrl(tabUrl, receipt, receiptType);
                 }
               });
             } else {
@@ -683,7 +683,7 @@ let simulator = module.exports = {
     }
   },
 
-  addManifestUrl: function(manifestUrl, receipt) {
+  addManifestUrl: function(manifestUrl, receipt, receiptType) {
     console.log("Simulator.addManifestUrl " + manifestUrl);
 
     Request({
@@ -717,6 +717,7 @@ let simulator = module.exports = {
           manifestUrl: manifestUrl,
           webapp: response.json,
           receipt: receipt,
+          receiptType: receiptType,
         });
       }
     }).get();
@@ -755,7 +756,7 @@ let simulator = module.exports = {
     }).head();
   },
 
-  addManifest: function({ manifestUrl, webapp, installOrigin, generated, receipt }) {
+  addManifest: function({ manifestUrl, webapp, installOrigin, generated, receipt, receiptType }) {
     console.log("Simulator.addManifest " + manifestUrl);
     manifestUrl = URL.URL(manifestUrl.toString());
     let origin = manifestUrl.toString().substring(0, manifestUrl.toString().lastIndexOf(manifestUrl.path));
@@ -784,6 +785,7 @@ let simulator = module.exports = {
       host: manifestUrl.host,
       installOrigin: installOrigin,
       receipt: receipt,
+      receiptType: receiptType,
     }
     console.log("Registered App " + JSON.stringify(apps[id], null, 2));
 
@@ -1051,7 +1053,7 @@ let simulator = module.exports = {
     let next = null;
     // if needsUpdateAll try to reinstall all active registered app
     if (SStorage.storage.needsUpdateAll) {
-      next = (typeof cb === "function") ? 
+      next = (typeof cb === "function") ?
         (function(e) e ? cb(e) : simulator.updateAll(cb)) :
         (function(e) e ? null  : simulator.updateAll());
     } else {
