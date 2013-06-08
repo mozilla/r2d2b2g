@@ -63,7 +63,7 @@ function updateReceipt(window) {
 function cleanUp({ srv, window, done, simulator }) {
   return function clean() {
     window.postMessage({ name: "toggle" }, "*");
-    simulator.unload();
+    simulator.unload("shutdown");
     srv.stop(function () {
       window.close();
       done();
