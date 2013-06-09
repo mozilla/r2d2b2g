@@ -509,13 +509,27 @@ section header {
 
 /* Device-related UI */
 .device-dependent {
-    transition: .5s opacity;
+    transition: .5s opacity, .5s height;
     opacity: 0;
     pointer-events: none;
 }
 .device-connected .device-dependent {
     opacity: 1;
     pointer-events: all;
+}
+
+#sidebar .device-dependent {
+    text-align: center;
+    height: 0;
+    margin: 0;
+}
+
+#sidebar .device-dependent img {
+    vertical-align: middle;
+}
+
+.device-connected #sidebar .device-dependent {
+    height: 50px;
 }
 
 .appIcon {
