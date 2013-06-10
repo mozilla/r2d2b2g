@@ -24,7 +24,13 @@ function debug(aMsg) {
  * Creates a WebappsActor. WebappsActor provides remote access to
  * install apps.
  */
-function WebappsActor(aConnection) { debug("init"); }
+function WebappsActor(aConnection) {
+  debug("init");
+
+  this._appActorsMap = new WeakMap();
+  this._lastAppActorPool = null;
+  this._watchActorPool = null;
+}
 
 WebappsActor.prototype = {
   actorPrefix: "simulatorWebapps",
@@ -285,6 +291,135 @@ WebappsActor.prototype = {
     }
 
     return { appId: appId, path: appDir.path }
+  },
+
+  _createAppActor: function wa__createAppActor(frame) {
+    // Eventually retrieve a previous Actor instance for this app
+    let actor = this._appActorsMap.get(frame);
+    if (!actor) {
+      // Pass the iframe and not the global object,
+      // otherwise webconsole code will toggle into global console mode.
+      actor = new AppActor(this.conn, frame);
+      // this.actorID is set by ActorPool when an actor is put into one.
+      actor.parentID = this.actorID;
+      this._appActorsMap.set(frame, actor);
+    }
+    return actor;
+  },
+
+  listApps : function wa_onListApps() {
+    let actorPool = new ActorPool(this.conn);
+
+    // Store a dictionary of app actors indexed by their manifest URL.
+    let appActors = {};
+
+    let registerApp = (function registerApp(frame) {
+      let actor = this._createAppActor(frame);
+      actorPool.addActor(actor);
+      let manifestURL = frame.getAttribute("mozapp");
+      appActors[manifestURL] = actor.grip();
+    }).bind(this);
+
+    // Register the system app
+    let chromeWindow = Services.wm.getMostRecentWindow('navigator:browser');
+    let systemAppFrame = chromeWindow.shell.contentBrowser;
+    registerApp.call(this, systemAppFrame);
+
+    // Register apps hosted in the system app. (i.e. all regular apps)
+    let frames = systemAppFrame.contentDocument.querySelectorAll("iframe[mozapp]");
+    for(var i = 0; i < frames.length; i++) {
+      let frame = frames[i];
+      registerApp.call(this, frame);
+    }
+
+    // Drop the pool being returned by previous call to listApps
+    if (this._lastAppActorPool) {
+      this.conn.removeActorPool(this._lastAppActorPool);
+    }
+
+    this._lastAppActorPool = actorPool;
+    this.conn.addActorPool(this._lastAppActorPool);
+
+    return {
+      'apps': appActors
+    };
+  },
+
+  watchApps: function wa_watchApps() {
+    let chromeWindow = Services.wm.getMostRecentWindow('navigator:browser');
+    let systemAppFrame = chromeWindow.getContentWindow();
+    // Eventually drop the pool being used during the last call to watchApps
+    if (this._watchActorPool) {
+      this.conn.removeActorPool(this._watchActorPool);
+    }
+    this._watchActorPool = new ActorPool(this.conn);
+    this._framesByOrigin = {};
+    this.conn.addActorPool(this._watchActorPool);
+    systemAppFrame.addEventListener("appwillopen", this);
+    systemAppFrame.addEventListener("appterminated", this);
+
+    return {};
+  },
+
+  unwatchApps: function wa_unwatchApps() {
+    let chromeWindow = Services.wm.getMostRecentWindow('navigator:browser');
+    let systemAppFrame = chromeWindow.getContentWindow();
+    // Eventually drop the pool being used during the last call to watchApps
+    if (this._watchActorPool) {
+      this.conn.removeActorPool(this._watchActorPool);
+    }
+    this._framesByOrigin = null;
+    systemAppFrame.removeEventListener("appwillopen", this);
+    systemAppFrame.removeEventListener("appterminated", this);
+
+    return {};
+  },
+
+  handleEvent: function (event) {
+    let frame, actor, origin;
+    switch(event.type) {
+      case "appwillopen":
+        frame = event.target;
+        // Ignore the event if we already received an appwillopen for this app
+        // (appwillopen is also fired when the app has been moved to background
+        // and get back to foreground)
+        if (this._appActorsMap.has(frame)) {
+          return;
+        }
+
+        actor = this._createAppActor(frame);
+        this._watchActorPool.addActor(actor);
+
+        // XXX: workaround to be able to get the frame during appterminated evt
+        origin = event.detail.origin;
+        this._framesByOrigin[origin] = frame;
+
+        this.conn.send({ from: this.actorID,
+                         type: "webappsOpen",
+                         manifestURL: frame.getAttribute("mozapp"),
+                         actor: actor.grip()
+                       });
+        break;
+
+      case "appterminated":
+        origin = event.detail.origin;
+        // Get the related app frame out of this event
+        // TODO: eventually fire the event on the frame or at least use
+        // manifestURL as key (and propagate manifestURL via event detail)
+        frame = this._framesByOrigin[origin];
+        if (frame) {
+          actor = this._appActorsMap.get(frame);
+          if (actor) {
+            this._watchActorPool.removeActor(actor);
+          }
+          let manifestURL = frame.getAttribute("mozapp");
+          this.conn.send({ from: this.actorID,
+                           type: "webappsClose",
+                           manifestURL: manifestURL
+                         });
+        }
+        break;
+    }
   }
 };
 
@@ -292,7 +427,87 @@ WebappsActor.prototype = {
  * The request types this actor can handle.
  */
 WebappsActor.prototype.requestTypes = {
-  "install": WebappsActor.prototype.install
+  "install": WebappsActor.prototype.install,
+  "listApps": WebappsActor.prototype.listApps,
+  "watchApps": WebappsActor.prototype.watchApps,
 };
+
+/**
+ * Creates an App actor.
+ *
+ * @param connection DebuggerServerConnection
+ *        The connection to the client.
+ * @param browser browser
+ *        The iframe instance that contains this app.
+ */
+function AppActor(connection, browser) {
+  BrowserTabActor.call(this, connection, browser);
+}
+
+AppActor.prototype = new BrowserTabActor();
+
+AppActor.prototype.grip = function DTA_grip() {
+  dbg_assert(!this.exited,
+             'grip() should not be called on exited browser actor.');
+  dbg_assert(this.actorID,
+             'tab should have an actorID.');
+
+  let response = {
+    'actor': this.actorID,
+    'title': this.browser.contentDocument.title,
+    'url': this.browser.contentDocument.documentURI
+  };
+
+  // Walk over tab actors added by extensions and add them to a new ActorPool.
+  let actorPool = new ActorPool(this.conn);
+  this._createExtraActors(DebuggerServer.tabActorFactories, actorPool);
+  if (!actorPool.isEmpty()) {
+    this._tabActorPool = actorPool;
+    this.conn.addActorPool(this._tabActorPool);
+  }
+
+  this._appendExtraActors(response);
+  return response;
+};
+
+/**
+ * Creates a thread actor and a pool for context-lifetime actors. It then sets
+ * up the content window for debugging.
+ */
+AppActor.prototype._pushContext = function DTA_pushContext() {
+  dbg_assert(!this._contextPool, "Can't push multiple contexts");
+
+  this._contextPool = new ActorPool(this.conn);
+  this.conn.addActorPool(this._contextPool);
+
+  this.threadActor = new ThreadActor(this);
+  this._addDebuggees(this.browser.contentWindow.wrappedJSObject);
+  this._contextPool.addActor(this.threadActor);
+};
+
+// Protocol Request Handlers
+
+/**
+ * Prepare to enter a nested event loop by disabling debuggee events.
+ */
+AppActor.prototype.preNest = function DTA_preNest() {
+  let windowUtils = this.browser.contentWindow
+                        .QueryInterface(Ci.nsIInterfaceRequestor)
+                        .getInterface(Ci.nsIDOMWindowUtils);
+  windowUtils.suppressEventHandling(true);
+  windowUtils.suspendTimeouts();
+};
+
+/**
+ * Prepare to exit a nested event loop by enabling debuggee events.
+ */
+AppActor.prototype.postNest = function DTA_postNest(aNestData) {
+  let windowUtils = this.browser.contentWindow
+                        .QueryInterface(Ci.nsIInterfaceRequestor)
+                        .getInterface(Ci.nsIDOMWindowUtils);
+  windowUtils.resumeTimeouts();
+  windowUtils.suppressEventHandling(false);
+};
+
 
 DebuggerServer.addGlobalActor(WebappsActor, "simulatorWebappsActor");

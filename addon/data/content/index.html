@@ -103,6 +103,9 @@
                         <button class="action" data-action="remove">Remove</button>
                         <button class="action" data-action="update">Update</button>
                         <button class="action" data-action="run">Run</button>
+                        {% if opened %}
+                          <button class="action" data-action="connect">Connect</button>
+                        {% endif %}
                     {% endif %}
                 </div>
                 <h4>

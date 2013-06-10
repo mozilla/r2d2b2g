@@ -124,6 +124,9 @@ var AppList = (function() {
             case 'validation':
                 itemEl.find('.app-validation-list').toggle();
                 break;
+            case 'connect':
+                window.postMessage({name: "connectToApp", id: id}, "*");
+                break;
         }
 
     });
