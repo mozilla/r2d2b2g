@@ -1433,6 +1433,7 @@ let simulator = module.exports = {
                 type: "install",
                 appId: app.xkey,
                 appType: Ci.nsIPrincipal.APP_STATUS_INSTALLED,
+                receipt: app.receipt,
               }).then(
                 function success(data) {
                   console.log("Debugger.webappsRequest success: " + data);
@@ -1512,6 +1513,7 @@ let simulator = module.exports = {
             type: "install",
             appId: app.xkey,
             appType: Ci.nsIPrincipal.APP_STATUS_INSTALLED,
+            receipt: app.receipt,
           }).then(
             function success(data) {
               console.log("Debugger.webappsRequest success: " + data);
