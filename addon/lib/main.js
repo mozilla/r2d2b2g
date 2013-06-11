@@ -84,7 +84,7 @@ if (["install", "downgrade", "upgrade"].indexOf(Self.loadReason) >= 0) {
       filter(function (appId) !Simulator.apps[appId].deleted);
 
     if (activeAppIds.length > 0) {
-      if (Services.vc.compare(lastVersion, "3.0pre3") < 0) {
+      if (Services.vc.compare(lastVersion, "4.0pre5dev") < 0) {
         ensureXkeysValid();
       }
       if (Services.vc.compare(lastVersion, "3.0pre5") < 0) {
