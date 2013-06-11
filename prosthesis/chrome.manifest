@@ -3,13 +3,9 @@ resource prosthesis ./
 content prosthesis content/
 locale prosthesis en-US locale/en-US/
 
-# B2G's "content" stylesheet removes styles from a variety of XUL widgets we use
-# in parts of the Simulator interface, making them hard to recognize, so we
-# remove that stylesheet by overriding it with our own.  Note that our
-# stylesheet doesn't actually exist, nor does it have to: merely specifying it
-# prevents the B2G one from loading. But we can create it at some point to apply
-# our own style (including style from the B2G sheet that we end up wanting).
-override chrome://browser/content/content.css chrome://prosthesis/content/global.css
+# Until platform bug 874984 is figured out, use custom content stylesheet
+# to avoid applying to xul documents.
+override chrome://browser/content/content.css chrome://prosthesis/content/b2g.css
 
 overlay chrome://prosthesis/content/shell.xul chrome://prosthesis/content/shell-mac.xul os=Darwin
 overlay chrome://prosthesis/content/shell.xul chrome://prosthesis/content/shell-windows.xul os=WINNT
