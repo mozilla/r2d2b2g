@@ -99,8 +99,10 @@ function simulatorAppUpdate(clearAppCache) {
 
   if (clearAppCache) {
     debug("clear cache and storages for: " + origin);
+    let localId = DOMApplicationRegistry.webapps[appId].localId;
     simulatorClearStorages(origin);
-    simulatorClearAppCache(appId);
+    simulatorClearCookies(localId);
+    simulatorClearAppCache(localId);
   }
 
   debug("request app reinstall:" + origin);
@@ -118,6 +120,11 @@ function simulatorGetAppWindow(origin) {
   return iframe ? iframe.contentWindow : null;
 }
 
+function simulatorClearCookies(localAppId) {
+  debug("clear cookies");
+  Services.cookies.removeCookiesForApp(localAppId, false);
+}
+
 function simulatorClearStorages(origin) {
   let appWindow = simulatorGetAppWindow(origin);
 
@@ -125,25 +132,14 @@ function simulatorClearStorages(origin) {
   appWindow.sessionStorage.clear();
   debug("clear localStorage entries");
   appWindow.localStorage.clear();
-  debug("clear cookies");
-  let s=(appWindow.document.cookie+';').
-        replace(/([^=]*)=[^;]*; */g,"$1=; expires=Thu, 01 Jan 1970 00:00:00 GMT;\n").split('\n');
-  for (var i in s) {
-    appWindow.document.cookie = s[i];
-  }
 }
 
-function simulatorClearAppCache(appId) {
+function simulatorClearAppCache(localAppId) {
   debug("clear appCache entries");
-  let localId = DOMApplicationRegistry.webapps[appId].localId;
-
-  if (!localId) {
-    return;
-  }
 
   try {
     Cc["@mozilla.org/network/application-cache-service;1"].
-      getService(Ci.nsIApplicationCacheService).discardByAppId(localId, false);
+      getService(Ci.nsIApplicationCacheService).discardByAppId(localAppId, false);
   } catch(e) {
     // NOTE: currently cacheService.discardByAppId always raise an expection
     // even if it's working correctly (and cache entries are refreshed on app
