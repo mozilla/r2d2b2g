@@ -98,7 +98,8 @@ function simulatorAppUpdate(clearAppCache) {
   let appId = DOMApplicationRegistry._appId(origin);
 
   if (clearAppCache) {
-    debug("clear all associated appCache entries: " + origin);
+    debug("clear cache and storages for: " + origin);
+    simulatorClearStorages(origin);
     simulatorClearAppCache(appId);
   }
 
@@ -111,7 +112,29 @@ function simulatorAppUpdate(clearAppCache) {
   }, "r2d2b2g:app-update", null);
 }
 
+function simulatorGetAppWindow(origin) {
+  let iframe = shell.contentBrowser.contentDocument
+        .querySelector("iframe[data-frame-origin='" + origin + "']");
+  return iframe ? iframe.contentWindow : null;
+}
+
+function simulatorClearStorages(origin) {
+  let appWindow = simulatorGetAppWindow(origin);
+
+  debug("clear sessionStorage entries");
+  appWindow.sessionStorage.clear();
+  debug("clear localStorage entries");
+  appWindow.localStorage.clear();
+  debug("clear cookies");
+  let s=(appWindow.document.cookie+';').
+        replace(/([^=]*)=[^;]*; */g,"$1=; expires=Thu, 01 Jan 1970 00:00:00 GMT;\n").split('\n');
+  for (var i in s) {
+    appWindow.document.cookie = s[i];
+  }
+}
+
 function simulatorClearAppCache(appId) {
+  debug("clear appCache entries");
   let localId = DOMApplicationRegistry.webapps[appId].localId;
 
   if (!localId) {
