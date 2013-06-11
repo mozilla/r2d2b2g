@@ -1239,6 +1239,12 @@ let simulator = module.exports = {
 
     remoteSimulator.on("webappsOpen", (function ({ manifestURL }) {
       let app = this._getAppByManifestURL(manifestURL);
+
+      // Ignore apps not being tracked by the simulator
+      if (!app) {
+        return;
+      }
+
       app.opened = true;
 
       // Update the connect button in app list
@@ -1247,6 +1253,12 @@ let simulator = module.exports = {
 
     remoteSimulator.on("webappsClose", (function ({ manifestURL }) {
       let app = this._getAppByManifestURL(manifestURL);
+
+      // Ignore apps not being tracked by the simulator
+      if (!app) {
+        return;
+      }
+
       app.opened = false;
 
       // Update the connect button in app list
