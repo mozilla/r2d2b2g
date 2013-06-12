@@ -6,9 +6,6 @@
 @namespace xul url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
 
 /* Style the scrollbars */
-xul|window xul|scrollbar {
-  display: none;
-}
 
 html xul|scrollbar {
   -moz-appearance: none !important;
@@ -20,47 +17,48 @@ html xul|scrollbar {
   opacity: 1;
 }
 
-xul|scrollbar[orient="vertical"] {
+html xul|scrollbar[orient="vertical"] {
   -moz-margin-start: -8px;
   min-width: 8px;
   max-width: 8px;
 }
 
-xul|scrollbar[orient="vertical"] xul|thumb {
+html xul|scrollbar[orient="vertical"] xul|thumb {
   max-width: 6px !important;
   min-width: 6px !important;
 }
 
-xul|scrollbar[orient="horizontal"] {
+html xul|scrollbar[orient="horizontal"] {
   margin-top: -8px;
   min-height: 8px;
   max-height: 8px;
 }
 
-xul|scrollbar[orient="horizontal"] xul|thumb {
+html xul|scrollbar[orient="horizontal"] xul|thumb {
   max-height: 6px !important;
   min-height: 6px !important;
 }
 
-xul|scrollbar:not([active="true"]),
-xul|scrollbar[disabled] {
+html xul|scrollbar:not([active="true"]),
+html xul|scrollbar[disabled] {
   opacity: 0;
   -moz-transition: opacity 1s ease;
 }
 
-xul|scrollbarbutton {
+html xul|scrollbarbutton {
   min-height: 8px !important;
   min-width: 8px !important;
   -moz-appearance: none !important;
   visibility: hidden;
 }
 
-xul|scrollbarbutton[sbattr="scrollbar-up-top"],
-xul|scrollbarbutton[sbattr="scrollbar-bottom-top"] {
+html xul|scrollbarbutton[sbattr="scrollbar-up-top"],
+html xul|scrollbarbutton[sbattr="scrollbar-bottom-top"] {
   display: none;
 }
 
-xul|thumb {
+html xul|thumb {
+  -moz-appearance: none !important;
   background-color: rgba(0, 0, 0, 0.4) !important;
   -moz-border-top-colors: none !important;
   -moz-border-bottom-colors: none !important;
@@ -88,8 +86,8 @@ select[size="1"] xul|scrollbarbutton {
 select,
 textarea,
 button,
-xul|button,
-* > input:not([type="image"]) {
+html xul|button,
+* > input:not([type="image"]):not([type="range"]) {
   -moz-appearance: none !important;  /* See bug 598421 for fixing the platform */
   border-radius: 3px;
 }
@@ -98,7 +96,7 @@ select[size],
 select[multiple],
 select[size][multiple],
 textarea,
-* > input:not([type="image"]) {
+* > input:not([type="image"]):not([type="range"]) {
   border-style: solid;
   border-color: #7d7d7d;
   color: #414141;
@@ -108,11 +106,6 @@ textarea,
 /* Selects are handled by the form helper, see bug 685197 */
 select option, select optgroup {
   pointer-events: none;
-}
-
-input:-moz-placeholder,
-textarea:-moz-placeholder {
-  color: GrayText;
 }
 
 select:not([size]):not([multiple]),
@@ -197,7 +190,7 @@ select[multiple]:focus,
 select[size][multiple]:focus,
 textarea:focus,
 input[type="file"]:focus > input[type="text"],
-* > input:not([type="image"]):focus {
+* > input:not([type="image"]):not([type="range"]):focus {
   outline: 0px !important;
   border-style: solid;
   border-color: rgb(94,128,153);
@@ -239,7 +232,7 @@ select:not([size]):not([multiple])[disabled],
 select[size="0"][disabled],
 select[size="1"][disabled],
 button[disabled],
-* > input:not([type="image"])[disabled] {
+* > input:not([type="image"]):not([type="range"])[disabled] {
   color: rgba(0,0,0,0.3);
   border-color: rgba(125,125,125,0.4);
   border-style: solid;
