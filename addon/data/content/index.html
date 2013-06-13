@@ -52,7 +52,7 @@
                 <section id="add-project-dialog">
                     <ul class="list-actions">
                         <li>
-                            <label for="receipt_type">Receipt Type:</label>
+                            <label for="receipt_type">Receipt:</label>
                             <select name="receipt_type" id="receipt_type">
                                 <option value="none" selected>None</option>
                                 <option value="ok">Valid</option>
@@ -90,7 +90,7 @@
         <script type="text/template" id="app-template">
             <li class="app {{ 'removed' if removed }}" data-id="{{ id | escape }}">
                 <div class="options">
-                    <label>Receipt Type</label>
+                    <label>Receipt:</label>
                     <select class="receipt-type">
                         {% for type in receiptTypes %}
                             <option value="{{ type }}" {{ 'selected' if receiptType == type else '' }}>{{ type }}</option>
