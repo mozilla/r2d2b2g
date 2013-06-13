@@ -15,3 +15,12 @@ addon/data/win32/adb
 
 # locale repositories cloned by build/make-locales.py
 gaia-l10n
+
+# b2g binaries
+b2g-18.0.2013*
+
+# packaged adb zip
+adb*.zip
+
+# r2d2b2g XPI
+r2d2b2g.xpi
