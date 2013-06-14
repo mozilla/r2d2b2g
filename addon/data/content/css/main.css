@@ -124,7 +124,6 @@ h1 {
 }
 
 article > section {
-    display: none;
     -moz-box-flex: 1;
     box-flex: 1;
     padding: 10px 10px;

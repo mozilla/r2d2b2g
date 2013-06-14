@@ -111,6 +111,9 @@ var AppList = (function() {
         e.preventDefault();
 
         switch (action) {
+            case 'reveal':
+                window.postMessage({ name: "revealApp", id: id }, "*");
+                break;
             case 'push':
                 window.postMessage({ name: "pushAppToDevice", id: id }, "*");
                 break;
