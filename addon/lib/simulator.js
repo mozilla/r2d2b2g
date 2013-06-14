@@ -1223,28 +1223,6 @@ let simulator = module.exports = {
           }
         });
         break;
-      case "runApp":
-        app = this.apps[message.id];
-        simulator.runApp(app, function (error,res) {
-          if (error) {
-            simulator.error(error);
-            return;
-          }
-
-          if (res.success === false) {
-            if (res.error === 'app-not-installed') {
-              // install and run if not installed
-              simulator.onMessage({
-                name: "updateApp",
-                id: message.id
-              });
-            } else {
-              // print error message
-              simulator.error("Run app failed: "+res.message);
-            }
-          }
-        });
-        break;
       case "removeApp":
         this.removeApp(message.id);
         break;
