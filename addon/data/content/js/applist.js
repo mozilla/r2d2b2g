@@ -41,7 +41,7 @@ var AppList = (function() {
                 renderSingle(appIds[i]);
             }
         } else {
-            listEl.appendChild('<li><h3>No Apps Installed</h3></li>');
+            listEl.append('<li class="notice">No Apps Installed</li>');
         }
     }
 

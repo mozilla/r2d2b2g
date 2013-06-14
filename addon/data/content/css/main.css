@@ -277,6 +277,11 @@ figure {
     padding: 0 10px;
     list-style-type: none;
 }
+#apps-list .notice {
+    font-weight: 300;
+    text-align: center;
+    margin: 1em;
+}
 #apps-list > em {
     display: block;
     text-align: center;
