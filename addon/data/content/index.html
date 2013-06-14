@@ -101,7 +101,7 @@
                     {{ name | escape }}<small>{{ 'has been removed' if removed else prettyType }}</small>
                 </h4>
                 <p>
-                    <a title="{{ id | escape }}" href="#">Open Location</a> <span class="location">({{ id | escape }})</span>
+                    <a title="{{ id | escape }}" class="action" data-action="reveal" href="#">Open Location</a> <span class="location">({{ id | escape }})</span>
                 </p>
                 <p>
                     Last updated: {{ prettyLastUpdate or 'never' }}
