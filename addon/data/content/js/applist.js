@@ -115,9 +115,6 @@ var AppList = (function() {
             case 'update':
                 window.postMessage({name: "updateApp", id: id}, "*");
                 break;
-            case 'run':
-                window.postMessage({name: "runApp", id: id}, "*");
-                break;
             case 'undo':
                 window.postMessage({name: "undoRemoveApp", id: id}, "*");
                 break;
