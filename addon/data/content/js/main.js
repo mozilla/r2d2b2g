@@ -15,16 +15,6 @@ var Simulator = {
       Simulator.toggle();
     });
 
-    var current = document.location.hash.substr(1) || 'dashboard';
-    Simulator.show('#' + current);
-
-    $(document).on('click', 'a[href^="#"]', function(evt) {
-      var target = $(this).attr('href');
-      if ($(target)[0].tagName.toLowerCase() == 'section') {
-        Simulator.show(target);
-      }
-    });
-
     var currentUrl;
     $('#add-app-url, #new-from-manifest').on('keyup change input', function(evt) {
       var url = $(this).val();
@@ -154,20 +144,6 @@ var Simulator = {
     $('body').toggleClass('device-connected', !!Simulator.deviceConnected);
   },
 
-  show: function(target) {
-    var to = $(target)[0];
-    if (this.section) {
-      if (to == this.section) {
-        return;
-      }
-      $(this.section).hide();
-      $('a[href="#' + $(this.section).attr('id') + '"]').removeClass('active');
-    }
-    this.section = to;
-    $(this.section).show();
-    $('a[href="#' + $(this.section).attr('id') + '"]').addClass('active');
-  },
-
   toggle: function() {
     $(this.toggler).prop('indeterminate', true);
     window.postMessage({ name: "toggle" }, "*");
@@ -194,6 +170,4 @@ $addProjectButton.on('click', function() {
   $addProjectDialog.css('height', height + 'px');
 });
 
-$(window).load(function() {
-  Simulator.init();
-});
+Simulator.init();
