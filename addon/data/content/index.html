@@ -85,15 +85,15 @@
                         <button class="action device-dependent" data-action="push">Push</button>
                         <button class="action" data-action="remove">Remove</button>
                         <button class="action" data-action="update">Update</button>
+                        <div class="receipt">
+                            <label>Receipt:</label>
+                            <select class="receipt-type">
+                                {% for type in receiptTypes %}
+                                    <option value="{{ type.id }}" {{ 'selected' if receiptType == type.id else '' }}>{{ type.pretty }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     {% endif %}
-                    <div class="receipt">
-                        <label>Receipt:</label>
-                        <select class="receipt-type">
-                            {% for type in receiptTypes %}
-                                <option value="{{ type.id }}" {{ 'selected' if receiptType == type.id else '' }}>{{ type.pretty }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
                 </div>
                 <h4>
                     <img class="appIcon" src="{{ iconPath | escape }}" />
