@@ -77,7 +77,12 @@ var AppList = (function() {
         }
 
         app.iconPath = iconPath;
-        app.receiptTypes = ['none', 'ok', 'invalid', 'refunded'];
+        app.receiptTypes = [
+            {id: 'none', pretty: 'None'},
+            {id: 'ok', pretty: 'Valid'},
+            {id: 'invalid', pretty: 'Invalid'},
+            {id: 'refunded', pretty: 'Refunded'}
+        ];
 
         var appEl = $(appTemplate.render(app).trim());
 
