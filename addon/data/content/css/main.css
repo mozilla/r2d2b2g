@@ -286,10 +286,30 @@ figure {
 }
 #apps-list .app {
     margin: 5px 0 10px;
-    padding: 6px 6px 6px 65px;
+    padding: 6px 36px 6px 65px;
     border-radius: 5px;
     position: relative;
     line-height: 1.1rem;
+}
+#apps-list .app.removed {
+    padding: 6px 6px 6px 65px;
+}
+#apps-list .app .remove {
+    position: absolute;
+    right: 0;
+    top: 7px;
+    width: 16px;
+    height: 16px;
+    overflow: hidden;
+    text-indent: 16px;
+    padding: 0;
+    display: block;
+    background: url('../x.svg#black') no-repeat;
+    background-size: contain;
+}
+#apps-list .app .remove:hover {
+    background: url('../x.svg#red') no-repeat;
+    background-size: contain;
 }
 .appIcon {
     width: 50px;
@@ -329,6 +349,7 @@ figure {
     padding-left: 10px;
 }
 #apps-list .options {
+    text-align: right;
     float: right;
     font-size: .8rem;
 }
@@ -338,7 +359,6 @@ figure {
 }
 #apps-list .options div {
     margin-top: 1em;
-    text-align: right;
 }
 .receipt-type {
     padding: 1px 0;
