@@ -41,8 +41,8 @@
 
   <commandset id="mainCommandSet">
     <command id="quitSimulatorCmd" oncommand="goQuitApplication()"/>
-    <command id="refreshAppCmd" oncommand="SimulatorAppUpdate.run()"/>
-    <command id="refreshClearCacheCmd" oncommand="SimulatorAppUpdate.run(true)"/>
+    <command id="refreshAppCmd" oncommand="simulatorAppUpdate()"/>
+    <command id="refreshClearCacheCmd" oncommand="simulatorAppUpdate(true)"/>
   </commandset>
   <keyset id="mainKeyset">
     <key id="refreshAppKey"

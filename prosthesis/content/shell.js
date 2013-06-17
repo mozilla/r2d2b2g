@@ -91,42 +91,30 @@ document.getElementById("rotateButton").addEventListener("click", function() {
           .addEventListener("click", openWin);
 }
 
-let SimulatorAppUpdate = {
-  run: function appUpdateRun(clearCacheAndStorages) {
-    let wm = shell.contentBrowser.contentWindow.wrappedJSObject.
-          WindowManager;
-    let origin = wm.getCurrentDisplayedApp().origin;
-    let appId = DOMApplicationRegistry._appId(origin);
+function simulatorAppUpdate(clearCacheAndStorages) {
+  let origin = shell.contentBrowser.
+           contentWindow.wrappedJSObject.
+           WindowManager.getCurrentDisplayedApp().origin;
+  let appId = DOMApplicationRegistry._appId(origin);
 
-    if (clearCacheAndStorages) {
-      debug("clear cache and storages for: " + origin);
-      let localId = DOMApplicationRegistry.webapps[appId].localId;
-      this._doClearStorages(origin);
-      this._doClearCookies(localId);
-      this._doClearAppCache(localId);
-    }
+  if (clearCacheAndStorages) {
+    debug("clear cache and storages for: " + origin);
 
-    debug("request app reinstall:" + origin);
-    Services.obs.notifyObservers({
-      wrappedJSObject: {
-        origin: origin,
-        appId: DOMApplicationRegistry._appId(origin)
-      }
-    }, "r2d2b2g:app-update", null);
-  },
-  _doClearStorages: function(origin) {
-    let appWindow = this._getAppWindow(origin);
+    let appWindow = simulatorGetAppWindow(origin);
 
-    appWindow.sessionStorage.clear();
+    // clear localStorage/sessionStorage
     appWindow.localStorage.clear();
-  },
-  _doClearCookies: function(localAppId) {
-    Services.cookies.removeCookiesForApp(localAppId, false);
-  },
-  _doClearAppCache: function(localAppId) {
+    appWindow.sessionStorage.clear();
+
+    let localId = DOMApplicationRegistry.webapps[appId].localId;
+
+    // clear cookies
+    Services.cookies.removeCookiesForApp(localId, false);
+
+    // clear app cache
     try {
       Cc["@mozilla.org/network/application-cache-service;1"].
-      getService(Ci.nsIApplicationCacheService).discardByAppId(localAppId, false);
+      getService(Ci.nsIApplicationCacheService).discardByAppId(localId, false);
     } catch(e) {
       // NOTE: currently cacheService.discardByAppId always raise an expection
       // even if it's working correctly (and cache entries are refreshed on app
@@ -136,17 +124,23 @@ let SimulatorAppUpdate = {
       // nsresult: "0x8000ffff (NS_ERROR_UNEXPECTED)" ...
       // debug("EXCEPTION on localId " + localId + ": " + e);
     }
-  },
-  _escapeForQuerySelector: function escapeNameForQuery(name) {
-    // NOTE: some characters needs to be escaped when used in a query selector
-    // notes and code snippet from:
-    // http://www.mymindleaks.com/article/escape-special-characters-in-javascript-css-queryselector.html
-    return typeof(name) == 'string' ? name.replace(/[\[\]\.\:\*]/g,"\\$&") : name;
-  },
-  _getAppWindow: function getAppWindow(origin) {
-    let escapedOrigin = this._escapeForQuerySelector(origin);
-    let iframe = shell.contentBrowser.contentDocument.
-                 querySelector("iframe[data-frame-origin='" + escapedOrigin + "']");
-    return iframe ? iframe.contentWindow : null;
   }
-};
+
+  debug("request app reinstall:" + origin);
+  Services.obs.notifyObservers({
+    wrappedJSObject: {
+      origin: origin,
+      appId: DOMApplicationRegistry._appId(origin)
+    }
+  }, "r2d2b2g:app-update", null);
+}
+
+function simulatorGetAppWindow(origin) {
+  // NOTE: some characters needs to be escaped when used in a query selector
+  // notes and code snippet from:
+  // http://www.mymindleaks.com/article/escape-special-characters-in-javascript-css-queryselector.html
+  let escapedOrigin = origin.replace(/[\[\]\.\:\*]/g,"\\$&");
+  let iframe = shell.contentBrowser.contentDocument.
+        querySelector("iframe[data-frame-origin='" + escapedOrigin + "']");
+  return iframe ? iframe.contentWindow : null;
+}
