@@ -105,7 +105,7 @@ function simulatorAppUpdate(clearCacheAndStorages) {
     )[0];
 
     if (!iframe) {
-      debug("ERROR: app iframe not found");
+      debug("error! app iframe not found");
       return;
     }
 
@@ -116,7 +116,7 @@ function simulatorAppUpdate(clearCacheAndStorages) {
     let localId = DOMApplicationRegistry.webapps[appId].localId;
 
     if (!localId) {
-      debug("ERROR: app localId not found");
+      debug("error! app localId not found");
       return;
     }
 
