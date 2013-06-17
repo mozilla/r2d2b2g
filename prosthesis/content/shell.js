@@ -91,62 +91,62 @@ document.getElementById("rotateButton").addEventListener("click", function() {
           .addEventListener("click", openWin);
 }
 
-function simulatorAppUpdate(clearAppCache) {
-  let wm = shell.contentBrowser.contentWindow.wrappedJSObject.
-           WindowManager;
-  let origin = wm.getCurrentDisplayedApp().origin;
-  let appId = DOMApplicationRegistry._appId(origin);
+let SimulatorAppUpdate = {
+  run: function appUpdateRun(clearCacheAndStorages) {
+    let wm = shell.contentBrowser.contentWindow.wrappedJSObject.
+          WindowManager;
+    let origin = wm.getCurrentDisplayedApp().origin;
+    let appId = DOMApplicationRegistry._appId(origin);
 
-  if (clearAppCache) {
-    debug("clear cache and storages for: " + origin);
-    let localId = DOMApplicationRegistry.webapps[appId].localId;
-    simulatorClearStorages(origin);
-    simulatorClearCookies(localId);
-    simulatorClearAppCache(localId);
-  }
-
-  debug("request app reinstall:" + origin);
-  Services.obs.notifyObservers({
-    wrappedJSObject: {
-      origin: origin,
-      appId: DOMApplicationRegistry._appId(origin)
+    if (clearCacheAndStorages) {
+      debug("clear cache and storages for: " + origin);
+      let localId = DOMApplicationRegistry.webapps[appId].localId;
+      this._doClearStorages(origin);
+      this._doClearCookies(localId);
+      this._doClearAppCache(localId);
     }
-  }, "r2d2b2g:app-update", null);
-}
 
-function simulatorGetAppWindow(origin) {
-  let iframe = shell.contentBrowser.contentDocument
-        .querySelector("iframe[data-frame-origin='" + origin + "']");
-  return iframe ? iframe.contentWindow : null;
-}
+    debug("request app reinstall:" + origin);
+    Services.obs.notifyObservers({
+      wrappedJSObject: {
+        origin: origin,
+        appId: DOMApplicationRegistry._appId(origin)
+      }
+    }, "r2d2b2g:app-update", null);
+  },
+  _doClearStorages: function(origin) {
+    let appWindow = this._getAppWindow(origin);
 
-function simulatorClearCookies(localAppId) {
-  debug("clear cookies");
-  Services.cookies.removeCookiesForApp(localAppId, false);
-}
-
-function simulatorClearStorages(origin) {
-  let appWindow = simulatorGetAppWindow(origin);
-
-  debug("clear sessionStorage entries");
-  appWindow.sessionStorage.clear();
-  debug("clear localStorage entries");
-  appWindow.localStorage.clear();
-}
-
-function simulatorClearAppCache(localAppId) {
-  debug("clear appCache entries");
-
-  try {
-    Cc["@mozilla.org/network/application-cache-service;1"].
+    appWindow.sessionStorage.clear();
+    appWindow.localStorage.clear();
+  },
+  _doClearCookies: function(localAppId) {
+    Services.cookies.removeCookiesForApp(localAppId, false);
+  },
+  _doClearAppCache: function(localAppId) {
+    try {
+      Cc["@mozilla.org/network/application-cache-service;1"].
       getService(Ci.nsIApplicationCacheService).discardByAppId(localAppId, false);
-  } catch(e) {
-    // NOTE: currently cacheService.discardByAppId always raise an expection
-    // even if it's working correctly (and cache entries are refreshed on app
-    // window reload)
-    // EXCEPTION on localId NNNN: [Exception... "Component returned failure code: 0x8000ffff \
-    // (NS_ERROR_UNEXPECTED) [nsIApplicationCacheService.discardByAppId]" \
-    // nsresult: "0x8000ffff (NS_ERROR_UNEXPECTED)" ...
-    // debug("EXCEPTION on localId " + localId + ": " + e);
+    } catch(e) {
+      // NOTE: currently cacheService.discardByAppId always raise an expection
+      // even if it's working correctly (and cache entries are refreshed on app
+      // window reload)
+      // EXCEPTION on localId NNNN: [Exception... "Component returned failure code: 0x8000ffff \
+      // (NS_ERROR_UNEXPECTED) [nsIApplicationCacheService.discardByAppId]" \
+      // nsresult: "0x8000ffff (NS_ERROR_UNEXPECTED)" ...
+      // debug("EXCEPTION on localId " + localId + ": " + e);
+    }
+  },
+  _escapeForQuerySelector: function escapeNameForQuery(name) {
+    // NOTE: some characters needs to be escaped when used in a query selector
+    // notes and code snippet from:
+    // http://www.mymindleaks.com/article/escape-special-characters-in-javascript-css-queryselector.html
+    return typeof(name) == 'string' ? name.replace(/[\[\]\.\:\*]/g,"\\$&") : name;
+  },
+  _getAppWindow: function getAppWindow(origin) {
+    let escapedOrigin = this._escapeForQuerySelector(origin);
+    let iframe = shell.contentBrowser.contentDocument.
+                 querySelector("iframe[data-frame-origin='" + escapedOrigin + "']");
+    return iframe ? iframe.contentWindow : null;
   }
-}
+};
