@@ -8,6 +8,8 @@
 // (from an addon built using the Add-on SDK).  If it isn't a CommonJS Module,
 // then it's a JavaScript Module.
 const COMMONJS = ("require" in this);
+const { setTimeout, clearTimeout } = require("sdk/timers");
+const TIMEOUT_DURATION = 15000; // ms
 
 let components;
 if (COMMONJS) {
@@ -45,9 +47,16 @@ this.Debugger = {
     client = new DebuggerClient(transport);
 
     let deferred = Promise.defer();
-    let self = this;
 
+    let connectionTimer = setTimeout(function timedOut() {
+      let errorMsg = "Failed to connect to device: timeout";
+      dump(errorMsg + "\n");
+      deferred.reject(errorMsg);
+    }, TIMEOUT_DURATION);
+
+    // Not guaranteed to connect
     client.connect(function onConnected(aType, aTraits) {
+      clearTimeout(connectionTimer);
       client.listTabs(function(aResponse) {
         if (aResponse.webappsActor) {
           webappsActor = aResponse.webappsActor;
