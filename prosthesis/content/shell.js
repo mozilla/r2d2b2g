@@ -100,11 +100,19 @@ function simulatorAppUpdate(clearCacheAndStorages) {
   if (clearCacheAndStorages) {
     debug("clear cache and storages for: " + origin);
 
-    let appWindow = simulatorGetAppWindow(origin);
+    let iframe = Array.prototype.filter.call(
+      shell.contentBrowser.contentDocument.getElementsByTagName("iframe"),
+      function(iframe) iframe.getAttribute("data-frame-origin") == origin
+    )[0];
+
+    if (!iframe) {
+      debug("ERROR: app iframe not found");
+      return;
+    }
 
     // clear localStorage/sessionStorage
-    appWindow.localStorage.clear();
-    appWindow.sessionStorage.clear();
+    iframe.contentWindow.localStorage.clear();
+    iframe.contentWindow.sessionStorage.clear();
 
     let localId = DOMApplicationRegistry.webapps[appId].localId;
 
@@ -133,14 +141,4 @@ function simulatorAppUpdate(clearCacheAndStorages) {
       appId: DOMApplicationRegistry._appId(origin)
     }
   }, "r2d2b2g:app-update", null);
-}
-
-function simulatorGetAppWindow(origin) {
-  // NOTE: some characters needs to be escaped when used in a query selector
-  // notes and code snippet from:
-  // http://www.mymindleaks.com/article/escape-special-characters-in-javascript-css-queryselector.html
-  let escapedOrigin = origin.replace(/[\[\]\.\:\*]/g,"\\$&");
-  let iframe = shell.contentBrowser.contentDocument.
-        querySelector("iframe[data-frame-origin='" + escapedOrigin + "']");
-  return iframe ? iframe.contentWindow : null;
 }
