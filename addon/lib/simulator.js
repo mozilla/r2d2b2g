@@ -771,7 +771,7 @@ let simulator = module.exports = {
       break;
     case "hosted":
       Request({
-        url: id,
+        url: id + '?' + new Date().getTime(), // append microtime to avoid cache
         onComplete: function (response) {
           let error;
           if (response.status != 200) {
