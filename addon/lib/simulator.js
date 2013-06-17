@@ -771,7 +771,12 @@ let simulator = module.exports = {
       break;
     case "hosted":
       Request({
-        url: id + '?' + new Date().getTime(), // append microtime to avoid cache
+        // Never fetch manifest from cache as if the user
+        // has hit "Update", it has probably changed.
+        headers: {
+          "Cache-Control": "no-cache",
+        },
+        url: id,
         onComplete: function (response) {
           let error;
           if (response.status != 200) {
