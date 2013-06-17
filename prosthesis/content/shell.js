@@ -116,6 +116,11 @@ function simulatorAppUpdate(clearCacheAndStorages) {
 
     let localId = DOMApplicationRegistry.webapps[appId].localId;
 
+    if (!localId) {
+      debug("ERROR: app localId not found");
+      return;
+    }
+
     // clear cookies
     Services.cookies.removeCookiesForApp(localId, false);
 
