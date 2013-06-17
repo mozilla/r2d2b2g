@@ -92,9 +92,8 @@ document.getElementById("rotateButton").addEventListener("click", function() {
 }
 
 function simulatorAppUpdate(clearCacheAndStorages) {
-  let origin = shell.contentBrowser.
-           contentWindow.wrappedJSObject.
-           WindowManager.getCurrentDisplayedApp().origin;
+  let origin = shell.contentBrowser.contentWindow.wrappedJSObject.
+               WindowManager.getCurrentDisplayedApp().origin;
   let appId = DOMApplicationRegistry._appId(origin);
 
   if (clearCacheAndStorages) {
