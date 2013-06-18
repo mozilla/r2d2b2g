@@ -50,18 +50,6 @@
                 <section id="add-project-dialog">
                     <ul class="list-actions">
                         <li>
-                            <label for="receipt_type">Receipt Type:</label>
-                            <select name="receipt_type" id="receipt_type">
-                                <option value="none" selected>None</option>
-                                <option value="ok">Valid</option>
-                                <!-- Expired receipts are still valid until
-                                     bug 757226 is patched. See Issue #497. -->
-                                <!--<option value="expired">Expired</option>-->
-                                <option value="invalid">Invalid</option>
-                                <option value="refunded">Refunded</option>
-                            </select>
-                        </li>
-                        <li>
                             <button id="action-add-directory" title="Select the manifest.webapp file from your app directory." onclick="Simulator.addAppByDirectory()">Add Directory</button>
                         </li>
                         <li>
@@ -79,6 +67,7 @@
                         <h2>Dashboard</h2>
                     </header>
                     <ul id="apps-list">
+                        <li class="notice">Loading your apps&hellip;</li>
                     </ul>
                 </div>
             </section>
@@ -88,22 +77,21 @@
         <script type="text/template" id="app-template">
             <li class="app {{ 'removed' if removed }}" data-id="{{ id | escape }}">
                 <div class="options">
-                    <label>Receipt Type</label>
-                    <select class="receipt-type">
-                        {% for type in receiptTypes %}
-                            <option value="{{ type }}" {{ 'selected' if receiptType == type else '' }}>{{ type }}</option>
-                        {% endfor %}
-                    </select>
                     {% if removed %}
                         <button class="action" data-action="undo">Undo</button>
                     {% else %}
                         <button class="action device-dependent" data-action="push">Push</button>
-                        <button class="action" data-action="remove">Remove</button>
                         <button class="action" data-action="update">Update</button>
-                        <button class="action" data-action="run">Run</button>
-                        {% if opened %}
-                          <button class="action" data-action="connect">Connect</button>
-                        {% endif %}
+                        <button class="action" data-action="connect">Connect</button>
+                        <a href="javascript:;" title="Remove" class="action remove" data-action="remove">Remove</a>
+                        <div class="receipt">
+                            <label>Receipt:</label>
+                            <select class="receipt-type">
+                                {% for type in receiptTypes %}
+                                    <option value="{{ type.id }}" {{ 'selected' if receiptType == type.id else '' }}>{{ type.pretty }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     {% endif %}
                 </div>
                 <h4>
@@ -111,7 +99,7 @@
                     {{ name | escape }}<small>{{ 'has been removed' if removed else prettyType }}</small>
                 </h4>
                 <p>
-                    <a title="{{ id | escape }}" href="#">Open Location</a> <span>({{ id | escape }})</span>
+                    <a title="{{ id | escape }}" class="action" data-action="reveal" href="#">Open Location</a> <span class="location">({{ id | escape }})</span>
                 </p>
                 <p>
                     Last updated: {{ prettyLastUpdate or 'never' }}
