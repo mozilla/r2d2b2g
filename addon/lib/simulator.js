@@ -948,7 +948,19 @@ let simulator = module.exports = {
       gCurrentToolbox = null;
     }
     gCurrentToolboxManifestURL = app.manifestURL;
+    // Function called whenever the toolbox is finally created
+    function toolboxDisplayed(toolbox) {
+      gCurrentToolbox = toolbox;
 
+      // Display a message in the console to make it clear that the toolbox
+      // got connected to a new App
+      let ui = toolbox.getPanel("webconsole").hud.ui;
+      let CATEGORY_JS = 2;
+      let SEVERITY_INFO = 2;
+      let node = ui.createMessageNode(CATEGORY_JS, SEVERITY_INFO,
+                                      "The toolbox is now connected to " + app.name);
+      ui.outputMessage(CATEGORY_JS, node);
+    }
     // We need to workaround existing devtools TabTarget.destroy code,
     // that tries to close the client when the related toolbox is closed
     // whereas we want to keep the client alive for other usages!
@@ -988,9 +1000,7 @@ let simulator = module.exports = {
           Object.defineProperty(target, "tab", {value: browserWindow.gBrowser.selectedTab});
 
           let promise = gDevTools.showToolbox(target, "webconsole", devtools.Toolbox.HostType.BOTTOM);
-          promise.then(function (toolbox) {
-            gCurrentToolbox = toolbox;
-          });
+          promise.then(toolboxDisplayed);
         });
       } catch(e) {
         let TargetFactory = Cu.import("resource:///modules/devtools/Target.jsm", {}).TargetFactory;
@@ -1009,9 +1019,7 @@ let simulator = module.exports = {
           gDevTools._toolboxes.delete(target);
 
           let promise = gDevTools.showToolbox(target, "webconsole", Toolbox.HostType.BOTTOM);
-          promise.then(function (toolbox) {
-            gCurrentToolbox = toolbox;
-          });
+          promise.then(toolboxDisplayed);
         } else {
           // FF22
           let target = TargetFactory.forTab(options);
@@ -1021,9 +1029,7 @@ let simulator = module.exports = {
           Object.defineProperty(target, "tab", {value: browserWindow.gBrowser.selectedTab});
           target.makeRemote(options).then(function() {
             let promise = gDevTools.showToolbox(target, "webconsole", Toolbox.HostType.BOTTOM);
-            promise.then(function (toolbox) {
-              gCurrentToolbox = toolbox;
-            });
+            promise.then(toolboxDisplayed);
           });
         }
       }
