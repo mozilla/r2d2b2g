@@ -41,7 +41,7 @@ var AppList = (function() {
                 renderSingle(appIds[i]);
             }
         } else {
-            listEl.appendChild('<li><h3>No Apps Installed</h3></li>');
+            listEl.append('<li class="notice">No Apps Installed</li>');
         }
     }
 
@@ -77,7 +77,12 @@ var AppList = (function() {
         }
 
         app.iconPath = iconPath;
-        app.receiptTypes = ['none', 'ok', 'invalid', 'refunded'];
+        app.receiptTypes = [
+            {id: 'none', pretty: 'None'},
+            {id: 'ok', pretty: 'Valid'},
+            {id: 'invalid', pretty: 'Invalid'},
+            {id: 'refunded', pretty: 'Refunded'}
+        ];
 
         var appEl = $(appTemplate.render(app).trim());
 
@@ -106,6 +111,9 @@ var AppList = (function() {
         e.preventDefault();
 
         switch (action) {
+            case 'reveal':
+                window.postMessage({ name: "revealApp", id: id }, "*");
+                break;
             case 'push':
                 window.postMessage({ name: "pushAppToDevice", id: id }, "*");
                 break;
@@ -114,9 +122,6 @@ var AppList = (function() {
                 break;
             case 'update':
                 window.postMessage({name: "updateApp", id: id}, "*");
-                break;
-            case 'run':
-                window.postMessage({name: "runApp", id: id}, "*");
                 break;
             case 'undo':
                 window.postMessage({name: "undoRemoveApp", id: id}, "*");

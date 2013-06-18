@@ -135,7 +135,7 @@ let simulator = module.exports = {
 
   get contentScript() Self.data.url("content-script.js"),
 
-  addAppByDirectory: function(receiptType) {
+  addAppByDirectory: function() {
     console.log("Simulator.addAppByDirectory");
 
     let win = Services.wm.getMostRecentWindow("navigator:browser");
@@ -155,9 +155,7 @@ let simulator = module.exports = {
       apps[manifestFile] = {
         type: "local",
         xkey: xkey,
-        origin: "app://" + xkey,
-        receipt: null,
-        receiptType: receiptType,
+        origin: "app://" + xkey
       };
       console.log("Registered App " + JSON.stringify(apps[manifestFile]));
 
@@ -170,22 +168,7 @@ let simulator = module.exports = {
           simulator.runApp(app);
         }
       };
-      if (receiptType && receiptType !== "none") {
-        let app = apps[manifestFile];
-        let manifestURL = simulator.receiptManifestURL(app.type, app.xkey);
-        this.fetchReceipt(manifestURL, receiptType, function(err, receipt) {
-          if (err || !receipt) {
-            delete apps[manifestFile];
-            simulator.error("Error retrieving receipt. Please try adding the app again.");
-            console.error(err || "No receipt");
-          } else {
-            app.receipt = receipt;
-            simulator.updateApp(manifestFile, next);
-          }
-        });
-      } else {
-        this.updateApp(manifestFile, next);
-      }
+      this.updateApp(manifestFile, next);
     }
   },
 
@@ -609,7 +592,7 @@ let simulator = module.exports = {
   /**
    * Installs the web page in the active tab as if it was an app.
    */
-  addAppByTabUrl: function(tabUrl, force, receiptType) {
+  addAppByTabUrl: function(tabUrl, force) {
     console.log("Simulator.addAppByTabUrl " + tabUrl);
     let url = URL.URL(tabUrl);
     let origin = url.toString().substring(0, url.lastIndexOf(url.path));
@@ -628,20 +611,9 @@ let simulator = module.exports = {
       if (!force) {
         this.validateUrl(tabUrl, function(err) {
           if (err) {
-            simulator.addAppByTabUrl(tabUrl, true, receiptType);
+            simulator.addAppByTabUrl(tabUrl, true);
           } else {
-            if (receiptType && receiptType !== "none") {
-              simulator.fetchReceipt(origin, receiptType, function(err, receipt) {
-                if (err || !receipt) {
-                  simulator.error("Error retrieving receipt. Please try adding the app again.");
-                  console.error(err || "No receipt");
-                } else {
-                  simulator.addManifestUrl(tabUrl, receipt, receiptType);
-                }
-              });
-            } else {
-              simulator.addManifestUrl(tabUrl);
-            }
+            simulator.addManifestUrl(tabUrl);
           }
         });
         return;
@@ -667,26 +639,12 @@ let simulator = module.exports = {
       manifestUrl: manifestUrl,
       webapp: webapp,
       installOrigin: origin,
-      generated: true,
-      receipt: null,
-      receiptType: receiptType,
+      generated: true
     };
-    if (receiptType && receiptType !== "none") {
-      this.fetchReceipt(origin, receiptType, function (err, receipt) {
-        if (err || !receipt) {
-          simulator.error("Error retrieving receipt. Please try adding the app again.");
-          console.error(err || "No receipt");
-        } else {
-          addManifestArgs.receipt = receipt;
-          simulator.addManifest(addManifestArgs);
-        }
-      });
-    } else {
-      this.addManifest(addManifestArgs);
-    }
+    this.addManifest(addManifestArgs);
   },
 
-  addManifestUrl: function(manifestUrl, receipt, receiptType) {
+  addManifestUrl: function(manifestUrl) {
     console.log("Simulator.addManifestUrl " + manifestUrl);
 
     Request({
@@ -718,9 +676,7 @@ let simulator = module.exports = {
 
         simulator.addManifest({
           manifestUrl: manifestUrl,
-          webapp: response.json,
-          receipt: receipt,
-          receiptType: receiptType,
+          webapp: response.json
         });
       }
     }).get();
@@ -759,7 +715,7 @@ let simulator = module.exports = {
     }).head();
   },
 
-  addManifest: function({ manifestUrl, webapp, installOrigin, generated, receipt, receiptType }) {
+  addManifest: function({ manifestUrl, webapp, installOrigin, generated}) {
     console.log("Simulator.addManifest " + manifestUrl);
     manifestUrl = URL.URL(manifestUrl.toString());
     let origin = manifestUrl.toString().substring(0, manifestUrl.toString().lastIndexOf(manifestUrl.path));
@@ -787,8 +743,6 @@ let simulator = module.exports = {
       origin: origin,
       host: manifestUrl.host,
       installOrigin: installOrigin,
-      receipt: receipt,
-      receiptType: receiptType,
     }
     console.log("Registered App " + JSON.stringify(apps[id], null, 2));
 
@@ -821,6 +775,11 @@ let simulator = module.exports = {
     case "hosted":
       Request({
         url: id,
+        // Never fetch manifest from cache as if the user has hit "Update"
+        // it has probably changed.  This works around SDK bug 884113.
+        headers: {
+          "Cache-Control": "no-cache",
+        },
         onComplete: function (response) {
           let error;
           if (response.status != 200) {
@@ -1314,11 +1273,11 @@ let simulator = module.exports = {
         break;
       case "addAppByDirectory":
         // packaged apps
-        simulator.addAppByDirectory(message.receiptType);
+        simulator.addAppByDirectory();
         break;
       case "addAppByTab":
         // hosted and generated apps
-        simulator.addAppByTabUrl(message.url, false, message.receiptType);
+        simulator.addAppByTabUrl(message.url, false);
         break;
       case "listApps":
         if (message.flush) {
@@ -1334,28 +1293,6 @@ let simulator = module.exports = {
             simulator.error(error);
           } else {
             simulator.runApp(app);
-          }
-        });
-        break;
-      case "runApp":
-        app = this.apps[message.id];
-        simulator.runApp(app, function (error,res) {
-          if (error) {
-            simulator.error(error);
-            return;
-          }
-
-          if (res.success === false) {
-            if (res.error === 'app-not-installed') {
-              // install and run if not installed
-              simulator.onMessage({
-                name: "updateApp",
-                id: message.id
-              });
-            } else {
-              // print error message
-              simulator.error("Run app failed: "+res.message);
-            }
           }
         });
         break;
