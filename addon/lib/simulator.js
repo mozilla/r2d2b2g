@@ -771,12 +771,12 @@ let simulator = module.exports = {
       break;
     case "hosted":
       Request({
-        // Never fetch manifest from cache as if the user
-        // has hit "Update", it has probably changed.
+        url: id,
+        // Never fetch manifest from cache as if the user has hit "Update"
+        // it has probably changed.  This works around SDK bug 884113.
         headers: {
           "Cache-Control": "no-cache",
         },
-        url: id,
         onComplete: function (response) {
           let error;
           if (response.status != 200) {
