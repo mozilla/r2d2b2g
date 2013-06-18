@@ -56,6 +56,7 @@ const MANIFEST_CONTENT_TYPE = "application/x-web-app-manifest+json";
 let worker, remoteSimulator;
 let deviceConnected, adbReady, debuggerReady;
 let gCurrentToolbox, gCurrentToolboxManifestURL;
+let gRunningApps = [];
 
 let simulator = module.exports = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIObserver,
@@ -938,6 +939,10 @@ let simulator = module.exports = {
   },
 
   connectToApp: function(app) {
+    simulator.runApp(app, simulator.openToolboxForApp.bind(simulator, app));
+  },
+
+  openToolboxForApp: function(app) {
     if (gCurrentToolbox) {
       gCurrentToolbox.destroy();
       gCurrentToolbox = null;
@@ -1101,6 +1106,9 @@ let simulator = module.exports = {
         next();
       });
 
+      // Reset currently opened app list
+      gRunningApps = [];
+
       try {
         this.remoteSimulator.run({
           defaultApp: appName
@@ -1128,7 +1136,21 @@ let simulator = module.exports = {
       }
       else {
         let cb = typeof next === "function" ? (function(res) next(null,res)) : null;
-        simulator.remoteSimulator.runApp(app.xkey, cb);
+        simulator.remoteSimulator.runApp(app.xkey);
+
+        // Listen for app to be finally opened before firing the callback
+        if (cb) {
+          if (gRunningApps.indexOf(app) != -1) {
+            cb();
+          } else {
+            simulator.remoteSimulator.on("webappsOpen", function listener({manifestURL}) {
+              if (manifestURL == app.manifestURL) {
+                simulator.remoteSimulator.removeListener("webappsOpen", listener);
+                cb();
+              }
+            });
+          }
+        }
       }
     });
   },
@@ -1204,10 +1226,7 @@ let simulator = module.exports = {
         return;
       }
 
-      app.opened = true;
-
-      // Update the connect button in app list
-      simulator.sendListApps();
+      gRunningApps.push(app);
     }).bind(this));
 
     remoteSimulator.on("webappsClose", (function ({ manifestURL }) {
@@ -1218,10 +1237,9 @@ let simulator = module.exports = {
         return;
       }
 
-      app.opened = false;
-
-      // Update the connect button in app list
-      simulator.sendListApps();
+      let idx = gRunningApps.indexOf(app);
+      if (idx != -1)
+        gRunningApps.splice(idx, 1);
 
       // Close the current toolbox if it targets the closed app
       if (gCurrentToolboxManifestURL == manifestURL) {
