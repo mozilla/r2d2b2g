@@ -48,13 +48,13 @@ this.Debugger = {
 
     let deferred = Promise.defer();
 
-    let connectionTimer = setTimeout(function timedOut() {
+    let connectionTimer = setTimeout(function () {
       let errorMsg = "Failed to connect to device: timeout";
       dump(errorMsg + "\n");
       deferred.reject(errorMsg);
     }, TIMEOUT_DURATION);
 
-    // Not guaranteed to connect
+    // Not guaranteed to connect, Bug 883931
     client.connect(function onConnected(aType, aTraits) {
       clearTimeout(connectionTimer);
       client.listTabs(function(aResponse) {
