@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+  <view id="hover" viewBox="0 32 32 32"/>
+  <g transform="translate(16,16) rotate(-45) translate(-16,-16)">
+    <rect x="0" y="0" fill="none" stroke="none" width="32" height="32"/>
+    <path stroke="#666" stroke-width="3" fill="none" d="M16,26 A 10,10 0 1,1 26,16"/>
+    <path stroke="none" fill="#666" d="M26,23 l-7,-7 h14 Z"/>
+  </g>
+  <g transform="translate(16,48) rotate(-45) translate(-16,-16)">
+    <rect x="0" y="0" fill="none" stroke="none" width="32" height="32"/>
+    <path stroke="#1155cc" stroke-width="3" fill="none" d="M16,26 A 10,10 0 1,1 26,16"/>
+    <path stroke="none" fill="#1155cc" d="M26,23 l-7,-7 h14 Z"/>
+  </g>
+</svg>
+

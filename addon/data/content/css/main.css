@@ -24,7 +24,7 @@ body {
     -moz-box-orient: horizontal;
 }
 a {
-    color: rgb(17, 85, 204);
+    color: #1155cc;
 }
 .center-box {
     display: -moz-box;
@@ -364,16 +364,39 @@ figure {
     padding: 1px 0;
 }
 #apps-list .options button, #apps-list .options a {
-    padding: 3px 10px;
+    padding: 4px 10px 3px;
     font-weight: normal;
     text-decoration: none;
 }
-#apps-list .action[data-action=push] {
-    background-image: url(../device.png);
+#apps-list .action.reload {
+    background-image: url(../reload.svg);
     background-repeat: no-repeat;
     background-position: 6px center;
     padding-left: 23px;
     background-size: auto 14px;
+}
+#apps-list .action.reload:hover {
+    background-image: url(../reload.svg#hover);
+}
+#apps-list .action[data-action=push] {
+    background-image: url(../device.svg);
+    background-repeat: no-repeat;
+    background-position: 6px center;
+    padding-left: 23px;
+    background-size: auto 14px;
+}
+#apps-list .action.reload:hover {
+    background-image: url(../reload.svg#hover);
+}
+#apps-list .action[data-action=connect] {
+    background-image: url(../tools.svg);
+    background-repeat: no-repeat;
+    background-position: 6px center;
+    padding-left: 23px;
+    background-size: auto 14px;
+}
+#apps-list .action[data-action=connect]:hover {
+    background-image: url(../tools.svg#hover);
 }
 #apps-list label {
     padding-left: 5px;
@@ -444,7 +467,7 @@ input:-moz-placeholder {
     font-style: italic;
 }
 button:hover:not(:disabled), .popover-wrap:hover button, a.button:hover {
-    color: #222;
+    color: #1155cc;
     cursor: pointer;
 }
 a.button {
