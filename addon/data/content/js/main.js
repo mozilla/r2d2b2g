@@ -62,6 +62,11 @@ var Simulator = {
           case "isRunning":
             $(Simulator.toggler).prop('indeterminate', false);
             $(Simulator.toggler).prop('checked', message.isRunning);
+            if (message.isRunning) {
+              $("#open-connect-devtools").show().prop("disabled", false);
+            } else {
+              $("#open-connect-devtools").hide().prop("disabled", true);
+            }
             break;
           case "listTabs":
             var datalist = $('#list-app-tabs').empty();
