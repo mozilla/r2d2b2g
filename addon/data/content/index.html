@@ -43,7 +43,7 @@
                     </fieldset>
                 </div>
                 <h5 id="device-status" class="device-dependent">
-                    <img src="device.png" alt="Device"> Device connected.
+                    <img src="device.svg" alt="Device"> Device connected.
                 </h5>
                 <a id="help" class="item" href="https://developer.mozilla.org/en-US/docs/Tools/Firefox_OS_Simulator" target="_blank">Help</a>
             </header>
@@ -83,7 +83,10 @@
                         <button class="action" data-action="undo">Undo</button>
                     {% else %}
                         <button class="action device-dependent" data-action="push">Push</button>
-                        <button class="action" data-action="update">Update</button>
+                        {#<button class="action connect device-dependent" data-action="connect">Connect</button>#}
+                        <button class="action reload" data-action="update"
+                                title="Pushes the latest code to the Simulator and launches the app.">
+                                Refresh</button>
                         <a href="javascript:;" title="Remove" class="action remove" data-action="remove">Remove</a>
                         <div class="receipt">
                             <label>Receipt:</label>
@@ -100,10 +103,10 @@
                     {{ name | escape }}<small>{{ 'has been removed' if removed else prettyType }}</small>
                 </h4>
                 <p>
-                    <a title="{{ id | escape }}" class="action" data-action="reveal" href="#">Open Location</a> <span class="location">({{ id | escape }})</span>
+                    Last updated: {{ prettyLastUpdate or 'never' }}
                 </p>
                 <p>
-                    Last updated: {{ prettyLastUpdate or 'never' }}
+                    <a title="{{ id | escape }}" class="action" data-action="reveal" href="#">Open Location</a> <span class="location">({{ id | escape }})</span>
                 </p>
                 {% if validation and not removed %}
                     {% set errors = validation.errors %}

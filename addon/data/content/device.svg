@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+  <view id="hover" viewBox="0 32 32 32"/>
+  <g fill-rule="evenodd" transform="" fill="#666">
+    <path d="M5,4 a 4,4 0 0,1 4,-4 h14 a 4,4 0 0,1 4,4 v24 a 4,4 0 0,1 -4,4 h-14 a 4,4 0 0,1 -4,-4 z M 8,4 h16 v21 h-16 z M 15.5,27 a 1.5,1.5 0 1,0 1.5,0 a 1.5,1.5 0 1.5,0 -1.5,0"/>  </g>
+  <g fill-rule="evenodd" transform="translate(0,32)" fill="#1155cc">
+    <path d="M5,4 a 4,4 0 0,1 4,-4 h14 a 4,4 0 0,1 4,4 v24 a 4,4 0 0,1 -4,4 h-14 a 4,4 0 0,1 -4,-4 z M 8,4 h16 v21 h-16 z M 15.5,27 a 1.5,1.5 0 1,0 1.5,0 a 1.5,1.5 0 1.5,0 -1.5,0"/>
+  </g>
+</svg>
+
