@@ -240,8 +240,8 @@ const RemoteSimulatorClient = Class({
 
     client.addListener("closed", (function () {
       clearTimeout(timeout);
-      emit(this, "clientClosed", {client: client});
       this._stopGeolocation();
+      emit(this, "clientClosed", {client: client});
     }).bind(this));
 
     client.addListener("geolocationStart", this.onGeolocationStart.bind(this));
