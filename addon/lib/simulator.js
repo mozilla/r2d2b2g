@@ -55,6 +55,8 @@ const MANIFEST_CONTENT_TYPE = "application/x-web-app-manifest+json";
 
 let worker, remoteSimulator;
 let deviceConnected, adbReady, debuggerReady;
+let gCurrentToolbox, gCurrentToolboxManifestURL;
+let gRunningApps = [];
 
 let simulator = module.exports = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIObserver,
@@ -150,9 +152,11 @@ let simulator = module.exports = {
       console.log("Selected " + manifestFile);
 
       let apps = simulator.apps;
+      let xkey = UUID.uuid().toString().slice(1, -1);
       apps[manifestFile] = {
         type: "local",
-        xkey: UUID.uuid().toString().slice(1, -1)
+        xkey: xkey,
+        origin: "app://" + xkey
       };
       console.log("Registered App " + JSON.stringify(apps[manifestFile]));
 
@@ -934,28 +938,100 @@ let simulator = module.exports = {
     }
   },
 
-  openConnectDevtools: function() {
-    let port = this.remoteSimulator.remoteDebuggerPort;
-    let originalPort = Services.prefs.getIntPref("devtools.debugger.remote-port");
-    Tabs.open({
-      url: "chrome://browser/content/devtools/connect.xhtml",
-      onReady: function(tab) {
-        // Inject the allocated remote debugger port into the opened tab.
-        // We know it's a Number, so we don't actually need to parseInt it,
-        // but doing so reassures AMO reviewers that we aren't exposing
-        // a security issue.
-        tab.attach({
-          contentScript: "window.addEventListener(" +
-                         "  'load', " +
-                         "  function() " +
-                         "    document.getElementById('port').value = " +
-                         "      '" + parseInt(port, 10) + "', " +
-                         "  true" +
-                         ");"
-        }).on('detach', function restoreOriginalRemotePort() {
-          // restore previous value (autosaved on submit by connect.xhtml)
-          Services.prefs.setIntPref("devtools.debugger.remote-port", originalPort);
+  connectToApp: function(app) {
+    simulator.runApp(app, simulator.openToolboxForApp.bind(simulator, app));
+  },
+
+  openToolboxForApp: function(app) {
+    if (gCurrentToolbox) {
+      gCurrentToolbox.destroy();
+      gCurrentToolbox = null;
+    }
+    gCurrentToolboxManifestURL = app.manifestURL;
+    // Function called whenever the toolbox is finally created
+    function toolboxDisplayed(toolbox) {
+      gCurrentToolbox = toolbox;
+
+      // Display a message in the console to make it clear that the toolbox
+      // got connected to a new App
+      let ui = toolbox.getPanel("webconsole").hud.ui;
+      let CATEGORY_JS = 2;
+      let SEVERITY_INFO = 2;
+      let node = ui.createMessageNode(CATEGORY_JS, SEVERITY_INFO,
+                                      "The toolbox is now connected to " + app.name);
+      ui.outputMessage(CATEGORY_JS, node);
+    }
+    // We need to workaround existing devtools TabTarget.destroy code,
+    // that tries to close the client when the related toolbox is closed
+    // whereas we want to keep the client alive for other usages!
+    // http://hg.mozilla.org/mozilla-central/annotate/cfcce7c5eb74/browser/devtools/framework/target.js#l427
+    // TODO: remove this workaround when bug 875104 reach release channel
+    let clientProxy = new Proxy(this.remoteSimulator.client, {
+      get: function (target, name) {
+        if (name == "close")
+          return function () {};
+        return target[name];
+      }
+    });
+    let self = this;
+    this.remoteSimulator.getActorForApp(app.manifestURL, function (actor) {
+      let options = {
+        form: actor,
+        client: clientProxy,
+        chrome: false
+      };
+      let {gDevTools} = Cu.import("resource:///modules/devtools/gDevTools.jsm", {});
+
+      // Devtools API changed at each 3 last FF version :'(
+      // Either on how to load modules, or how to use the API.
+      try {
+        let devtools;
+        try {
+          // FF24
+          devtools = Cu.import("resource://gre/modules/devtools/Loader.jsm", {}).devtools;
+        } catch(e) {
+          // FF23
+          devtools = Cu.import("resource:///modules/devtools/gDevTools.jsm", {}).devtools;
+        }
+        let promise = devtools.TargetFactory.forRemoteTab(options).then(function (target) {
+          // We have to set tab as BottomHost expect a tab attribute on target whereas
+          // TabTarget ignores any tab being given as options attributes passed to forRemoteTab.
+          let browserWindow = Services.wm.getMostRecentWindow("navigator:browser");
+          Object.defineProperty(target, "tab", {value: browserWindow.gBrowser.selectedTab});
+
+          let promise = gDevTools.showToolbox(target, "webconsole", devtools.Toolbox.HostType.BOTTOM);
+          promise.then(toolboxDisplayed);
         });
+      } catch(e) {
+        let TargetFactory = Cu.import("resource:///modules/devtools/Target.jsm", {}).TargetFactory;
+        let Toolbox = Cu.import("resource:///modules/devtools/Toolbox.jsm", {}).Toolbox;
+        if (TargetFactory.forRemote) {
+          // FF21
+          let target = TargetFactory.forRemote(options.form, options.client, options.chrome);
+
+          // We have to set tab as BottomHost expect a tab attribute on target whereas
+          // TabTarget ignores any tab being given as options attributes passed to forRemoteTab.
+          let browserWindow = Services.wm.getMostRecentWindow("navigator:browser");
+          Object.defineProperty(target, "tab", {value: browserWindow.gBrowser.selectedTab});
+
+          // XXX: For some unknown reason, the toolbox doesn't get unregistered
+          // on close. Workaround that by manually unregistering it.
+          gDevTools._toolboxes.delete(target);
+
+          let promise = gDevTools.showToolbox(target, "webconsole", Toolbox.HostType.BOTTOM);
+          promise.then(toolboxDisplayed);
+        } else {
+          // FF22
+          let target = TargetFactory.forTab(options);
+          // We have to set tab as BottomHost expect a tab attribute on target whereas
+          // TabTarget ignores any tab being given as options attributes passed to forRemoteTab.
+          let browserWindow = Services.wm.getMostRecentWindow("navigator:browser");
+          Object.defineProperty(target, "tab", {value: browserWindow.gBrowser.selectedTab});
+          target.makeRemote(options).then(function() {
+            let promise = gDevTools.showToolbox(target, "webconsole", Toolbox.HostType.BOTTOM);
+            promise.then(toolboxDisplayed);
+          });
+        }
       }
     });
   },
@@ -1036,6 +1112,9 @@ let simulator = module.exports = {
         next();
       });
 
+      // Reset currently opened app list
+      gRunningApps = [];
+
       try {
         this.remoteSimulator.run({
           defaultApp: appName
@@ -1063,7 +1142,21 @@ let simulator = module.exports = {
       }
       else {
         let cb = typeof next === "function" ? (function(res) next(null,res)) : null;
-        simulator.remoteSimulator.runApp(app.xkey, cb);
+        simulator.remoteSimulator.runApp(app.xkey);
+
+        // Listen for app to be finally opened before firing the callback
+        if (cb) {
+          if (gRunningApps.indexOf(app) != -1) {
+            cb();
+          } else {
+            simulator.remoteSimulator.on("webappsOpen", function listener({manifestURL}) {
+              if (manifestURL == app.manifestURL) {
+                simulator.remoteSimulator.removeListener("webappsOpen", listener);
+                cb();
+              }
+            });
+          }
+        }
       }
     });
   },
@@ -1122,10 +1215,55 @@ let simulator = module.exports = {
       },
       onExit: function () {
         simulator.postIsRunning();
+
+        // Close any still opened toolbox
+        if (gCurrentToolbox) {
+          gCurrentToolbox.destroy();
+          gCurrentToolbox = null;
+        }
       }
     });
 
+    remoteSimulator.on("webappsOpen", (function ({ manifestURL }) {
+      let app = this._getAppByManifestURL(manifestURL);
+
+      // Ignore apps not being tracked by the simulator
+      if (!app) {
+        return;
+      }
+
+      gRunningApps.push(app);
+    }).bind(this));
+
+    remoteSimulator.on("webappsClose", (function ({ manifestURL }) {
+      let app = this._getAppByManifestURL(manifestURL);
+
+      // Ignore apps not being tracked by the simulator
+      if (!app) {
+        return;
+      }
+
+      let idx = gRunningApps.indexOf(app);
+      if (idx != -1)
+        gRunningApps.splice(idx, 1);
+
+      // Close the current toolbox if it targets the closed app
+      if (gCurrentToolboxManifestURL == manifestURL) {
+        gCurrentToolbox.destroy();
+        gCurrentToolbox = null;
+      }
+    }).bind(this));
+
     return remoteSimulator;
+  },
+
+  _getAppByManifestURL: function (manifestURL) {
+    for (let id in this.apps) {
+      let app = this.apps[id];
+      if (app.manifestURL == manifestURL)
+        return app;
+    }
+    return null;
   },
 
   observe: function(subject, topic, data) {
@@ -1181,6 +1319,10 @@ let simulator = module.exports = {
             simulator.runApp(app);
           }
         });
+        break;
+      case "connectToApp":
+        app = this.apps[message.id];
+        simulator.connectToApp(app);
         break;
       case "removeApp":
         this.removeApp(message.id);

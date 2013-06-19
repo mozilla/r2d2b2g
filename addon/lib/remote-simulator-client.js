@@ -32,6 +32,8 @@ const Geolocation = Cc["@mozilla.org/geolocation;1"].getService(Ci.nsISupports);
 dbgClient.UnsolicitedNotifications.geolocationStart = "geolocationStart";
 dbgClient.UnsolicitedNotifications.geolocationStop = "geolocationStop";
 dbgClient.UnsolicitedNotifications.appUpdateRequest = "appUpdateRequest";
+dbgClient.UnsolicitedNotifications.webappsOpen = "webappsOpen";
+dbgClient.UnsolicitedNotifications.webappsClose = "webappsClose";
 
 // Log subprocess error and debug messages to the console.  This logs messages
 // for all consumers of the API.  We trim the messages because they sometimes
@@ -65,6 +67,16 @@ const RemoteSimulatorClient = Class({
   // (means that we can start using the client!)
   get isReady() !!this._remote,
 
+  get client() this._remote.client,
+
+  getActorForApp: function (manifestURL, callback) {
+    this.client.request({to: this._remote.webapps, type: "listApps"},
+      function (reply) {
+        let actor = reply.apps[manifestURL];
+        callback(actor);
+      });
+  },
+
   _hookInternalEvents: function () {
     // on clientConnected, register an handler to close current connection 
     // on kill and send a "listTabs" debug protocol request, finally
@@ -92,7 +104,11 @@ const RemoteSimulatorClient = Class({
     this.on("clientReady", function (remote) {
       console.debug("rsc.onClientReady");
       this._remote = remote;
-      emit(this, "ready", null);
+      // Start watching app open/close
+      this.client.request({to: this._remote.webapps, type: "watchApps"},
+        (function () {
+          emit(this, "ready", null);
+        }).bind(this));
     });
 
     // on clientClosed, untrack old remote target and emit 
@@ -246,6 +262,8 @@ const RemoteSimulatorClient = Class({
 
     client.addListener("geolocationStart", this.onGeolocationStart.bind(this));
     client.addListener("geolocationStop", this.onGeolocationStop.bind(this));
+    client.addListener("webappsOpen", this.onWebappsOpen.bind(this));
+    client.addListener("webappsClose", this.onWebappsClose.bind(this));
 
     this._registerAppUpdateRequest(client);
 
@@ -304,6 +322,18 @@ const RemoteSimulatorClient = Class({
       Geolocation.clearWatch(this._geolocationID);
       this._geolocationID = null;
     }
+  },
+
+  onWebappsOpen: function onWebappsOpen(type, packet) {
+    emit(this, "webappsOpen", {
+      manifestURL: packet.manifestURL
+    });
+  },
+
+  onWebappsClose: function onWebappsClose(type, packet) {
+    emit(this, "webappsClose", {
+      manifestURL: packet.manifestURL
+    });
   },
 
   // send a getBuildID request to the remote simulator actor

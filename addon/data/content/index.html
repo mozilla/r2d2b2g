@@ -33,8 +33,6 @@
                               Remote Debugger Port:
                               <span id="commands-preference-remote-debugger-port"></span>
                             </div>
-                            <button id="open-connect-devtools" title="Connect Developer Tools&hellip;"
-                                    onclick="Simulator.openConnectDevtools()">Connect&hellip;</button>
                         </label>
                         <label class="commands-options" style="display: none">
                           Run:
@@ -84,6 +82,7 @@
                     {% else %}
                         <button class="action device-dependent" data-action="push">Push</button>
                         <button class="action" data-action="update">Update</button>
+                        <button class="action" data-action="connect">Connect</button>
                         <a href="javascript:;" title="Remove" class="action remove" data-action="remove">Remove</a>
                         <div class="receipt">
                             <label>Receipt:</label>
