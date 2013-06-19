@@ -10,10 +10,11 @@
 const COMMONJS = ("require" in this);
 const TIMEOUT_DURATION = 15000; // ms
 
+let setTimeout, clearTimeout;
 let components;
 if (COMMONJS) {
   components = require("chrome").components;
-  var { setTimeout, clearTimeout } = require("sdk/timers");
+  ({ setTimeout, clearTimeout }) = require("sdk/timers");
 } else {
   components = Components;
   let { Loader, Require } =
@@ -33,7 +34,7 @@ if (COMMONJS) {
   //
   // ModuleNotFoundError: unable to satisfy: require(io/file) from...
   let require_ = Require(loader);
-  var { setTimeout, clearTimeout } = require_("sdk/timers");
+  ({ setTimeout, clearTimeout }) = require_("sdk/timers");
 }
 let Cc = components.classes;
 let Ci = components.interfaces;
