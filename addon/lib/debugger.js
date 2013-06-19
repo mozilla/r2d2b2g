@@ -8,12 +8,33 @@
 // (from an addon built using the Add-on SDK).  If it isn't a CommonJS Module,
 // then it's a JavaScript Module.
 const COMMONJS = ("require" in this);
+const TIMEOUT_DURATION = 15000; // ms
 
+let setTimeout, clearTimeout;
 let components;
 if (COMMONJS) {
   components = require("chrome").components;
+  ({ setTimeout, clearTimeout }) = require("sdk/timers");
 } else {
   components = Components;
+  let { Loader, Require } =
+    Cu.import('resource://gre/modules/commonjs/toolkit/loader.js').Loader;
+
+  let loader = Loader({
+    paths: {
+      '': 'resource://gre/modules/commonjs/sdk/'
+    },
+    globals: { },
+    modules: { }
+  });
+
+  // This variable needs to be named something other than require or else
+  // the addon-sdk loader gets confused. The addon-sdk throws a
+  // ModuleNotFoundError at addon build time. For example:
+  //
+  // ModuleNotFoundError: unable to satisfy: require(io/file) from...
+  let require_ = Require(loader);
+  ({ setTimeout, clearTimeout }) = require_("sdk/timers");
 }
 let Cc = components.classes;
 let Ci = components.interfaces;
@@ -45,9 +66,16 @@ this.Debugger = {
     client = new DebuggerClient(transport);
 
     let deferred = Promise.defer();
-    let self = this;
 
+    let connectionTimer = setTimeout(function () {
+      let errorMsg = "Failed to connect to device: timeout";
+      dump(errorMsg + "\n");
+      deferred.reject(errorMsg);
+    }, TIMEOUT_DURATION);
+
+    // Not guaranteed to connect, Bug 883931
     client.connect(function onConnected(aType, aTraits) {
+      clearTimeout(connectionTimer);
       client.listTabs(function(aResponse) {
         if (aResponse.webappsActor) {
           webappsActor = aResponse.webappsActor;
