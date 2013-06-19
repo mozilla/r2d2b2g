@@ -17,6 +17,7 @@ const Request = require('request').Request;
 const SStorage = require("simple-storage");
 const Gcli = require('gcli');
 const Simulator = require("simulator.js");
+const Prefs = require("preferences-service");
 
 Cu.import("resource://gre/modules/Services.jsm");
 
@@ -78,6 +79,12 @@ if (SStorage.storage.lastVersion != Self.version) {
 // - ensure apps xkeys are unique
 // - flag needsUpdateAll if there are active apps registered
 if (["install", "downgrade", "upgrade"].indexOf(Self.loadReason) >= 0) {
+  // Delete obsolete property and preference.
+  if (Services.vc.compare(lastVersion, "4.0pre7") < 0) {
+    delete SStorage.storage.defaultApp;
+    Prefs.delete("extensions.r2d2b2g.jsconsole");
+  }
+
   if (Simulator.apps) {
     let activeAppIds = Object.keys(Simulator.apps).
       filter(function (appId) !Simulator.apps[appId].deleted);
