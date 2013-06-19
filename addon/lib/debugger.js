@@ -8,14 +8,32 @@
 // (from an addon built using the Add-on SDK).  If it isn't a CommonJS Module,
 // then it's a JavaScript Module.
 const COMMONJS = ("require" in this);
-const { setTimeout, clearTimeout } = require("sdk/timers");
 const TIMEOUT_DURATION = 15000; // ms
 
 let components;
 if (COMMONJS) {
   components = require("chrome").components;
+  var { setTimeout, clearTimeout } = require("sdk/timers");
 } else {
   components = Components;
+  let { Loader, Require } =
+    Cu.import('resource://gre/modules/commonjs/toolkit/loader.js').Loader;
+
+  let loader = Loader({
+    paths: {
+      '': 'resource://gre/modules/commonjs/sdk/'
+    },
+    globals: { },
+    modules: { }
+  });
+
+  // This variable needs to be named something other than require or else
+  // the addon-sdk loader gets confused. The addon-sdk throws a
+  // ModuleNotFoundError at addon build time. For example:
+  //
+  // ModuleNotFoundError: unable to satisfy: require(io/file) from...
+  let require_ = Require(loader);
+  var { setTimeout, clearTimeout } = require_("sdk/timers");
 }
 let Cc = components.classes;
 let Ci = components.interfaces;
