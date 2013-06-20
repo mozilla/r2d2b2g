@@ -32,14 +32,6 @@ var Simulator = {
       window.postMessage({name: "validateUrl", url: url}, "*");
     });
 
-    $('#commands-preference-jsconsole').on('change', function(evt) {
-      window.postMessage({
-        name: "setPreference",
-        key: "jsconsole",
-        value: $(this).prop("checked")
-      }, "*");
-    });
-
     $('#form-add-app').on('submit', function(evt) {
       evt.preventDefault();
 
@@ -69,27 +61,11 @@ var Simulator = {
             break;
           case "isRunning":
             $(Simulator.toggler).prop('indeterminate', false);
-            var remoteDebuggerPortEl = $('#commands-preference-remote-debugger-port');
+            $(Simulator.toggler).prop('checked', message.isRunning);
             if (message.isRunning) {
-              $(Simulator.toggler).prop('checked', true);
-              remoteDebuggerPortEl.html(message.remoteDebuggerPort);
-              remoteDebuggerPortEl.parents('label').show();
-              // NOTE: show connect devtools buttons where it's supported
-              //       and show allocated debugger port on previous firefox releases
-              if (message.hasConnectDevtools) {
-                $("#show-debugger-port").hide();
-                $("#open-connect-devtools").prop("disabled", false);
-                $("#open-connect-devtools").show();
-              } else {
-                $("#show-debugger-port").show();
-                $("#open-connect-devtools").hide();
-                $("#open-connect-devtools").prop("disabled", true);
-              }
-            }
-            else {
-              $(Simulator.toggler).prop('checked', false);
-              $('#commands-preference-remote-debugger-port').html(message.remoteDebuggerPort);
-              remoteDebuggerPortEl.parents('label').hide();
+              $("#open-connect-devtools").show().prop("disabled", false);
+            } else {
+              $("#open-connect-devtools").hide().prop("disabled", true);
             }
             break;
           case "listTabs":
@@ -101,9 +77,6 @@ var Simulator = {
               datalist.append(el);
               tablist.append(el);
             }
-            break;
-          case "setPreference":
-            $("#commands-preference-" + message.key).prop("checked", message.value);
             break;
           case "validateUrl":
             var set = $('#add-app-url').parents('form').removeClass('is-manifest');
@@ -117,14 +90,6 @@ var Simulator = {
             }
             break;
           case "listApps":
-            var defaultApp = message.defaultApp || null;
-
-            var defaultPref = $("#commands-preference-default-app");
-            if (defaultApp) {
-              defaultPref.text(message.list[defaultApp].name).parents('label').show();
-            } else {
-              defaultPref.parents('label').hide();
-            }
             AppList.update(message.list);
             break;
         }
@@ -137,7 +102,6 @@ var Simulator = {
     // Clears removed apps on reload
     window.postMessage({ name: "listApps", flush: true }, "*");
     window.postMessage({ name: "listTabs" }, "*");
-    window.postMessage({ name: "getPreference" }, "*");
   },
 
   updateDeviceView: function() {

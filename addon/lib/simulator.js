@@ -39,13 +39,6 @@ const TEST_RECEIPT_URL = "https://marketplace.firefox.com/api/v1/receipts/test/"
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 
-// NOTE: detect if developer toolbox feature can be enabled
-const HAS_CONNECT_DEVTOOLS = xulapp.is("Firefox") &&
-  xulapp.versionInRange(xulapp.platformVersion, "20.0a1", "*");
-
-console.debug("XULAPP: ", xulapp.name,xulapp.version, xulapp.platformVersion);
-console.debug("HAS_CONNECT_DEVTOOLS: ", HAS_CONNECT_DEVTOOLS);
-
 const PR_RDWR = 0x04;
 const PR_CREATE_FILE = 0x08;
 const PR_TRUNCATE = 0x20;
@@ -93,18 +86,6 @@ let simulator = module.exports = {
 
   get permissions() {
     return SStorage.storage.permissions || (SStorage.storage.permissions = {});
-  },
-
-  get defaultApp() {
-    return SStorage.storage.defaultApp || null;
-  },
-
-  set defaultApp(id) {
-    SStorage.storage.defaultApp = id;
-  },
-
-  get jsConsoleEnabled() {
-    return Prefs.get("extensions.r2d2b2g.jsconsole", false);
   },
 
   get worker() worker,
@@ -346,9 +327,6 @@ let simulator = module.exports = {
                          " (packaged app) installed in Firefox OS");
           // Complete install (Packaged)
 
-          // NOTE: remote simulator.defaultApp because on the first run the app
-          //       will be not already installed
-          simulator.defaultApp = null;
           console.log("Requesting webappsActor to install packaged app: ",
                       config.xkey);
           simulator.run(function(error) {
@@ -413,8 +391,6 @@ let simulator = module.exports = {
               simulator.info(config.name + " (hosted app) installed in Firefox OS");
 
               // Complete install (Hosted)
-              // DISABLED: because on the first run the app will be not already installed
-              simulator.defaultApp = null;
               simulator.run(function(error) {
                 if (error) {
                   // exit on error running b2g-desktop
@@ -866,7 +842,6 @@ let simulator = module.exports = {
     this.worker.postMessage({
       name: "listApps",
       list: simulator.apps,
-      defaultApp: simulator.defaultApp
     });
   },
 
@@ -994,21 +969,7 @@ let simulator = module.exports = {
     }
   },
 
-  getPreference: function() {
-    this.worker.postMessage({
-      name: "setPreference",
-      key: "jsconsole",
-      value: simulator.jsConsoleEnabled
-    });
-  },
-
   run: function (cb) {
-    let appName = null;
-    if (this.defaultApp) {
-      appName = this.apps[this.defaultApp].name
-      this.defaultApp = null;
-    }
-
     let next = null;
     // if needsUpdateAll try to reinstall all active registered app
     if (SStorage.storage.needsUpdateAll) {
@@ -1037,9 +998,7 @@ let simulator = module.exports = {
       });
 
       try {
-        this.remoteSimulator.run({
-          defaultApp: appName
-        });
+        this.remoteSimulator.run();
       } catch(e) {
         if (!cb) {
           // report error if simulator.run is called
@@ -1074,15 +1033,9 @@ let simulator = module.exports = {
 
   postIsRunning: function() {
     if (simulator.worker) {
-      let port = simulator.isRunning ?
-        simulator.remoteSimulator.remoteDebuggerPort :
-        null;
-
       simulator.worker.postMessage({
         name: "isRunning",
         isRunning: simulator.isRunning,
-        remoteDebuggerPort: port,
-        hasConnectDevtools: HAS_CONNECT_DEVTOOLS,
       });
     }
   },
@@ -1190,18 +1143,6 @@ let simulator = module.exports = {
         break;
       case "undoRemoveApp":
         this.undoRemoveApp(message.id);
-        break;
-      case "setDefaultApp":
-        if (!message.id || message.id in apps) {
-          simulator.defaultApp = message.id;
-          this.sendListApps();
-        }
-        break;
-      case "setPreference":
-        console.log(message.key + ": " + message.value);
-        Prefs.set("extensions.r2d2b2g." + message.key, message.value);
-      case "getPreference":
-        simulator.getPreference();
         break;
       case "toggle":
         if (this.isRunning) {

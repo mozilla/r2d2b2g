@@ -170,17 +170,6 @@ figure {
     text-decoration: none;
 }
 
-.commands-options {
-    display: block;
-    margin-top: 10px;
-    line-height: 1.4em;
-    font-size: 0.8em;
-    color: #888;
-}
-.commands-options input {
-    margin-right: 5px;
-}
-
 .toggle {
     position: relative;
     border: 1px solid rgba(0, 0, 0, 0.4);
