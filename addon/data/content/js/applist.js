@@ -74,8 +74,9 @@ var AppList = (function() {
                 // use the file protocol for local apps
                 // We need to support unix and win path separators
                 var lastPathSep = app.id.lastIndexOf("/");
-                if (lastPathSep == -1)
-                  lastPathSep = app.id.lastIndexOf("\\");
+                if (lastPathSep == -1) {
+                    lastPathSep = app.id.lastIndexOf("\\");
+                }
                 iconPath = "file://" + app.id.substring(0, lastPathSep) + app.icon;
             }
         }
