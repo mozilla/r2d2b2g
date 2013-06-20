@@ -368,15 +368,15 @@ figure {
     font-weight: normal;
     text-decoration: none;
 }
-#apps-list .action.reload {
-    background-image: url(../reload.svg);
+#apps-list .action.refresh {
+    background-image: url(../refresh.svg);
     background-repeat: no-repeat;
     background-position: 6px center;
     padding-left: 23px;
     background-size: auto 14px;
 }
-#apps-list .action.reload:hover {
-    background-image: url(../reload.svg#hover);
+#apps-list .action.refresh:hover {
+    background-image: url(../refresh.svg#hover);
 }
 #apps-list .action[data-action=push] {
     background-image: url(../device.svg);
@@ -385,8 +385,8 @@ figure {
     padding-left: 23px;
     background-size: auto 14px;
 }
-#apps-list .action.reload:hover {
-    background-image: url(../reload.svg#hover);
+#apps-list .action.refresh:hover {
+    background-image: url(../refresh.svg#hover);
 }
 #apps-list .action[data-action=connect] {
     background-image: url(../tools.svg);
