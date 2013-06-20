@@ -5,7 +5,6 @@
 const { getActiveTab, getTabContentWindow, closeTab } = require("sdk/tabs/utils");
 const { getMostRecentBrowserWindow } = require("sdk/window/utils");
 const { nsHttpServer } = require("sdk/test/httpd");
-const simulator = require("simulator");
 
 const MOCK_MANIFEST_URL = "http://localhost:8099/test_app/webapp.manifest";
 
@@ -77,6 +76,7 @@ function cleanUp({ srv, window, done, simulator }) {
 }
 
 exports["test receipt update"] = function receiptUpdate(assert, done) {
+  const simulator = require("simulator");
 
   // Start up a test serving serving a locally hosted app.
   let srv = new nsHttpServer();
