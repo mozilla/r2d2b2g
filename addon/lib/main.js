@@ -82,7 +82,7 @@ if (["install", "downgrade", "upgrade"].indexOf(Self.loadReason) >= 0) {
   // Delete obsolete property and preference.
   if (Services.vc.compare(lastVersion, "4.0pre7") < 0) {
     delete SStorage.storage.defaultApp;
-    Prefs.delete("extensions.r2d2b2g.jsconsole");
+    Prefs.reset("extensions.r2d2b2g.jsconsole");
   }
 
   if (Simulator.apps) {
