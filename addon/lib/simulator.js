@@ -935,29 +935,57 @@ let simulator = module.exports = {
   },
 
   openConnectDevtools: function() {
-    let port = this.remoteSimulator.remoteDebuggerPort;
-    let originalPort = Services.prefs.getIntPref("devtools.debugger.remote-port");
-    Tabs.open({
-      url: "chrome://browser/content/devtools/connect.xhtml",
-      onReady: function(tab) {
-        // Inject the allocated remote debugger port into the opened tab.
-        // We know it's a Number, so we don't actually need to parseInt it,
-        // but doing so reassures AMO reviewers that we aren't exposing
-        // a security issue.
-        tab.attach({
-          contentScript: "window.addEventListener(" +
-                         "  'load', " +
-                         "  function() " +
-                         "    document.getElementById('port').value = " +
-                         "      '" + parseInt(port, 10) + "', " +
-                         "  true" +
-                         ");"
-        }).on('detach', function restoreOriginalRemotePort() {
-          // restore previous value (autosaved on submit by connect.xhtml)
-          Services.prefs.setIntPref("devtools.debugger.remote-port", originalPort);
-        });
+    // We need to workaround existing devtools TabTarget.destroy code,
+    // that tries to close the client when the related toolbox is closed
+    // whereas we want to keep the client alive for other usages!
+    // http://hg.mozilla.org/mozilla-central/annotate/cfcce7c5eb74/browser/devtools/framework/target.js#l427
+    let clientProxy = new Proxy(this.remoteSimulator._remote.client, {
+      get: function (target, name) {
+        if (name == "close")
+          return function () {};
+        return target[name];
       }
     });
+    // Open a remote toolbox to shell.xul
+    let options = {
+      form: this.remoteSimulator._rootActor,
+      client: clientProxy,
+      chrome: true
+    };
+    let {gDevTools} = Cu.import("resource:///modules/devtools/gDevTools.jsm", {});
+
+    // Devtools API changed at each 3 last FF version :'(
+    // Either on how to load modules, or how to use the API.
+    try {
+      let devtools;
+      try {
+        // FF24
+        devtools = Cu.import("resource://gre/modules/devtools/Loader.jsm", {}).devtools;
+      } catch(e) {
+        // FF23
+        devtools = Cu.import("resource:///modules/devtools/gDevTools.jsm", {}).devtools;
+      }
+      let promise = devtools.TargetFactory.forRemoteTab(options).then(function (target) {
+        gDevTools.showToolbox(target, "webconsole", devtools.Toolbox.HostType.WINDOW);
+      });
+    } catch(e) {
+      let TargetFactory = Cu.import("resource:///modules/devtools/Target.jsm", {}).TargetFactory;
+      let Toolbox = Cu.import("resource:///modules/devtools/Toolbox.jsm", {}).Toolbox;
+      if (TargetFactory.forRemote) {
+        // FF21
+        let target = TargetFactory.forRemote(options.form, options.client, options.chrome);
+        // XXX: For some unknown reason, the toolbox doesn't get unregistered
+        // on close. Workaround that by manually unregistering it.
+        gDevTools._toolboxes.delete(target);
+        gDevTools.showToolbox(target, "webconsole", Toolbox.HostType.WINDOW);
+      } else {
+        // FF22
+        let target = TargetFactory.forTab(options);
+        target.makeRemote(options).then(function() {
+          gDevTools.showToolbox(target, "webconsole", Toolbox.HostType.WINDOW);
+        });
+      }
+    }
   },
 
   kill: function(onKilled) {

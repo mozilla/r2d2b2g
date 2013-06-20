@@ -76,6 +76,7 @@ const RemoteSimulatorClient = Class({
       let client = data.client;
       this.once("kill", function () client.close());
       client.request({to: "root", type: "listTabs"}, (function (reply) {
+        this._rootActor = reply;
         emit(this, "clientReady", {
           client: client,
           globals: reply,
