@@ -938,7 +938,8 @@ let simulator = module.exports = {
     }
   },
 
-  connectToApp: function(app) {
+  connectToApp: function(id) {
+    let app = this.apps[id];
     simulator.runApp(app, simulator.openToolboxForApp.bind(simulator, app));
   },
 
@@ -961,18 +962,80 @@ let simulator = module.exports = {
                                       "The toolbox is now connected to " + app.name);
       ui.outputMessage(CATEGORY_JS, node);
     }
-    // We need to workaround existing devtools TabTarget.destroy code,
-    // that tries to close the client when the related toolbox is closed
+    // We need to workaround existing devtools DebuggerClient.close code,
+    // that tries to close the connection when the toolbox is closed
     // whereas we want to keep the client alive for other usages!
-    // http://hg.mozilla.org/mozilla-central/annotate/cfcce7c5eb74/browser/devtools/framework/target.js#l427
-    // TODO: remove this workaround when bug 875104 reach release channel
-    let clientProxy = new Proxy(this.remoteSimulator.client, {
+    // Although, at the same time, we do want the other cleanups being done in
+    // client.close.
+    // http://hg.mozilla.org/mozilla-central/file/a67425aa4728/toolkit/devtools/client/dbg-client.jsm#l354
+    // TODO: tweak platform code to prevent that and remove this workaround.
+    let client = this.remoteSimulator.client;
+    function clientClose(aOnClosed) {
+      // Disable detach event notifications, because event handlers will be in a
+      // cleared scope by the time they run.
+      //this._eventsEnabled = false;
+
+      if (aOnClosed) {
+        this.addOneTimeListener('closed', function(aEvent) {
+          aOnClosed();
+        });
+      }
+
+      // In this function, we're using the hoisting behavior of nested
+      // function definitions to write the code in the order it will actually
+      // execute. So converting to arrow functions to get rid of 'self' would
+      // be unhelpful here.
+      let self = this;
+
+      let continuation = function () {
+        self._consoleClients = {};
+        detachThread();
+      }
+
+      for each (let client in this._consoleClients) {
+        continuation = client.close.bind(client, continuation);
+      }
+
+      continuation();
+
+      function detachThread() {
+        if (self.activeThread) {
+          self.activeThread.detach(detachTab);
+        } else {
+          detachTab();
+        }
+      }
+
+      function detachTab() {
+        if (self.activeTab) {
+          self.activeTab.detach(closeTransport);
+        } else {
+          closeTransport();
+        }
+      }
+
+      function closeTransport() {
+        console.log("client.close: hooked and cancelled transport closing");
+        //self._transport.close();
+        //self._transport = null;
+      }
+    }
+    let clientProxy = new Proxy(client, {
       get: function (target, name) {
-        if (name == "close")
-          return function () {};
+        // Hook close method to prevent transport closing
+        if (name == "close") {
+          return clientClose.bind(target);
+        }
         return target[name];
+      },
+      set: function (target, name, v) {
+        // Prevent `this._transport = null;`
+        if (name == "_transport")
+          return false;
+        target[name] = v;
       }
     });
+
     let self = this;
     this.remoteSimulator.getActorForApp(app.manifestURL, function (actor) {
       let options = {
@@ -1321,8 +1384,7 @@ let simulator = module.exports = {
         });
         break;
       case "connectToApp":
-        app = this.apps[message.id];
-        simulator.connectToApp(app);
+        this.connectToApp(message.id);
         break;
       case "removeApp":
         this.removeApp(message.id);

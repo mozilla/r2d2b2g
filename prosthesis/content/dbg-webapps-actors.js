@@ -299,7 +299,7 @@ WebappsActor.prototype = {
     if (!actor) {
       // Pass the iframe and not the global object,
       // otherwise webconsole code will toggle into global console mode.
-      actor = new AppActor(this.conn, frame);
+      actor = new AppActor(this.conn, frame, this._appActorsMap);
       // this.actorID is set by ActorPool when an actor is put into one.
       actor.parentID = this.actorID;
       this._appActorsMap.set(frame, actor);
@@ -440,11 +440,42 @@ WebappsActor.prototype.requestTypes = {
  * @param browser browser
  *        The iframe instance that contains this app.
  */
-function AppActor(connection, browser) {
+function AppActor(connection, browser, appActorsMap) {
   BrowserTabActor.call(this, connection, browser);
+  this._appActorsMap = appActorsMap;
 }
 
 AppActor.prototype = new BrowserTabActor();
+
+AppActor.prototype._attach = function DTA_attach() {
+  if (this._attached) {
+    return;
+  }
+  // DOMWindowCreated events don't fire on app frames (may be because of mozbrowser?)
+  // Listen to the observer notification instead.
+  Services.obs.addObserver(this, "content-document-global-created", false);
+
+  BrowserTabActor.prototype._attach.call(this);
+
+  // Unregister this actor from the map to prevent from reusing it.
+  // One actor can only be attached once and then be garbaged on detach.
+  this._appActorsMap.delete(this.browser);
+}
+AppActor.prototype._detach = function DTA_detach() {
+  if (!this.attached) {
+    return;
+  }
+  Services.obs.removeObserver(this, "content-document-global-created");
+
+  BrowserTabActor.prototype._detach.call(this);
+}
+
+AppActor.prototype.observe = function DTA_observe(subject, topic, data) {
+  if (subject.wrappedJSObject == this.browser.contentWindow.wrappedJSObject) {
+    let event = {target: subject.document, type: "DOMWindowCreated"};
+    this.onWindowCreated(event);
+  }
+}
 
 AppActor.prototype.grip = function DTA_grip() {
   dbg_assert(!this.exited,
