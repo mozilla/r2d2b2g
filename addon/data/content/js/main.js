@@ -10,11 +10,6 @@ var Simulator = {
   init: function() {
 
     this.toggler = $('#command-toggle')[0];
-    $(this.toggler).prop('checked', false).on('change', function(evt) {
-      // FIXME: Change to actual checkbox state
-      Simulator.toggle();
-    });
-
     var currentUrl;
     $('#add-app-url, #new-from-manifest').on('keyup change input', function(evt) {
       var url = $(this).val();
@@ -135,3 +130,7 @@ $addProjectButton.on('click', function() {
 });
 
 Simulator.init();
+
+$(window).load(function () {
+  $(Simulator.toggler).prop('checked', false).on('change', Simulator.toggle);
+});
