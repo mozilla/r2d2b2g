@@ -1342,6 +1342,9 @@ let simulator = module.exports = {
           });
 
           deferred.resolve();
+        },
+        function failure(reason) {
+          simulator.error(reason);
         }
       );
     }

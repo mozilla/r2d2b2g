@@ -240,8 +240,8 @@ const RemoteSimulatorClient = Class({
 
     client.addListener("closed", (function () {
       clearTimeout(timeout);
-      emit(this, "clientClosed", {client: client});
       this._stopGeolocation();
+      emit(this, "clientClosed", {client: client});
     }).bind(this));
 
     client.addListener("geolocationStart", this.onGeolocationStart.bind(this));
@@ -268,6 +268,13 @@ const RemoteSimulatorClient = Class({
     console.log("Firefox received geolocation start request");
 
     let onSuccess = (function onSuccess(position) {
+      if (!this._remote) {
+        console.warn("position watcher called while Simulator not running");
+        // Try clearing the geolocation watch, even though we shouldn't have to.
+        this._stopGeolocation();
+        return;
+      }
+
       console.log("Firefox sending geolocation response");
 
       this._remote.client.request({
