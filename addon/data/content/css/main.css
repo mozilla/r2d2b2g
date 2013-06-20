@@ -286,19 +286,23 @@ figure {
 #apps-list .app .remove {
     position: absolute;
     right: 0;
-    top: 7px;
-    width: 16px;
-    height: 16px;
+    top: 6px;
+    width: 22px;
+    height: 22px;
     overflow: hidden;
-    text-indent: 16px;
-    padding: 0;
+    text-indent: 24px;
     display: block;
-    background: url('../x.svg#black') no-repeat;
-    background-size: contain;
+    background-image: url('../x.svg#black');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 12px;
+}
+#apps-list .app .remove:not(:hover) {
+    border-color: transparent;
+    background-color: transparent;
 }
 #apps-list .app .remove:hover {
-    background: url('../x.svg#red') no-repeat;
-    background-size: contain;
+    background-image: url('../x.svg#red');
 }
 .appIcon {
     width: 50px;
