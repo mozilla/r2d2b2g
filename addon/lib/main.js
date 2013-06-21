@@ -119,7 +119,7 @@ Tabs.on('ready', function() {
 Tabs.on('close', function() {
   // Kill process when the last tab is gone
   if (!Tabs.length) {
-    Simulator.kill();
+    Simulator.unload();
   }
   if (Simulator.worker) {
     Simulator.sendListTabs();
