@@ -317,13 +317,13 @@ const RemoteSimulatorClient = Class({
     }
   },
 
-  onAppOpen: function onAppOpen(type, packet) {
+  onAppOpen: function (type, packet) {
     emit(this, "appOpen", {
       manifestURL: packet.manifestURL
     });
   },
 
-  onAppClose: function onAppClose(type, packet) {
+  onAppClose: function (type, packet) {
     emit(this, "appClose", {
       manifestURL: packet.manifestURL
     });

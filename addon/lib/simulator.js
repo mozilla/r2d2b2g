@@ -38,6 +38,7 @@ const TEST_RECEIPT_URL = "https://marketplace.firefox.com/api/v1/receipts/test/"
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
+const { gDevTools } = Cu.import("resource:///modules/devtools/gDevTools.jsm", {});
 
 // NOTE: detect if developer toolbox feature can be enabled
 const HAS_CONNECT_DEVTOOLS = xulapp.is("Firefox") &&
@@ -1030,8 +1031,9 @@ let simulator = module.exports = {
       },
       set: function (target, name, v) {
         // Prevent `this._transport = null;`
-        if (name == "_transport")
+        if (name == "_transport") {
           return false;
+        }
         target[name] = v;
       }
     });
@@ -1043,7 +1045,6 @@ let simulator = module.exports = {
         client: clientProxy,
         chrome: false
       };
-      let {gDevTools} = Cu.import("resource:///modules/devtools/gDevTools.jsm", {});
 
       // Devtools API changed at each 3 last FF version :'(
       // Either on how to load modules, or how to use the API.
@@ -1307,8 +1308,9 @@ let simulator = module.exports = {
       }
 
       let idx = gRunningApps.indexOf(app);
-      if (idx != -1)
+      if (idx != -1) {
         gRunningApps.splice(idx, 1);
+      }
 
       // Close the current toolbox if it targets the closed app
       if (gCurrentToolboxManifestURL == manifestURL) {

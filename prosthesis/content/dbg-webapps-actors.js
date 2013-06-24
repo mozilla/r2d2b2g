@@ -293,7 +293,7 @@ WebappsActor.prototype = {
     return { appId: appId, path: appDir.path }
   },
 
-  _createAppActor: function wa__createAppActor(frame) {
+  _createAppActor: function (frame) {
     // Eventually retrieve a previous Actor instance for this app
     let actor = this._appActorsMap.get(frame);
     if (!actor) {
@@ -307,7 +307,7 @@ WebappsActor.prototype = {
     return actor;
   },
 
-  listApps : function wa_onListApps() {
+  listApps : function () {
     let actorPool = new ActorPool(this.conn);
 
     // Store a dictionary of app actors indexed by their manifest URL.
@@ -327,7 +327,7 @@ WebappsActor.prototype = {
 
     // Register apps hosted in the system app. (i.e. all regular apps)
     let frames = systemAppFrame.contentDocument.querySelectorAll("iframe[mozapp]");
-    for(var i = 0; i < frames.length; i++) {
+    for (let i = 0; i < frames.length; i++) {
       let frame = frames[i];
       registerApp.call(this, frame);
     }
@@ -345,7 +345,7 @@ WebappsActor.prototype = {
     };
   },
 
-  watchApps: function wa_watchApps() {
+  watchApps: function () {
     let chromeWindow = Services.wm.getMostRecentWindow('navigator:browser');
     let systemAppFrame = chromeWindow.getContentWindow();
     // Eventually drop the pool being used during the last call to watchApps
@@ -361,7 +361,7 @@ WebappsActor.prototype = {
     return {};
   },
 
-  unwatchApps: function wa_unwatchApps() {
+  unwatchApps: function () {
     let chromeWindow = Services.wm.getMostRecentWindow('navigator:browser');
     let systemAppFrame = chromeWindow.getContentWindow();
     // Eventually drop the pool being used during the last call to watchApps
@@ -447,7 +447,7 @@ function AppActor(connection, browser, appActorsMap) {
 
 AppActor.prototype = new BrowserTabActor();
 
-AppActor.prototype._attach = function DTA_attach() {
+AppActor.prototype._attach = function () {
   if (this._attached) {
     return;
   }
@@ -461,7 +461,7 @@ AppActor.prototype._attach = function DTA_attach() {
   // One actor can only be attached once and then be garbaged on detach.
   this._appActorsMap.delete(this.browser);
 }
-AppActor.prototype._detach = function DTA_detach() {
+AppActor.prototype._detach = function () {
   if (!this.attached) {
     return;
   }
@@ -470,14 +470,14 @@ AppActor.prototype._detach = function DTA_detach() {
   BrowserTabActor.prototype._detach.call(this);
 }
 
-AppActor.prototype.observe = function DTA_observe(subject, topic, data) {
+AppActor.prototype.observe = function (subject, topic, data) {
   if (subject.wrappedJSObject == this.browser.contentWindow.wrappedJSObject) {
     let event = {target: subject.document, type: "DOMWindowCreated"};
     this.onWindowCreated(event);
   }
 }
 
-AppActor.prototype.grip = function DTA_grip() {
+AppActor.prototype.grip = function () {
   dbg_assert(!this.exited,
              'grip() should not be called on exited browser actor.');
   dbg_assert(this.actorID,
@@ -505,7 +505,7 @@ AppActor.prototype.grip = function DTA_grip() {
  * Creates a thread actor and a pool for context-lifetime actors. It then sets
  * up the content window for debugging.
  */
-AppActor.prototype._pushContext = function DTA_pushContext() {
+AppActor.prototype._pushContext = function () {
   dbg_assert(!this._contextPool, "Can't push multiple contexts");
 
   this._contextPool = new ActorPool(this.conn);
@@ -521,7 +521,7 @@ AppActor.prototype._pushContext = function DTA_pushContext() {
 /**
  * Prepare to enter a nested event loop by disabling debuggee events.
  */
-AppActor.prototype.preNest = function DTA_preNest() {
+AppActor.prototype.preNest = function () {
   let windowUtils = this.browser.contentWindow
                         .QueryInterface(Ci.nsIInterfaceRequestor)
                         .getInterface(Ci.nsIDOMWindowUtils);
@@ -532,7 +532,7 @@ AppActor.prototype.preNest = function DTA_preNest() {
 /**
  * Prepare to exit a nested event loop by enabling debuggee events.
  */
-AppActor.prototype.postNest = function DTA_postNest(aNestData) {
+AppActor.prototype.postNest = function (aNestData) {
   let windowUtils = this.browser.contentWindow
                         .QueryInterface(Ci.nsIInterfaceRequestor)
                         .getInterface(Ci.nsIDOMWindowUtils);
