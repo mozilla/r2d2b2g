@@ -395,7 +395,7 @@ WebappsActor.prototype = {
         this._framesByOrigin[origin] = frame;
 
         this.conn.send({ from: this.actorID,
-                         type: "webappsOpen",
+                         type: "appOpen",
                          manifestURL: frame.getAttribute("mozapp"),
                          actor: actor.grip()
                        });
@@ -414,7 +414,7 @@ WebappsActor.prototype = {
           }
           let manifestURL = frame.getAttribute("mozapp");
           this.conn.send({ from: this.actorID,
-                           type: "webappsClose",
+                           type: "appClose",
                            manifestURL: manifestURL
                          });
         }

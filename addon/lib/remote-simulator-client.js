@@ -32,8 +32,8 @@ const Geolocation = Cc["@mozilla.org/geolocation;1"].getService(Ci.nsISupports);
 dbgClient.UnsolicitedNotifications.geolocationStart = "geolocationStart";
 dbgClient.UnsolicitedNotifications.geolocationStop = "geolocationStop";
 dbgClient.UnsolicitedNotifications.appUpdateRequest = "appUpdateRequest";
-dbgClient.UnsolicitedNotifications.webappsOpen = "webappsOpen";
-dbgClient.UnsolicitedNotifications.webappsClose = "webappsClose";
+dbgClient.UnsolicitedNotifications.appOpen = "appOpen";
+dbgClient.UnsolicitedNotifications.appClose = "appClose";
 
 // Log subprocess error and debug messages to the console.  This logs messages
 // for all consumers of the API.  We trim the messages because they sometimes
@@ -262,8 +262,8 @@ const RemoteSimulatorClient = Class({
 
     client.addListener("geolocationStart", this.onGeolocationStart.bind(this));
     client.addListener("geolocationStop", this.onGeolocationStop.bind(this));
-    client.addListener("webappsOpen", this.onWebappsOpen.bind(this));
-    client.addListener("webappsClose", this.onWebappsClose.bind(this));
+    client.addListener("appOpen", this.onAppOpen.bind(this));
+    client.addListener("appClose", this.onAppClose.bind(this));
 
     this._registerAppUpdateRequest(client);
 
@@ -317,14 +317,14 @@ const RemoteSimulatorClient = Class({
     }
   },
 
-  onWebappsOpen: function onWebappsOpen(type, packet) {
-    emit(this, "webappsOpen", {
+  onAppOpen: function onAppOpen(type, packet) {
+    emit(this, "appOpen", {
       manifestURL: packet.manifestURL
     });
   },
 
-  onWebappsClose: function onWebappsClose(type, packet) {
-    emit(this, "webappsClose", {
+  onAppClose: function onAppClose(type, packet) {
+    emit(this, "appClose", {
       manifestURL: packet.manifestURL
     });
   },

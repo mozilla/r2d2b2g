@@ -1212,9 +1212,9 @@ let simulator = module.exports = {
           if (gRunningApps.indexOf(app) != -1) {
             cb();
           } else {
-            simulator.remoteSimulator.on("webappsOpen", function listener({manifestURL}) {
+            simulator.remoteSimulator.on("appOpen", function listener({manifestURL}) {
               if (manifestURL == app.manifestURL) {
-                simulator.remoteSimulator.removeListener("webappsOpen", listener);
+                simulator.remoteSimulator.removeListener("appOpen", listener);
                 cb();
               }
             });
@@ -1287,7 +1287,7 @@ let simulator = module.exports = {
       }
     });
 
-    remoteSimulator.on("webappsOpen", (function ({ manifestURL }) {
+    remoteSimulator.on("appOpen", (function ({ manifestURL }) {
       let app = this._getAppByManifestURL(manifestURL);
 
       // Ignore apps not being tracked by the simulator
@@ -1298,7 +1298,7 @@ let simulator = module.exports = {
       gRunningApps.push(app);
     }).bind(this));
 
-    remoteSimulator.on("webappsClose", (function ({ manifestURL }) {
+    remoteSimulator.on("appClose", (function ({ manifestURL }) {
       let app = this._getAppByManifestURL(manifestURL);
 
       // Ignore apps not being tracked by the simulator
