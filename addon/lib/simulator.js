@@ -57,6 +57,8 @@ const MANIFEST_CONTENT_TYPE = "application/x-web-app-manifest+json";
 let worker, remoteSimulator;
 let deviceConnected, adbReady, debuggerReady;
 let gCurrentToolbox, gCurrentToolboxManifestURL;
+// Lock to prevent duplicate toolbox creation
+let gConnectingToApp = false;
 let gRunningApps = [];
 
 let simulator = module.exports = {
@@ -940,6 +942,14 @@ let simulator = module.exports = {
   },
 
   connectToApp: function(id) {
+    // connectToApp implementation is asynchronous and take a visible amount of
+    // time to end up displaying the toolbox.
+    // We need to lock down toolbox create to prevent trying to display more
+    // than one at a time.
+    if (gConnectingToApp)
+      return;
+    gConnectingToApp = true;
+
     let app = this.apps[id];
     simulator.runApp(app, simulator.openToolboxForApp.bind(simulator, app));
   },
@@ -950,9 +960,11 @@ let simulator = module.exports = {
       gCurrentToolbox = null;
     }
     gCurrentToolboxManifestURL = app.manifestURL;
+
     // Function called whenever the toolbox is finally created
     function toolboxDisplayed(toolbox) {
       gCurrentToolbox = toolbox;
+      gConnectingToApp = false;
 
       // Display a message in the console to make it clear that the toolbox
       // got connected to a new App
