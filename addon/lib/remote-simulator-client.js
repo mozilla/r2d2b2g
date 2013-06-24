@@ -92,6 +92,8 @@ const RemoteSimulatorClient = Class({
     // listeners and emit an high level "ready" event
     this.on("clientReady", function (remote) {
       console.debug("rsc.onClientReady");
+      // Needed for Debugger Server to initialize SimulatorActor
+      remote.client.request({to: remote.simulator, type: "ping"});
       this._remote = remote;
       emit(this, "ready", null);
     });
