@@ -224,9 +224,8 @@ SimulatorActor.prototype = {
 
     if (success) {
       return { success: true, message: "runApp request initiated" };
-    } else {
-      return { success: false, error: "app-not-installed" };
     }
+    return { success: false, error: "app-not-installed" };
   },
 
   onUninstallApp: function(aRequest) {
