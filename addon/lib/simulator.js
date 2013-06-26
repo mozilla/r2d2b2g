@@ -926,7 +926,23 @@ let simulator = module.exports = {
     gConnectingToApp = true;
 
     let app = this.apps[id];
-    simulator.runApp(app, simulator.openToolboxForApp.bind(simulator, app));
+    this.runApp(app, (function(error) {
+      if (error) {
+        if (error == "app-not-installed") {
+          this.updateApp(id, (function(error) {
+            if (error) {
+              this.error("Error connecting to app: " + error);
+            } else {
+              this.runApp(app, this.openToolboxForApp.bind(this, app));
+            }
+          }).bind(this));
+        } else {
+          this.error("Error connecting to app: " + error);
+        }
+      } else {
+        this.openToolboxForApp(app);
+      }
+    }).bind(this));
   },
 
   openToolboxForApp: function(app) {
@@ -1174,25 +1190,33 @@ let simulator = module.exports = {
         } else {
           simulator.error(error);
         }
+        return;
       }
-      else {
-        let cb = typeof next === "function" ? (function(res) next(null,res)) : null;
-        simulator.remoteSimulator.runApp(app.xkey);
+
+      simulator.remoteSimulator.runApp(app.xkey, function(response) {
+        if (!response.success) {
+          if (typeof next === "function") {
+            next(response.error);
+          } else {
+            simulator.error("Error running app: " + response.error);
+          }
+          return;
+        }
 
         // Listen for app to be finally opened before firing the callback
-        if (cb) {
+        if (typeof next === "function") {
           if (gRunningApps.indexOf(app) != -1) {
-            cb();
+            next();
           } else {
             simulator.remoteSimulator.on("appOpen", function listener({manifestURL}) {
               if (manifestURL == app.manifestURL) {
                 simulator.remoteSimulator.removeListener("appOpen", listener);
-                cb();
+                next();
               }
             });
           }
         }
-      }
+      });
     });
   },
 
