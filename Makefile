@@ -182,7 +182,7 @@ locales:
 	python build/make-locales.py
 
 run:
-	cd addon-sdk && . bin/activate && cd ../addon && cfx run --templatedir template/ $(BIN_ARG) $(PROFILE_ARG)
+	cd addon-sdk && . bin/activate && cd ../addon && cfx run --templatedir template/ $(BIN_ARG) $(PROFILE_ARG) --static-args="{ \"autoRun\": true }"
 
 package:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx xpi --templatedir template/
