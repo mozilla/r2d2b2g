@@ -53,14 +53,14 @@ B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/
 # Platform-specific Defines
 ifeq (win32, $(B2G_PLATFORM))
   # The URL of the specific B2G build.
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-06-12.en-US.win32.zip
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-06-19.en-US.win32.zip
 
   ADB_PACKAGE = adb-1.0.31-windows.zip
   ADB_BINARIES = adb.exe AdbWinApi.dll AdbWinUsbApi.dll
   BIN_SUFFIX = .exe
 else
 ifeq (mac64, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-06-12.en-US.mac64.dmg
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-06-19.en-US.mac64.dmg
 
   ADB_PACKAGE = adb-1.0.31-mac.zip
   ADB_BINARIES = adb
@@ -68,13 +68,13 @@ ifeq (mac64, $(B2G_PLATFORM))
   DOWNLOAD_CMD = /usr/bin/curl -O
 else
 ifeq (linux64, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-06-12.en-US.linux-x86_64.tar.bz2
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-06-19.en-US.linux-x86_64.tar.bz2
 
   ADB_PACKAGE = adb-1.0.31-linux64.zip
   ADB_BINARIES = adb
 else
 ifeq (linux, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-06-12.en-US.linux-i686.tar.bz2
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-06-19.en-US.linux-i686.tar.bz2
 
   ADB_PACKAGE = adb-1.0.31-linux.zip
   ADB_BINARIES = adb
@@ -144,7 +144,7 @@ profile:
 	cp build/override-prefs.js gaia/build/custom-prefs.js
 	cp build/override-settings.json gaia/build/custom-settings.json
 	NOFTU=1 GAIA_APP_SRCDIRS=apps make -C gaia
-	BROWSER=1 NOFTU=1 GAIA_APP_SRCDIRS=apps make -C gaia preferences
+	DESKTOP=1 NOFTU=1 GAIA_APP_SRCDIRS=apps make -C gaia preferences
 	python build/override-webapps.py
 	cd gaia/tools/extensions/desktop-helper/ && zip -r ../../../profile/extensions/desktop-helper\@gaiamobile.org.xpi *
 	cd gaia/tools/extensions/activities/ && zip -r ../../../profile/extensions/activities\@gaiamobile.org.xpi *

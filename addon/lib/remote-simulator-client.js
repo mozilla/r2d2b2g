@@ -17,7 +17,6 @@ const Runtime = require("runtime");
 const Self = require("self");
 const URL = require("url");
 const Subprocess = require("subprocess");
-const Prefs = require("preferences-service");
 const { setTimeout, clearTimeout } = require("sdk/timers");
 
 const { rootURI: ROOT_URI } = require('@loader/options');
@@ -27,6 +26,8 @@ const PROFILE_URL = ROOT_URI + "profile/";
 const dbgClient = Cu.import("resource://gre/modules/devtools/dbg-client.jsm");
 
 const Geolocation = Cc["@mozilla.org/geolocation;1"].getService(Ci.nsISupports);
+
+const DEBUGGER_CONNECT_TIMEOUT = 30000;
 
 // add unsolicited notifications
 dbgClient.UnsolicitedNotifications.geolocationStart = "geolocationStart";
@@ -103,6 +104,8 @@ const RemoteSimulatorClient = Class({
     // listeners and emit an high level "ready" event
     this.on("clientReady", function (remote) {
       console.debug("rsc.onClientReady");
+      // Needed for Debugger Server to initialize SimulatorActor
+      remote.client.request({to: remote.simulator, type: "ping"});
       this._remote = remote;
       // Start watching app open/close
       this.client.request({to: this._remote.webapps, type: "watchApps"},
@@ -120,8 +123,7 @@ const RemoteSimulatorClient = Class({
         // If the connection was closed before connection succeed,
         // and the process is still alive, the attempt was rejected or timed out.
         // We should keep trying to connect until we reach our own timeout.
-        let timeout = this._timeout || 30000;
-        if (Date.now() - this._startConnectingTime < timeout) {
+        if (Date.now() - this._startConnectingTime < DEBUGGER_CONNECT_TIMEOUT) {
           setTimeout(this.connectDebuggerClient.bind(this), 250);
         }
         else {
@@ -142,20 +144,10 @@ const RemoteSimulatorClient = Class({
     this.on("stderr", function onStderr(data) console.error(data.trim()));
   },
 
-  // run({defaultApp: "Appname", timeout: 15000})
-  // will spawn a b2g instance, optionally run an application
-  // and change pingback timeout interval
-  run: function (options) {
-    if (options) {
-      this._defaultApp = options.defaultApp;
-      this._timeout = options.timeout;
-      delete options.defaultApp;
-      delete options.pingbackTimeout;
-    } else {
-      this._defaultApp = null;
-      this._timeout = null;
-    }
-
+  /**
+   * Start the process and connect the debugger client.
+   */
+  run: function() {
     // resolve b2g binaries path (raise exception if not found)
     let b2gExecutable = this.b2gExecutable;
 
@@ -256,8 +248,8 @@ const RemoteSimulatorClient = Class({
 
     client.addListener("closed", (function () {
       clearTimeout(timeout);
-      emit(this, "clientClosed", {client: client});
       this._stopGeolocation();
+      emit(this, "clientClosed", {client: client});
     }).bind(this));
 
     client.addListener("geolocationStart", this.onGeolocationStart.bind(this));
@@ -286,6 +278,13 @@ const RemoteSimulatorClient = Class({
     console.log("Firefox received geolocation start request");
 
     let onSuccess = (function onSuccess(position) {
+      if (!this._remote) {
+        console.warn("position watcher called while Simulator not running");
+        // Try clearing the geolocation watch, even though we shouldn't have to.
+        this._stopGeolocation();
+        return;
+      }
+
       console.log("Firefox sending geolocation response");
 
       this._remote.client.request({
@@ -476,14 +475,6 @@ const RemoteSimulatorClient = Class({
     // NOTE: push dbgport option on the b2g-desktop commandline
     args.push("-dbgport", ""+this.remoteDebuggerPort);
     
-    if (this.jsConsoleEnabled) {
-      args.push("-jsconsole");
-    }
-
-    if (this._defaultApp != null) {
-      args.push("--runapp", this._defaultApp);
-    }
-
     // Ignore eventual zombie instances of b2g that are left over
     args.push("-no-remote");
 
@@ -514,9 +505,6 @@ const RemoteSimulatorClient = Class({
     this._foundRemoteDebuggerPort = port;
   },
 
-  get jsConsoleEnabled() {
-    return Prefs.get("extensions.r2d2b2g.jsconsole", false);    
-  }
 });
 
 module.exports = RemoteSimulatorClient;
