@@ -38,6 +38,7 @@ const TEST_RECEIPT_URL = "https://marketplace.firefox.com/api/v1/receipts/test/"
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
+const { gDevTools } = Cu.import("resource:///modules/devtools/gDevTools.jsm", {});
 
 // NOTE: detect if developer toolbox feature can be enabled
 const HAS_CONNECT_DEVTOOLS = xulapp.is("Firefox") &&
@@ -56,6 +57,8 @@ const MANIFEST_CONTENT_TYPE = "application/x-web-app-manifest+json";
 let worker, remoteSimulator;
 let deviceConnected, adbReady, debuggerReady;
 let gCurrentToolbox, gCurrentToolboxManifestURL;
+// Lock to prevent duplicate toolbox creation
+let gConnectingToApp = false;
 let gRunningApps = [];
 
 let simulator = module.exports = {
@@ -938,7 +941,16 @@ let simulator = module.exports = {
     }
   },
 
-  connectToApp: function(app) {
+  connectToApp: function(id) {
+    // connectToApp implementation is asynchronous and take a visible amount of
+    // time to end up displaying the toolbox.
+    // We need to lock down toolbox create to prevent trying to display more
+    // than one at a time.
+    if (gConnectingToApp)
+      return;
+    gConnectingToApp = true;
+
+    let app = this.apps[id];
     simulator.runApp(app, simulator.openToolboxForApp.bind(simulator, app));
   },
 
@@ -948,9 +960,11 @@ let simulator = module.exports = {
       gCurrentToolbox = null;
     }
     gCurrentToolboxManifestURL = app.manifestURL;
+
     // Function called whenever the toolbox is finally created
     function toolboxDisplayed(toolbox) {
       gCurrentToolbox = toolbox;
+      gConnectingToApp = false;
 
       // Display a message in the console to make it clear that the toolbox
       // got connected to a new App
@@ -961,18 +975,81 @@ let simulator = module.exports = {
                                       "The toolbox is now connected to " + app.name);
       ui.outputMessage(CATEGORY_JS, node);
     }
-    // We need to workaround existing devtools TabTarget.destroy code,
-    // that tries to close the client when the related toolbox is closed
+    // We need to workaround existing devtools DebuggerClient.close code,
+    // that tries to close the connection when the toolbox is closed
     // whereas we want to keep the client alive for other usages!
-    // http://hg.mozilla.org/mozilla-central/annotate/cfcce7c5eb74/browser/devtools/framework/target.js#l427
-    // TODO: remove this workaround when bug 875104 reach release channel
-    let clientProxy = new Proxy(this.remoteSimulator.client, {
+    // Although, at the same time, we do want the other cleanups being done in
+    // client.close.
+    // http://hg.mozilla.org/mozilla-central/file/a67425aa4728/toolkit/devtools/client/dbg-client.jsm#l354
+    // TODO: tweak platform code to prevent that and remove this workaround.
+    let client = this.remoteSimulator.client;
+    function clientClose(aOnClosed) {
+      // Disable detach event notifications, because event handlers will be in a
+      // cleared scope by the time they run.
+      //this._eventsEnabled = false;
+
+      if (aOnClosed) {
+        this.addOneTimeListener('closed', function(aEvent) {
+          aOnClosed();
+        });
+      }
+
+      // In this function, we're using the hoisting behavior of nested
+      // function definitions to write the code in the order it will actually
+      // execute. So converting to arrow functions to get rid of 'self' would
+      // be unhelpful here.
+      let self = this;
+
+      let continuation = function () {
+        self._consoleClients = {};
+        detachThread();
+      }
+
+      for each (let client in this._consoleClients) {
+        continuation = client.close.bind(client, continuation);
+      }
+
+      continuation();
+
+      function detachThread() {
+        if (self.activeThread) {
+          self.activeThread.detach(detachTab);
+        } else {
+          detachTab();
+        }
+      }
+
+      function detachTab() {
+        if (self.activeTab) {
+          self.activeTab.detach(closeTransport);
+        } else {
+          closeTransport();
+        }
+      }
+
+      function closeTransport() {
+        console.log("client.close: hooked and cancelled transport closing");
+        //self._transport.close();
+        //self._transport = null;
+      }
+    }
+    let clientProxy = new Proxy(client, {
       get: function (target, name) {
-        if (name == "close")
-          return function () {};
+        // Hook close method to prevent transport closing
+        if (name == "close") {
+          return clientClose.bind(target);
+        }
         return target[name];
+      },
+      set: function (target, name, v) {
+        // Prevent `this._transport = null;`
+        if (name == "_transport") {
+          return false;
+        }
+        target[name] = v;
       }
     });
+
     let self = this;
     this.remoteSimulator.getActorForApp(app.manifestURL, function (actor) {
       let options = {
@@ -980,7 +1057,6 @@ let simulator = module.exports = {
         client: clientProxy,
         chrome: false
       };
-      let {gDevTools} = Cu.import("resource:///modules/devtools/gDevTools.jsm", {});
 
       // Devtools API changed at each 3 last FF version :'(
       // Either on how to load modules, or how to use the API.
@@ -1149,9 +1225,9 @@ let simulator = module.exports = {
           if (gRunningApps.indexOf(app) != -1) {
             cb();
           } else {
-            simulator.remoteSimulator.on("webappsOpen", function listener({manifestURL}) {
+            simulator.remoteSimulator.on("appOpen", function listener({manifestURL}) {
               if (manifestURL == app.manifestURL) {
-                simulator.remoteSimulator.removeListener("webappsOpen", listener);
+                simulator.remoteSimulator.removeListener("appOpen", listener);
                 cb();
               }
             });
@@ -1224,7 +1300,7 @@ let simulator = module.exports = {
       }
     });
 
-    remoteSimulator.on("webappsOpen", (function ({ manifestURL }) {
+    remoteSimulator.on("appOpen", (function ({ manifestURL }) {
       let app = this._getAppByManifestURL(manifestURL);
 
       // Ignore apps not being tracked by the simulator
@@ -1235,7 +1311,7 @@ let simulator = module.exports = {
       gRunningApps.push(app);
     }).bind(this));
 
-    remoteSimulator.on("webappsClose", (function ({ manifestURL }) {
+    remoteSimulator.on("appClose", (function ({ manifestURL }) {
       let app = this._getAppByManifestURL(manifestURL);
 
       // Ignore apps not being tracked by the simulator
@@ -1244,8 +1320,9 @@ let simulator = module.exports = {
       }
 
       let idx = gRunningApps.indexOf(app);
-      if (idx != -1)
+      if (idx != -1) {
         gRunningApps.splice(idx, 1);
+      }
 
       // Close the current toolbox if it targets the closed app
       if (gCurrentToolboxManifestURL == manifestURL) {
@@ -1321,8 +1398,7 @@ let simulator = module.exports = {
         });
         break;
       case "connectToApp":
-        app = this.apps[message.id];
-        simulator.connectToApp(app);
+        this.connectToApp(message.id);
         break;
       case "removeApp":
         this.removeApp(message.id);
