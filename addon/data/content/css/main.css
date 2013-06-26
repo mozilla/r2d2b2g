@@ -100,14 +100,6 @@ h1 {
     right: 13px;
     bottom: 13px;
 }
-#help {
-    float: right;
-    color: #888;
-    text-decoration: none;
-}
-#help:active {
-    color: #4D4E53;
-}
 
 .badge:after, .badge:before {
     content: "";
@@ -437,13 +429,18 @@ figure {
 #add-app-url {
     width: 220px;
 }
-button, input[type="url"], input[type="text"] {
+button, input[type="url"], input[type="text"], a.button {
     font-size: 0.8rem;
+    background: #f0f0f0;
     color: #444;
     border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 5px;
     padding: 7px 9px;
     font-weight: bold;
+    text-decoration: none;
+}
+a.button {
+    display: inline-block;
 }
 button:disabled {
     color: #999;
@@ -462,10 +459,6 @@ input:-moz-placeholder {
 button:hover:not(:disabled), .popover-wrap:hover button, a.button:hover {
     color: #1155cc;
     cursor: pointer;
-}
-a.button {
-    font-size: 0.8rem;
-    padding: 8px 12px;
 }
 .popover-wrap button {
     pointer-events: none;
