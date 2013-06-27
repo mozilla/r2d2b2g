@@ -87,6 +87,14 @@ var Simulator = {
           case "listApps":
             AppList.update(message.list);
             break;
+          case "updateReceiptStart":
+            $('li').filter(function() $(this).data('id') == message.id).
+                    addClass("updateReceipt");
+            break;
+          case "updateReceiptStop":
+            $('li').filter(function() $(this).data('id') == message.id).
+                    removeClass("updateReceipt");
+            break;
         }
       },
       false
