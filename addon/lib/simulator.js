@@ -420,14 +420,10 @@ let simulator = module.exports = {
     }
   },
 
-  receiptManifestURL: function receiptManifestURL(appType, appOrigin) {
-    return appType === "local" ? "https://" + appOrigin + ".simulator" : appOrigin;
-  },
-
   updateReceiptType: function updateReceiptType(appId, receiptType) {
     let app = this.apps[appId];
-    let manifestURL = this.receiptManifestURL(app.type,
-                                              app.origin || app.xkey);
+    let manifestURL =
+      app.type === "local" ? "https://" + app.xkey + ".simulator" : app.origin;
     if (receiptType === "none") {
       app.receipt = null;
       app.receiptType = receiptType;
