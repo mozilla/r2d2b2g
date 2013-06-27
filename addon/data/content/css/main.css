@@ -348,6 +348,15 @@ figure {
 .receipt-type {
     padding: 1px 0;
 }
+.receipt-label {
+    padding-left: 23px;
+}
+.app.updateReceipt .receipt-label {
+    background-image: url(../throbber.svg);
+    background-repeat: no-repeat;
+    background-position: 6px center;
+    background-size: auto 14px;
+}
 #apps-list .options button, #apps-list .options a {
     padding: 4px 10px 3px;
     font-weight: normal;
@@ -383,9 +392,6 @@ figure {
 #apps-list .action[data-action=connect]:hover {
     background-image: url(../tools.svg#hover);
 }
-#apps-list label {
-    padding-left: 5px;
-}
 #apps-list input[type="checkbox"] {
 }
 #apps-list p {
@@ -393,11 +399,6 @@ figure {
     color: #888;
     margin: 0;
     margin-bottom: 2px;
-}
-#apps-list label span {
-    font-size: 0.8em;
-    color: #888;
-    padding: 0 10px;
 }
 
 #apps-list .app-validation {

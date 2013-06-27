@@ -433,7 +433,11 @@ let simulator = module.exports = {
       app.receiptType = receiptType;
       this._updateApp(appId, this.sendListApps.bind(this));
     } else {
+      app.updateReceipt = true;
+      this.postUpdateReceiptStart(appId);
       this.fetchReceipt(manifestURL, receiptType, function fetched(err, receipt) {
+        delete app.updateReceipt;
+        this.postUpdateReceiptStop(appId);
         if (err || !receipt) {
           console.error(err || "No receipt");
         } else {
@@ -442,6 +446,18 @@ let simulator = module.exports = {
           this._updateApp(appId, this.sendListApps.bind(this));
         }
       }.bind(this));
+    }
+  },
+
+  postUpdateReceiptStart: function(id) {
+    if (this.worker) {
+      this.worker.postMessage({ name: "updateReceiptStart", id: id });
+    }
+  },
+
+  postUpdateReceiptStop: function(id) {
+    if (this.worker) {
+      this.worker.postMessage({ name: "updateReceiptStop", id: id });
     }
   },
 

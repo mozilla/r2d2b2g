@@ -64,7 +64,7 @@
         </article>
 
         <script type="text/template" id="app-template">
-            <li class="app {{ 'removed' if removed }}" data-id="{{ id | escape }}">
+            <li class="app {{ 'removed' if removed }} {{ 'updateReceipt' if updateReceipt }}" data-id="{{ id | escape }}">
                 <div class="options">
                     {% if removed %}
                         <button class="action" data-action="undo">Undo</button>
@@ -76,7 +76,7 @@
                         <button class="action connect" data-action="connect">Connect</button>
                         <button title="Remove" class="action remove" data-action="remove">Remove</button>
                         <div class="receipt">
-                            <label>Receipt:</label>
+                            <label class="receipt-label">Receipt:</label>
                             <select class="receipt-type">
                                 {% for type in receiptTypes %}
                                     <option value="{{ type.id }}" {{ 'selected' if receiptType == type.id else '' }}>{{ type.pretty }}</option>
