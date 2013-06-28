@@ -98,7 +98,14 @@ StyleEditorActor.prototype = {
       delete this._observer;
     }
 
-    this._sheets.clear();
+    try {
+      this._sheets.clear();
+    } catch(e) {
+      // Mozilla 18 doesn't have Map.clear(), which was introduced in 19.
+      for (let actor in this._sheets) {
+        this._sheets.delete(actor);
+      }
+    }
 
     this.conn.removeActorPool(this._actorPool);
     this._actorPool = null;
@@ -259,7 +266,14 @@ StyleEditorActor.prototype = {
     for (let actor in this._sheets) {
       this.releaseActor(this._sheets[actor]);
     }
-    this._sheets.clear();
+    try {
+      this._sheets.clear();
+    } catch(e) {
+      // Mozilla 18 doesn't have Map.clear(), which was introduced in 19.
+      for (let actor in this._sheets) {
+        this._sheets.delete(actor);
+      }
+    }
   },
 
   /**
