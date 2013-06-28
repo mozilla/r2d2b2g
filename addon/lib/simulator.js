@@ -435,7 +435,8 @@ let simulator = module.exports = {
         delete app.updateReceipt;
         this.postUpdateReceiptStop(appId);
         if (err || !receipt) {
-          console.error(err || "No receipt");
+          this.error("Error getting receipt: " + (err || "unknown error"));
+          this.sendListApps();
         } else {
           app.receipt = receipt;
           app.receiptType = receiptType;
@@ -467,26 +468,21 @@ let simulator = module.exports = {
         receipt_type: receiptType,
       },
       onComplete: function(response) {
-        const INVALID_MESSAGE = "INVALID_RECEIPT";
         if (response.status === 400 && "error_message" in response.json) {
-          console.log("Bad request made to test receipt server: " +
-            JSON.stringify(response.json.error_message));
-          return cb(INVALID_MESSAGE, null);
+          return cb("bad request made to test receipt server: " +
+                    JSON.stringify(response.json.error_message), null);
         }
         if (response.status !== 201) {
-          console.log("Unexpected status code " + response.status);
-          return cb(INVALID_MESSAGE, null);
+          return cb("unexpected status code " + response.status, null);
         }
         if (!response.json) {
-          console.log("Expected JSON response.");
-          return cb(INVALID_MESSAGE, null);
+          return cb("expected JSON response", null);
         }
         if (!('receipt' in response.json)) {
-          console.log("Expected receipt field in test receipt response");
-          return cb(INVALID_MESSAGE, null);
+          return cb("expected receipt field in test receipt response", null);
         }
         console.log("Received receipt: " + response.json.receipt);
-        cb(null, response.json.receipt);
+        return cb(null, response.json.receipt);
       },
     }).post();
   },
