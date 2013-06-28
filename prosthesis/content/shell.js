@@ -123,6 +123,12 @@ function simulatorAppUpdate(clearCacheAndStorages) {
     // clear cookies
     Services.cookies.removeCookiesForApp(localId, false);
 
+    // clear indexedDB
+    // NOTE: extracted from "resource://gre/modules/ForgetAboutSite.jsm"
+    Cc["@mozilla.org/dom/indexeddb/manager;1"].
+    getService(Ci.nsIIndexedDatabaseManager).
+    clearDatabasesForURI(iframe.contentDocument.documentURIObject);
+
     // clear app cache
     try {
       Cc["@mozilla.org/network/application-cache-service;1"].
