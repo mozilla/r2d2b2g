@@ -13,3 +13,4 @@ overlay chrome://prosthesis/content/shell.xul chrome://prosthesis/content/shell-
 
 manifest components/FakeGeolocationProvider.manifest
 manifest components/SimulatorScreen.manifest
+manifest components/SimulatorBars.manifest
