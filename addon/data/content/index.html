@@ -93,7 +93,7 @@
                     Last updated: {{ prettyLastUpdate or 'never' }}
                 </p>
                 <p>
-                    <a title="{{ id | escape }}" class="action" data-action="reveal" href="#">Open Location</a> <span class="location">({{ id | escape }})</span>
+                    <a title="{{ id | escape }}" class="action" data-action="reveal" href="#">Open Location</a> <span class="location">{{ id | escape }}</span>
                 </p>
                 {% if validation and not removed %}
                     {% set errors = validation.errors %}
