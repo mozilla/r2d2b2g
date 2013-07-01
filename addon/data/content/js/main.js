@@ -112,8 +112,12 @@ var Simulator = {
   },
 
   toggle: function() {
-    $(this.toggler).prop('indeterminate', true);
-    window.postMessage({ name: "toggle" }, "*");
+    var toggler = this.toggler;
+    $(toggler).prop('indeterminate', true);
+    window.postMessage({
+      name: "toggle",
+      start: toggler.checked,
+    }, "*");
   },
 
   addAppByDirectory: function() {
@@ -140,5 +144,6 @@ $addProjectButton.on('click', function() {
 Simulator.init();
 
 $(window).load(function () {
-  $(Simulator.toggler).prop('checked', false).on('change', Simulator.toggle);
+  $(Simulator.toggler).prop('checked', false)
+                      .on('change', Simulator.toggle.bind(Simulator));
 });

@@ -1395,10 +1395,13 @@ let simulator = module.exports = {
         this.undoRemoveApp(message.id);
         break;
       case "toggle":
-        if (this.isRunning) {
-          this.kill();
+        let start = message.start;
+        if (this.isRunning === start) {
+          this.postIsRunning();
+        } else if (start) {
+          this.run();
         } else {
-          simulator.run();
+          this.kill();
         }
         break;
       case "listTabs":
