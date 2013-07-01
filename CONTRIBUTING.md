@@ -16,8 +16,7 @@ will crash Firefox, and you'll lose changes to the apps on the Dashboard.
 
 ## Using Custom Profiles ##
 
-If you need to use a custom Firefox profile, you can skip step 9 and run via
-the following command
+If you need to use a custom Firefox profile, instead run with following command
 
 `PROFILE=/path/to/arbitrary/profile make run`
 
