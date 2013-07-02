@@ -10,6 +10,7 @@ var Simulator = {
   init: function() {
 
     this.toggler = $('#command-toggle')[0];
+    $(this.toggler).on('change', this.toggle.bind(this));
     var currentUrl;
     $('#add-app-url, #new-from-manifest').on('keyup change input', function(evt) {
       var url = $(this).val();
@@ -142,8 +143,3 @@ $addProjectButton.on('click', function() {
 });
 
 Simulator.init();
-
-$(window).load(function () {
-  $(Simulator.toggler).prop('checked', false)
-                      .on('change', Simulator.toggle.bind(Simulator));
-});
