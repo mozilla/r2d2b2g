@@ -148,7 +148,7 @@ let simulator = module.exports = {
         // Update the Dashboard to reflect changes to the record and run the app
         // if the update succeeded.  Otherwise, it isn't necessary to notify
         // the user about the error, as it'll show up in the validation results.
-        simulator.sendListApps();
+        simulator.sendSingleApp(manifestFile);
         if (!error) {
           simulator.runApp(app);
         }
@@ -235,11 +235,11 @@ let simulator = module.exports = {
       // validation, but validation can stall and never call our callback;
       // and we want to make sure the app listing is updated with the info
       // we just got from the manifest; so we do it here as well.
-      simulator.sendListApps();
+      simulator.sendSingleApp(id);
 
       simulator.validateApp(id, function(error, app) {
         // update dashboard app validation info
-        simulator.sendListApps();
+        simulator.sendSingleApp(id);
 
         if (!error) {
           // NOTE: try to updateApp if there isn't any blocking error
@@ -263,7 +263,7 @@ let simulator = module.exports = {
 
     if (!config) {
       if (this.worker) {
-        this.sendListApps();
+        this.sendSingleApp(id);
       }
       if (next) {
         next();
@@ -416,7 +416,7 @@ let simulator = module.exports = {
     }
 
     if (this.worker) {
-      this.sendListApps();
+      this.sendSingleApp(id);
     }
   },
 
@@ -427,7 +427,9 @@ let simulator = module.exports = {
     if (receiptType === "none") {
       app.receipt = null;
       app.receiptType = receiptType;
-      this._updateApp(appId, this.sendListApps.bind(this));
+      this._updateApp(appId, function() {
+        this.sendSingleApp(appId);
+      });
     } else {
       app.updateReceipt = true;
       this.postUpdateReceiptStart(appId);
@@ -436,13 +438,22 @@ let simulator = module.exports = {
         this.postUpdateReceiptStop(appId);
         if (err || !receipt) {
           this.error("Error getting receipt: " + (err || "unknown error"));
-          this.sendListApps();
+          this.sendSingleApp(appId);
         } else {
           app.receipt = receipt;
           app.receiptType = receiptType;
-          this._updateApp(appId, this.sendListApps.bind(this));
+          this._updateApp(appId, function() {
+            this.sendSingleApp(appId);
+          });
         }
       }.bind(this));
+    }
+  },
+
+  sendSingleApp: function(id) {
+    let app = this.apps[id];
+    if (this.worker) {
+      this.worker.postMessage({ name: "updateSingleApp", id: id, app: app });
     }
   },
 
@@ -504,13 +515,13 @@ let simulator = module.exports = {
       if (error) {
         simulator.error(error);
         config.removed = false;
-        simulator.sendListApps();
+        simulator.sendSingleApp(id);
         return;
       }
       simulator.remoteSimulator.uninstall(config.xkey, function() {
         // app uninstall completed
         // TODO: add success/error detection and report to the user
-        simulator.sendListApps();
+        simulator.sendSingleApp(id);
       });
     });
   },
@@ -529,7 +540,7 @@ let simulator = module.exports = {
     simulator.updateApp(id, function next(error, app) {
       // app reinstall completed
       // success/error detection and report to the user
-      simulator.sendListApps();
+      simulator.sendSingleApp(id);
       if (error) {
         simulator.error(error);
       } else {
@@ -738,7 +749,7 @@ let simulator = module.exports = {
       // Update the Dashboard to reflect changes to the record and run the app
       // if the update succeeded.  Otherwise, it isn't necessary to notify
       // the user about the error, as it'll show up in the validation results.
-      simulator.sendListApps();
+      simulator.sendSingleApp(id);
       if (!error) {
         simulator.runApp(app);
       }
