@@ -49,9 +49,7 @@ const MANIFEST_CONTENT_TYPE = "application/x-web-app-manifest+json";
 
 let worker, remoteSimulator;
 let deviceConnected, adbReady, debuggerReady;
-let gCurrentToolbox, gCurrentToolboxManifestURL;
-// Lock to prevent duplicate toolbox creation
-let gConnectingToApp = false;
+let gCurrentConnection, gCurrentToolbox, gCurrentToolboxManifestURL;
 let gRunningApps = [];
 
 let simulator = module.exports = {
@@ -925,13 +923,11 @@ let simulator = module.exports = {
   },
 
   connectToApp: function(id) {
-    // connectToApp implementation is asynchronous and take a visible amount of
-    // time to end up displaying the toolbox.
-    // We need to lock down toolbox create to prevent trying to display more
-    // than one at a time.
-    if (gConnectingToApp)
-      return;
-    gConnectingToApp = true;
+    // connectToApp implementation is asynchronous and takes a visible amount
+    // of time to end up displaying the toolbox, so users can initiate
+    // a new connection while an existing connection is underway; thus we track
+    // each connection and cancel it if a newer connection has been initiated.
+    let connection = gCurrentConnection = { appID: id };
 
     let app = this.apps[id];
     this.runApp(app, (function(error) {
@@ -941,19 +937,26 @@ let simulator = module.exports = {
             if (error) {
               this.error("Error connecting to app: " + error);
             } else {
-              this.runApp(app, this.openToolboxForApp.bind(this, app));
+              this.runApp(app, this.openToolboxForApp.bind(this, app,
+                                                           connection));
             }
           }).bind(this));
         } else {
           this.error("Error connecting to app: " + error);
         }
       } else {
-        this.openToolboxForApp(app);
+        this.openToolboxForApp(app, connection);
       }
     }).bind(this));
   },
 
-  openToolboxForApp: function(app) {
+  openToolboxForApp: function(app, connection) {
+    if (connection != gCurrentConnection) {
+      console.log("cancel connection to " + connection.appID +
+                  " because superceded by " + gCurrentConnection.appID);
+      return;
+    }
+
     if (gCurrentToolbox) {
       gCurrentToolbox.destroy();
       gCurrentToolbox = null;
@@ -962,8 +965,14 @@ let simulator = module.exports = {
 
     // Function called whenever the toolbox is finally created
     function toolboxDisplayed(toolbox) {
+      if (connection != gCurrentConnection) {
+        console.log("destroy toolbox for " + connection.appID +
+                    " because superceded by " + gCurrentConnection.appID);
+        toolbox.destroy();
+        return;
+      }
+
       gCurrentToolbox = toolbox;
-      gConnectingToApp = false;
 
       // Display a message in the console to make it clear that the toolbox
       // got connected to a new App
