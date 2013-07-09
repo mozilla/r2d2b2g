@@ -18,6 +18,7 @@ const SStorage = require("simple-storage");
 const Gcli = require('gcli');
 const Simulator = require("simulator.js");
 const Prefs = require("preferences-service");
+const Args = require("sdk/system").staticArgs;
 
 Cu.import("resource://gre/modules/Services.jsm");
 
@@ -264,4 +265,8 @@ if (PermissionSettings) {
         return "unknown";
     }
   };
+}
+
+if (Args.autoRun) {
+  Simulator.openHelperTab();
 }
