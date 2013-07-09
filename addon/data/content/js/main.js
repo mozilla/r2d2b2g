@@ -86,15 +86,16 @@ var Simulator = {
             }
             break;
           case "listApps":
-            AppList.update(message.list);
+            AppList.updateAll(message.list);
             break;
           case "updateReceiptStart":
-            $('li').filter(function() $(this).data('id') == message.id).
-                    addClass("updateReceipt");
+            AppList.update(message.id, { updateReceipt: true });
             break;
           case "updateReceiptStop":
-            $('li').filter(function() $(this).data('id') == message.id).
-                    removeClass("updateReceipt");
+            AppList.update(message.id, { updateReceipt: false });
+            break;
+          case "updateSingleApp":
+            AppList.update(message.id, message.app);
             break;
         }
       },
