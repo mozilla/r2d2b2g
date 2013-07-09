@@ -25,23 +25,52 @@ var AppList = (function() {
     var apps = {};
     var appIds = [];
 
-    function update(data) {
+    function updateAll(data) {
+        console.log('updating all apps');
+        if (!data) {
+            return;
+        }
         apps = data;
         appIds = Object.keys(apps).sort();
         render();
     }
 
-    function render() {
-        listEl.empty();
+    function update(id, data) {
+        console.log('updating', id);
+        var app = apps[id];
+        if (!app) {
+            return;
+        }
+        if ('key' in app) {
+            // if data is a whole app, replace the record.
+            apps[id] = app;
+        } else {
+            // otherwise, extend the app object.
+            for (key in data) {
+                app[key] = data[key];
+            }
+        }
+        render(id);
+    }
 
-        // $('#new-project').toggle(!appIds.length);
-        //listEl.toggle(!!appIds.length);
-        if (appIds.length) {
-            for (var i=0; i<appIds.length; i++) {
-                renderSingle(appIds[i]);
+    function render(id) {
+        if (id) {
+            // re-render a single app in place.
+            var row = $('[data-id="'+id+'"]');
+            if (row.length) {
+                row.replaceWith(renderSingle(id));
             }
         } else {
-            listEl.append('<li class="notice">No Apps Installed</li>');
+            // re-render all apps.
+            console.log('re-rendering all apps');
+            listEl.empty();
+            if (appIds.length) {
+                for (var i = 0, len = appIds.length; i < len; ++i) {
+                    listEl.append(renderSingle(appIds[i]));
+                }
+            } else {
+                listEl.append('<li class="notice">No Apps Installed</li>');
+            }
         }
     }
 
@@ -92,7 +121,7 @@ var AppList = (function() {
         var appEl = $(appTemplate.render(app).trim());
 
         // FIXME: Make an actual list, add a template engine
-        listEl.append(appEl);
+        return appEl;
     }
 
     listEl.on('change', '.receipt-type', function(e) {
@@ -143,6 +172,7 @@ var AppList = (function() {
 
 
     return {
+        'updateAll': updateAll,
         'update': update,
         'apps': apps
     };
