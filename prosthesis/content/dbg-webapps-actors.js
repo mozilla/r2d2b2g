@@ -58,8 +58,8 @@ WebappsActor.prototype = {
     reg._readManifests([{ id: aId }], function(aResult) {
       let manifest = aResult[0].manifest;
       aApp.name = manifest.name;
-      reg._registerSystemMessages(manifest, aApp);
-      reg._registerActivities(manifest, aApp, true);
+      DOMApplicationRegistry.updateAppHandlers(null, manifest, aApp);
+
       reg._saveApps(function() {
         aApp.manifest = manifest;
 
