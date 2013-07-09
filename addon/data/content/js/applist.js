@@ -27,7 +27,9 @@ var AppList = (function() {
 
     function updateAll(data) {
         console.log('updating all apps');
-        if (!data) return;
+        if (!data) {
+            return;
+        }
         apps = data;
         appIds = Object.keys(apps).sort();
         render();
@@ -36,7 +38,9 @@ var AppList = (function() {
     function update(id, data) {
         console.log('updating', id);
         var app = apps[id];
-        if (!app) return;
+        if (!app) {
+            return;
+        }
         if ('key' in app) {
             // if data is a whole app, replace the record.
             apps[id] = app;
@@ -61,7 +65,7 @@ var AppList = (function() {
             console.log('re-rendering all apps');
             listEl.empty();
             if (appIds.length) {
-                for (var i=0; i<appIds.length; i++) {
+                for (var i = 0, len = appIds.length; i < len; ++i) {
                     listEl.append(renderSingle(appIds[i]));
                 }
             } else {
