@@ -29,24 +29,20 @@ function appFirstListed({ target, event, onInstall, onUpdate, equal }) {
   let appUpdated = false;
   target.addEventListener(event, function onEvent(evt) {
     let message = evt.detail;
-    if (message.name === "listApps") {
-      let appList = message.list;
-      console.log(JSON.stringify(appList));
-      if (MOCK_MANIFEST_URL in appList) {
-        let app = appList[MOCK_MANIFEST_URL];
-        if (!appInstalled) {
-          appInstalled = true;
-          onInstall();
-        } else if (app.receipt && app.receiptType === updatedReceiptType) {
-          // Need at least one assertion so test is not empty.
-          equal(app.receiptType, updatedReceiptType, "Receipt type updated");
-          if (!appUpdated) {
-            appUpdated = true;
-          } else {
-            console.log("Done cleaning up");
-            target.removeEventListener(event, onEvent);
-            onUpdate();
-          }
+    if (message.name === "updateSingleApp") {
+      let app = message.app;
+      if (!appInstalled) {
+        appInstalled = true;
+        onInstall();
+      } else if (app.receipt && app.receiptType === updatedReceiptType) {
+        // Need at least one assertion so test is not empty.
+        equal(app.receiptType, updatedReceiptType, "Receipt type updated");
+        if (!appUpdated) {
+          appUpdated = true;
+        } else {
+          console.log("Done cleaning up");
+          target.removeEventListener(event, onEvent);
+          onUpdate();
         }
       }
     }
