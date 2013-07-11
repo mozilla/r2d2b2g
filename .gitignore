@@ -1,3 +1,11 @@
+# backup files for editors
+*~
+*.swp
+
+# downloaded files
+adb-*.zip
+b2g-*.tar.bz2
+
 # generated Gaia profile and other files the Add-on SDK needs to be in that dir
 addon/template
 
