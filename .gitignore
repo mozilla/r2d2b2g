@@ -13,5 +13,8 @@ addon/data/linux/adb
 addon/data/linux64/adb
 addon/data/win32/adb
 
+# generated XPI package
+addon/r2d2b2g.xpi
+
 # locale repositories cloned by build/make-locales.py
 gaia-l10n
