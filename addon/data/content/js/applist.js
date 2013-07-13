@@ -93,7 +93,7 @@ var AppList = (function() {
         var iconPath = "default.png";
 
         if (app.icon) {
-            if (app.icon.indexOf("data:image/") === 0) {
+            if ((app.icon.indexOf("data:image/") === 0) || (app.icon.indexOf('http') === 0)) {
                 // set the src to the data uri
                 iconPath = app.icon;
             } else if (app.type === "hosted") {
