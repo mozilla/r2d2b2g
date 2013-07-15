@@ -76,13 +76,14 @@ WebappsActor.prototype = {
                                requestID: "bar"
                              });
 
+        reg.broadcastMessage("Webapps:AddApp", { id: aId, app: aApp });
         reg.broadcastMessage("Webapps:Install:Return:OK",
                              { app: aApp,
                                oid: "foo",
                                requestID: "bar"
                              });
         delete aApp.manifest;
-        reg.broadcastMessage("Webapps:AddApp", { id: aId, app: aApp });
+
         self.conn.send({ from: self.actorID,
                          type: "webappsEvent",
                          appId: aId
