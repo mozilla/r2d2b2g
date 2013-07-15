@@ -18,6 +18,7 @@ const Self = require("self");
 const URL = require("url");
 const Subprocess = require("subprocess");
 const { setTimeout, clearTimeout } = require("sdk/timers");
+const Prefs = require("preferences-service");
 
 const { rootURI: ROOT_URI } = require('@loader/options');
 const PROFILE_URL = ROOT_URI + "profile/";
@@ -469,8 +470,13 @@ const RemoteSimulatorClient = Class({
   get b2gArguments() {
     let args = [];
 
-    let profile = URL.toFilename(PROFILE_URL);
-    args.push("-profile", profile);
+    let customProfile = Prefs.get("extensions.r2d2b2g.profile", "");
+    if (customProfile) {
+      args.push("-profile", customProfile);
+    } else {
+      let profile = URL.toFilename(PROFILE_URL);
+      args.push("-profile", profile);
+    }
 
     // NOTE: push dbgport option on the b2g-desktop commandline
     args.push("-dbgport", ""+this.remoteDebuggerPort);
