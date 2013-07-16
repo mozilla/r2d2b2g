@@ -96,7 +96,7 @@ var AppList = (function() {
             if ((app.icon.indexOf("data:image/") === 0) ||
                 (app.icon.indexOf('http:') === 0) ||
                 (app.icon.indexOf('https:') === 0)) {
-                // set the src to the data: or absolute URL
+                // set the src to the data: URI or absolute URL
                 iconPath = app.icon;
             } else if (app.type === "hosted") {
                 // hosted app icon is relative to the app origin
