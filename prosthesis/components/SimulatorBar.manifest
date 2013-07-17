@@ -1,4 +1,4 @@
-component {cd0aa5a9-1a6e-44c4-8707-3e24e9030c24} SimulatorBars.js
+component {cd0aa5a9-1a6e-44c4-8707-3e24e9030c24} SimulatorBar.js
 contract @mozilla.org/simulator-bar;1 {cd0aa5a9-1a6e-44c4-8707-3e24e9030c24}
 category JavaScript-global-property locationbar @mozilla.org/simulator-bar;1
 category JavaScript-global-property menubar @mozilla.org/simulator-bar;1
