@@ -8,13 +8,9 @@ let Cu = Components.utils;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
-let DEBUG = true;
-let DEBUG_PREFIX = "prosthesis: SimulatorBar.js - ";
-let debug = DEBUG ?
-  function debug() dump(DEBUG_PREFIX + Array.slice(arguments) + "\n") :
-  function() {};
+function debug() dump(Array.slice(arguments) + "\n");
 
-debug("loading component definition.");
+debug("loading SimulatorBar component definition.");
 
 function SimulatorBar() {}
 SimulatorBar.prototype = {
