@@ -58,8 +58,8 @@ WebappsActor.prototype = {
     reg._readManifests([{ id: aId }], function(aResult) {
       let manifest = aResult[0].manifest;
       aApp.name = manifest.name;
-      reg._registerSystemMessages(manifest, aApp);
-      reg._registerActivities(manifest, aApp, true);
+      DOMApplicationRegistry.updateAppHandlers(null, manifest, aApp);
+
       reg._saveApps(function() {
         aApp.manifest = manifest;
 
@@ -76,13 +76,14 @@ WebappsActor.prototype = {
                                requestID: "bar"
                              });
 
+        reg.broadcastMessage("Webapps:AddApp", { id: aId, app: aApp });
         reg.broadcastMessage("Webapps:Install:Return:OK",
                              { app: aApp,
                                oid: "foo",
                                requestID: "bar"
                              });
         delete aApp.manifest;
-        reg.broadcastMessage("Webapps:AddApp", { id: aId, app: aApp });
+
         self.conn.send({ from: self.actorID,
                          type: "webappsEvent",
                          appId: aId
@@ -109,49 +110,76 @@ WebappsActor.prototype = {
       });
   },
 
-  installHostedApp: function wa_actorInstallHosted(aDir, aId, aType, aReceipt) {
+  _getAppType: function wa_actorGetAppType(aType) {
+    let type = Ci.nsIPrincipal.APP_STATUS_INSTALLED;
+
+    if (aType) {
+      type = aType == "privileged" ? Ci.nsIPrincipal.APP_STATUS_PRIVILEGED
+           : aType == "certified" ? Ci.nsIPrincipal.APP_STATUS_CERTIFIED
+           : Ci.nsIPrincipal.APP_STATUS_INSTALLED;
+    }
+
+    return type;
+  },
+
+  installHostedApp: function wa_actorInstallHosted(aDir, aId, aReceipt) {
     debug("installHostedApp");
     let self = this;
 
     let runnable = {
       run: function run() {
         try {
-          // The destination directory for this app.
-          let installDir = FileUtils.getDir(DIRECTORY_NAME,
-                                            ["webapps", aId], true);
-
           // Move manifest.webapp to the destination directory.
           let manFile = aDir.clone();
           manFile.append("manifest.webapp");
-          manFile.moveTo(installDir, "manifest.webapp");
-
-          // Read the origin and manifest url from metadata.json
-          let metaFile = aDir.clone();
-          metaFile.append("metadata.json");
-          DOMApplicationRegistry._loadJSONAsync(metaFile, function(aMetadata) {
-            if (!aMetadata) {
-              self._sendError("Error Parsing metadata.json", aId);
+          DOMApplicationRegistry._loadJSONAsync(manFile, function(aManifest) {
+            if (!aManifest) {
+              self._sendError("Error Parsing manifest.webapp", aId);
               return;
             }
 
-            if (!aMetadata.origin) {
-              self._sendError("Missing 'origin' propery in metadata.json", aId);
-              return;
-            }
+            let appType = self._getAppType(aManifest.type);
 
-            let origin = aMetadata.origin;
-            let manifestURL = aMetadata.manifestURL ||
-                              origin + "/manifest.webapp";
-            // Create a fake app object with the minimum set of properties we need.
-            let app = {
-              origin: origin,
-              installOrigin: aMetadata.installOrigin || origin,
-              manifestURL: manifestURL,
-              receipts: aReceipt ? [aReceipt] : [],
-              appStatus: aType
-            }
+            // In production builds, don't allow installation of certified apps.
+//#ifdef MOZ_OFFICIAL
+//            if (appType == Ci.nsIPrincipal.APP_STATUS_CERTIFIED) {
+//              self._sendError("Installing certified apps is not allowed.", aId);
+//              return;
+//            }
+//#endif
+            // The destination directory for this app.
+            let installDir = FileUtils.getDir(DIRECTORY_NAME,
+                                              ["webapps", aId], true);
+            manFile.moveTo(installDir, "manifest.webapp");
 
-            self._registerApp(app, aId, aDir);
+            // Read the origin and manifest url from metadata.json
+            let metaFile = aDir.clone();
+            metaFile.append("metadata.json");
+            DOMApplicationRegistry._loadJSONAsync(metaFile, function(aMetadata) {
+              if (!aMetadata) {
+                self._sendError("Error Parsing metadata.json", aId);
+                return;
+              }
+
+              if (!aMetadata.origin) {
+                self._sendError("Missing 'origin' property in metadata.json", aId);
+                return;
+              }
+
+              let origin = aMetadata.origin;
+              let manifestURL = aMetadata.manifestURL ||
+                                origin + "/manifest.webapp";
+              // Create a fake app object with the minimum set of properties we need.
+              let app = {
+                origin: origin,
+                installOrigin: aMetadata.installOrigin || origin,
+                manifestURL: manifestURL,
+                appStatus: appType,
+                receipts: aReceipt ? [aReceipt] : [],
+              };
+
+              self._registerApp(app, aId, aDir);
+            });
           });
         } catch(e) {
           // If anything goes wrong, just send it back.
@@ -164,7 +192,7 @@ WebappsActor.prototype = {
                                        Ci.nsIThread.DISPATCH_NORMAL);
   },
 
-  installPackagedApp: function wa_actorInstallPackaged(aDir, aId, aType, aReceipt) {
+  installPackagedApp: function wa_actorInstallPackaged(aDir, aId, aReceipt) {
     debug("installPackagedApp");
     let self = this;
 
@@ -175,15 +203,9 @@ WebappsActor.prototype = {
           let installDir = FileUtils.getDir(DIRECTORY_NAME,
                                             ["webapps", aId], true);
 
-          // Move application.zip to the destination directory.
+          // Move application.zip to the destination directory, and
+          // extract manifest.webapp there.
           let zipFile = aDir.clone();
-          zipFile.append("application.zip");
-          zipFile.moveTo(installDir, "application.zip");
-
-
-
-          // Extract the manifest.webapp file from the zip.
-          zipFile = installDir.clone();
           zipFile.append("application.zip");
 
           // Refresh application.zip content (e.g. reinstall app)
@@ -192,24 +214,39 @@ WebappsActor.prototype = {
           let zipReader = Cc["@mozilla.org/libjar/zip-reader;1"]
                             .createInstance(Ci.nsIZipReader);
           zipReader.open(zipFile);
-
           let manFile = installDir.clone();
           manFile.append("manifest.webapp");
           zipReader.extract("manifest.webapp", manFile);
           zipReader.close();
+          zipFile.moveTo(installDir, "application.zip");
 
-          let origin = "app://" + aId;
+          DOMApplicationRegistry._loadJSONAsync(manFile, function(aManifest) {
+            if (!aManifest) {
+              self._sendError("Error Parsing manifest.webapp", aId);
+            }
 
-          // Create a fake app object with the minimum set of properties we need.
-          let app = {
-            origin: origin,
-            installOrigin: origin,
-            manifestURL: origin + "/manifest.webapp",
-            receipts: aReceipt ? [aReceipt] : [],
-            appStatus: aType
-          }
+            let appType = self._getAppType(aManifest.type);
 
-          self._registerApp(app, aId, aDir);
+            // In production builds, don't allow installation of certified apps.
+//#ifdef MOZ_OFFICIAL
+//            if (appType == Ci.nsIPrincipal.APP_STATUS_CERTIFIED) {
+//              self._sendError("Installing certified apps is not allowed.", aId);
+//              return;
+//            }
+//#endif
+            let origin = "app://" + aId;
+
+            // Create a fake app object with the minimum set of properties we need.
+            let app = {
+              origin: origin,
+              installOrigin: origin,
+              manifestURL: origin + "/manifest.webapp",
+              appStatus: appType,
+              receipts: aReceipt ? [aReceipt] : []
+            }
+
+            self._registerApp(app, aId, aDir);
+          });
         } catch(e) {
           // If anything goes wrong, just send it back.
           self._sendError(e.toString(), aId);
@@ -226,9 +263,6 @@ WebappsActor.prototype = {
     *                  the files for the app in $TMP/b2g/$appId :
     *                  For packaged apps: application.zip
     *                  For hosted apps:   metadata.json and manifest.webapp
-    * @param appType : The privilege status of the app, as defined in
-    *                   nsIPrincipal. It's optional and default to
-    *                   APP_STATUS_INSTALLED
     */
   install: function wa_actorInstall(aRequest) {
     debug("install");
@@ -243,7 +277,6 @@ WebappsActor.prototype = {
                message: "missing parameter appId" }
     }
 
-    let appType = aRequest.appType || Ci.nsIPrincipal.APP_STATUS_INSTALLED;
     let appReceipt = aRequest.appReceipt;
 
     // Check that we are not overriding a preinstalled application.
@@ -253,9 +286,6 @@ WebappsActor.prototype = {
                message: "The application " + appId + " can't be overriden."
              }
     }
-
-    // In production builds, don't allow installation of certified apps.
-//@line 233 "/home/myk/Mozilla/central/b2g/chrome/content/dbg-webapps-actors.js"
 
     let appDir = FileUtils.getDir("TmpD", ["b2g", appId], false, false);
 
@@ -269,7 +299,7 @@ WebappsActor.prototype = {
     testFile.append("application.zip");
 
     if (testFile.exists()) {
-      this.installPackagedApp(appDir, appId, appType, appReceipt);
+      this.installPackagedApp(appDir, appId, appReceipt);
     } else {
       let missing =
         ["manifest.webapp", "metadata.json"]
@@ -287,7 +317,7 @@ WebappsActor.prototype = {
                  message: "hosted app file is missing" }
       }
 
-      this.installHostedApp(appDir, appId, appType, appReceipt);
+      this.installHostedApp(appDir, appId, appReceipt);
     }
 
     return { appId: appId, path: appDir.path }
