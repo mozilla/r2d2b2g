@@ -1,7 +1,7 @@
 {
   "id": "r2d2b2g@mozilla.org",
   "name": "r2d2b2g",
-  "version": "4.0pre8dev",
+  "version": "5.0pre2dev",
   "fullName": "Firefox OS Simulator",
   "description": "a Firefox OS simulator",
   "author": "Myk Melez (https://github.com/mykmelez)",
@@ -10,6 +10,7 @@
     "Anant Narayanan (https://github.com/anantn)",
     "Brandon Kase (https://github.com/bkase)",
     "Breck Yunits (https://github.com/breck7)",
+    "César Carruitero (https://github.com/ccarruitero)",
     "David Gomes (https://github.com/davidgomes)",
     "Fabrice Desré (https://github.com/fabricedesre)",
     "Harald Kirschner (https://github.com/digitarald)",
@@ -21,6 +22,7 @@
     "Matthew Riley MacPherson (https://github.com/tofumatt)",
     "Nick Desaulniers (https://github.com/nickdesaulniers)",
     "Soumen Ganguly (https://github.com/SoumenG)",
+    "Sudheesh Singanamalla (https://github.com/sudheesh001)",
     "Victor Bjelkholm (https://github.com/VictorBjelkholm)"
   ],
   "permissions": {

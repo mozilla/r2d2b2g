@@ -101,7 +101,7 @@ SimulatorActor.prototype = {
     let DOMApplicationRegistry = window.DOMApplicationRegistry;
 
     if (!DOMApplicationRegistry.webapps[appId]) {
-      return { success: false, error: 'app-not-installed', message: 'App not installed.'};
+      return false;
     }
 
     let appOrigin = DOMApplicationRegistry.webapps[appId].origin;
@@ -214,18 +214,18 @@ SimulatorActor.prototype = {
 
     Services.tm.currentThread.dispatch(runnable,
                                        Ci.nsIThread.DISPATCH_NORMAL);
+    return true;
   },
 
   onRunApp: function(aRequest) {
     this.debug("simulator actor received a 'runApp' command:" + aRequest.appId);
-    let appId = aRequest.appId;
 
-    this._runApp(appId);
+    let success = this._runApp(aRequest.appId);
 
-    return {
-      message: "runApp request received: " + appOrigin,
-      success: true
-    };
+    if (success) {
+      return { success: true, message: "runApp request initiated" };
+    }
+    return { success: false, error: "app-not-installed" };
   },
 
   onUninstallApp: function(aRequest) {
@@ -235,7 +235,7 @@ SimulatorActor.prototype = {
     let appId = aRequest.appId;
 
     if (!DOMApplicationRegistry.webapps[appId]) {
-      return { success: false, error: 'app-not-installed', message: 'App not installed.'}
+      return { success: false, error: 'app-not-installed' };
     }
 
     let appOrigin = DOMApplicationRegistry.webapps[appId].origin;

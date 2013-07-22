@@ -25,16 +25,11 @@
                                 <span class="toggle-off">Running</span>
                             </span>
                         </label>
-                        <button id="open-connect-devtools" title="Connect Developer Tools&hellip;"
-                                onclick="Simulator.openConnectDevtools()" style="display: none">
-                            Connect&hellip;
-                        </button>
                     </fieldset>
                 </div>
                 <h5 id="device-status" class="device-dependent">
                     <img src="device.svg" alt="Device"> Device connected.
                 </h5>
-                <a id="help" class="item" href="https://developer.mozilla.org/en-US/docs/Tools/Firefox_OS_Simulator" target="_blank">Help</a>
             </header>
 
             <section id="dashboard">
@@ -51,6 +46,9 @@
                                 <button id="action-add-manifest" title="Only enabled when the manifest is valid (JSON and correct mime type)" disabled>Add Manifest</button>
                             </form>
                         </li>
+                        <li>
+                            <a id="help" class="item button" href="https://developer.mozilla.org/en-US/docs/Tools/Firefox_OS_Simulator" target="_blank">Help</a>
+                        </li>
                     </ul>
                 </section>
                 <div id="dash-main">
@@ -66,19 +64,19 @@
         </article>
 
         <script type="text/template" id="app-template">
-            <li class="app {{ 'removed' if removed }}" data-id="{{ id | escape }}">
+            <li class="app {{ 'removed' if removed }} {{ 'updateReceipt' if updateReceipt }}" data-id="{{ id | escape }}">
                 <div class="options">
                     {% if removed %}
                         <button class="action" data-action="undo">Undo</button>
                     {% else %}
                         <button class="action device-dependent" data-action="push">Push</button>
-                        {#<button class="action connect device-dependent" data-action="connect">Connect</button>#}
                         <button class="action refresh" data-action="update"
                                 title="Pushes the latest code to the Simulator and launches the app.">
                                 Refresh</button>
+                        <button class="action connect" data-action="connect">Connect</button>
                         <button title="Remove" class="action remove" data-action="remove">Remove</button>
                         <div class="receipt">
-                            <label>Receipt:</label>
+                            <label class="receipt-label">Receipt:</label>
                             <select class="receipt-type">
                                 {% for type in receiptTypes %}
                                     <option value="{{ type.id }}" {{ 'selected' if receiptType == type.id else '' }}>{{ type.pretty }}</option>
@@ -95,7 +93,7 @@
                     Last updated: {{ prettyLastUpdate or 'never' }}
                 </p>
                 <p>
-                    <a title="{{ id | escape }}" class="action" data-action="reveal" href="#">Open Location</a> <span class="location">({{ id | escape }})</span>
+                    <a title="{{ id | escape }}" class="action" data-action="reveal" href="#">Open Location</a> <span class="location">{{ id | escape }}</span>
                 </p>
                 {% if validation and not removed %}
                     {% set errors = validation.errors %}

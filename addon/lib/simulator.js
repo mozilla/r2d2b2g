@@ -38,6 +38,7 @@ const TEST_RECEIPT_URL = "https://marketplace.firefox.com/api/v1/receipts/test/"
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
+const { gDevTools } = Cu.import("resource:///modules/devtools/gDevTools.jsm", {});
 
 const PR_RDWR = 0x04;
 const PR_CREATE_FILE = 0x08;
@@ -48,6 +49,8 @@ const MANIFEST_CONTENT_TYPE = "application/x-web-app-manifest+json";
 
 let worker, remoteSimulator;
 let deviceConnected, adbReady, debuggerReady;
+let gCurrentConnection, gCurrentToolbox, gCurrentToolboxManifestURL;
+let gRunningApps = [];
 
 let simulator = module.exports = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIObserver,
@@ -131,9 +134,11 @@ let simulator = module.exports = {
       console.log("Selected " + manifestFile);
 
       let apps = simulator.apps;
+      let xkey = UUID.uuid().toString().slice(1, -1);
       apps[manifestFile] = {
         type: "local",
-        xkey: UUID.uuid().toString().slice(1, -1)
+        xkey: xkey,
+        origin: "app://" + xkey
       };
       console.log("Registered App " + JSON.stringify(apps[manifestFile]));
 
@@ -141,7 +146,7 @@ let simulator = module.exports = {
         // Update the Dashboard to reflect changes to the record and run the app
         // if the update succeeded.  Otherwise, it isn't necessary to notify
         // the user about the error, as it'll show up in the validation results.
-        simulator.sendListApps();
+        simulator.sendSingleApp(manifestFile);
         if (!error) {
           simulator.runApp(app);
         }
@@ -228,11 +233,11 @@ let simulator = module.exports = {
       // validation, but validation can stall and never call our callback;
       // and we want to make sure the app listing is updated with the info
       // we just got from the manifest; so we do it here as well.
-      simulator.sendListApps();
+      simulator.sendSingleApp(id);
 
       simulator.validateApp(id, function(error, app) {
         // update dashboard app validation info
-        simulator.sendListApps();
+        simulator.sendSingleApp(id);
 
         if (!error) {
           // NOTE: try to updateApp if there isn't any blocking error
@@ -256,7 +261,7 @@ let simulator = module.exports = {
 
     if (!config) {
       if (this.worker) {
-        this.sendListApps();
+        this.sendSingleApp(id);
       }
       if (next) {
         next();
@@ -409,32 +414,56 @@ let simulator = module.exports = {
     }
 
     if (this.worker) {
-      this.sendListApps();
+      this.sendSingleApp(id);
     }
-  },
-
-  receiptManifestURL: function receiptManifestURL(appType, appOrigin) {
-    return appType === "local" ? "https://" + appOrigin + ".simulator" : appOrigin;
   },
 
   updateReceiptType: function updateReceiptType(appId, receiptType) {
     let app = this.apps[appId];
-    let manifestURL = this.receiptManifestURL(app.type,
-                                              app.origin || app.xkey);
+    let manifestURL =
+      app.type === "local" ? "https://" + app.xkey + ".simulator" : app.origin;
     if (receiptType === "none") {
       app.receipt = null;
       app.receiptType = receiptType;
-      this._updateApp(appId, this.sendListApps.bind(this));
+      this._updateApp(appId, function() {
+        this.sendSingleApp(appId);
+      });
     } else {
+      app.updateReceipt = true;
+      this.postUpdateReceiptStart(appId);
       this.fetchReceipt(manifestURL, receiptType, function fetched(err, receipt) {
+        delete app.updateReceipt;
+        this.postUpdateReceiptStop(appId);
         if (err || !receipt) {
-          console.error(err || "No receipt");
+          this.error("Error getting receipt: " + (err || "unknown error"));
+          this.sendSingleApp(appId);
         } else {
           app.receipt = receipt;
           app.receiptType = receiptType;
-          this._updateApp(appId, this.sendListApps.bind(this));
+          this._updateApp(appId, function() {
+            this.sendSingleApp(appId);
+          });
         }
       }.bind(this));
+    }
+  },
+
+  sendSingleApp: function(id) {
+    let app = this.apps[id];
+    if (this.worker) {
+      this.worker.postMessage({ name: "updateSingleApp", id: id, app: app });
+    }
+  },
+
+  postUpdateReceiptStart: function(id) {
+    if (this.worker) {
+      this.worker.postMessage({ name: "updateReceiptStart", id: id });
+    }
+  },
+
+  postUpdateReceiptStop: function(id) {
+    if (this.worker) {
+      this.worker.postMessage({ name: "updateReceiptStop", id: id });
     }
   },
 
@@ -448,26 +477,21 @@ let simulator = module.exports = {
         receipt_type: receiptType,
       },
       onComplete: function(response) {
-        const INVALID_MESSAGE = "INVALID_RECEIPT";
         if (response.status === 400 && "error_message" in response.json) {
-          console.log("Bad request made to test receipt server: " +
-            JSON.stringify(response.json.error_message));
-          return cb(INVALID_MESSAGE, null);
+          return cb("bad request made to test receipt server: " +
+                    JSON.stringify(response.json.error_message), null);
         }
         if (response.status !== 201) {
-          console.log("Unexpected status code " + response.status);
-          return cb(INVALID_MESSAGE, null);
+          return cb("unexpected status code " + response.status, null);
         }
         if (!response.json) {
-          console.log("Expected JSON response.");
-          return cb(INVALID_MESSAGE, null);
+          return cb("expected JSON response", null);
         }
         if (!('receipt' in response.json)) {
-          console.log("Expected receipt field in test receipt response");
-          return cb(INVALID_MESSAGE, null);
+          return cb("expected receipt field in test receipt response", null);
         }
         console.log("Received receipt: " + response.json.receipt);
-        cb(null, response.json.receipt);
+        return cb(null, response.json.receipt);
       },
     }).post();
   },
@@ -489,13 +513,13 @@ let simulator = module.exports = {
       if (error) {
         simulator.error(error);
         config.removed = false;
-        simulator.sendListApps();
+        simulator.sendSingleApp(id);
         return;
       }
       simulator.remoteSimulator.uninstall(config.xkey, function() {
         // app uninstall completed
         // TODO: add success/error detection and report to the user
-        simulator.sendListApps();
+        simulator.sendSingleApp(id);
       });
     });
   },
@@ -514,7 +538,7 @@ let simulator = module.exports = {
     simulator.updateApp(id, function next(error, app) {
       // app reinstall completed
       // success/error detection and report to the user
-      simulator.sendListApps();
+      simulator.sendSingleApp(id);
       if (error) {
         simulator.error(error);
       } else {
@@ -723,7 +747,7 @@ let simulator = module.exports = {
       // Update the Dashboard to reflect changes to the record and run the app
       // if the update succeeded.  Otherwise, it isn't necessary to notify
       // the user about the error, as it'll show up in the validation results.
-      simulator.sendListApps();
+      simulator.sendSingleApp(id);
       if (!error) {
         simulator.runApp(app);
       }
@@ -909,28 +933,200 @@ let simulator = module.exports = {
     }
   },
 
-  openConnectDevtools: function() {
-    let port = this.remoteSimulator.remoteDebuggerPort;
-    let originalPort = Services.prefs.getIntPref("devtools.debugger.remote-port");
-    Tabs.open({
-      url: "chrome://browser/content/devtools/connect.xhtml",
-      onReady: function(tab) {
-        // Inject the allocated remote debugger port into the opened tab.
-        // We know it's a Number, so we don't actually need to parseInt it,
-        // but doing so reassures AMO reviewers that we aren't exposing
-        // a security issue.
-        tab.attach({
-          contentScript: "window.addEventListener(" +
-                         "  'load', " +
-                         "  function() " +
-                         "    document.getElementById('port').value = " +
-                         "      '" + parseInt(port, 10) + "', " +
-                         "  true" +
-                         ");"
-        }).on('detach', function restoreOriginalRemotePort() {
-          // restore previous value (autosaved on submit by connect.xhtml)
-          Services.prefs.setIntPref("devtools.debugger.remote-port", originalPort);
+  connectToApp: function(id) {
+    // connectToApp implementation is asynchronous and takes a visible amount
+    // of time to end up displaying the toolbox, so users can initiate
+    // a new connection while an existing connection is underway; thus we track
+    // each connection and cancel it if a newer connection has been initiated.
+    let connection = gCurrentConnection = { appID: id };
+
+    let app = this.apps[id];
+    this.runApp(app, (function(error) {
+      if (error) {
+        if (error == "app-not-installed") {
+          this.updateApp(id, (function(error) {
+            if (error) {
+              this.error("Error connecting to app: " + error);
+            } else {
+              this.runApp(app, this.openToolboxForApp.bind(this, app,
+                                                           connection));
+            }
+          }).bind(this));
+        } else {
+          this.error("Error connecting to app: " + error);
+        }
+      } else {
+        this.openToolboxForApp(app, connection);
+      }
+    }).bind(this));
+  },
+
+  openToolboxForApp: function(app, connection) {
+    if (connection != gCurrentConnection) {
+      console.log("cancel connection to " + connection.appID +
+                  " because superceded by " + gCurrentConnection.appID);
+      return;
+    }
+
+    if (gCurrentToolbox) {
+      gCurrentToolbox.destroy();
+      gCurrentToolbox = null;
+    }
+    gCurrentToolboxManifestURL = app.manifestURL;
+
+    // Function called whenever the toolbox is finally created
+    function toolboxDisplayed(toolbox) {
+      if (connection != gCurrentConnection) {
+        console.log("destroy toolbox for " + connection.appID +
+                    " because superceded by " + gCurrentConnection.appID);
+        toolbox.destroy();
+        return;
+      }
+
+      gCurrentToolbox = toolbox;
+
+      // Display a message in the console to make it clear that the toolbox
+      // got connected to a new App
+      let ui = toolbox.getPanel("webconsole").hud.ui;
+      let CATEGORY_JS = 2;
+      let SEVERITY_INFO = 2;
+      let node = ui.createMessageNode(CATEGORY_JS, SEVERITY_INFO,
+                                      "The toolbox is now connected to " + app.name);
+      ui.outputMessage(CATEGORY_JS, node);
+    }
+    // We need to workaround existing devtools DebuggerClient.close code,
+    // that tries to close the connection when the toolbox is closed
+    // whereas we want to keep the client alive for other usages!
+    // Although, at the same time, we do want the other cleanups being done in
+    // client.close.
+    // http://hg.mozilla.org/mozilla-central/file/a67425aa4728/toolkit/devtools/client/dbg-client.jsm#l354
+    // TODO: tweak platform code to prevent that and remove this workaround.
+    let client = this.remoteSimulator.client;
+    function clientClose(aOnClosed) {
+      // Disable detach event notifications, because event handlers will be in a
+      // cleared scope by the time they run.
+      //this._eventsEnabled = false;
+
+      if (aOnClosed) {
+        this.addOneTimeListener('closed', function(aEvent) {
+          aOnClosed();
         });
+      }
+
+      // In this function, we're using the hoisting behavior of nested
+      // function definitions to write the code in the order it will actually
+      // execute. So converting to arrow functions to get rid of 'self' would
+      // be unhelpful here.
+      let self = this;
+
+      let continuation = function () {
+        self._consoleClients = {};
+        detachThread();
+      }
+
+      for each (let client in this._consoleClients) {
+        continuation = client.close.bind(client, continuation);
+      }
+
+      continuation();
+
+      function detachThread() {
+        if (self.activeThread) {
+          self.activeThread.detach(detachTab);
+        } else {
+          detachTab();
+        }
+      }
+
+      function detachTab() {
+        if (self.activeTab) {
+          self.activeTab.detach(closeTransport);
+        } else {
+          closeTransport();
+        }
+      }
+
+      function closeTransport() {
+        console.log("client.close: hooked and cancelled transport closing");
+        //self._transport.close();
+        //self._transport = null;
+      }
+    }
+    let clientProxy = new Proxy(client, {
+      get: function (target, name) {
+        // Hook close method to prevent transport closing
+        if (name == "close") {
+          return clientClose.bind(target);
+        }
+        return target[name];
+      },
+      set: function (target, name, v) {
+        // Prevent `this._transport = null;`
+        if (name == "_transport") {
+          return false;
+        }
+        target[name] = v;
+      }
+    });
+
+    let self = this;
+    this.remoteSimulator.getActorForApp(app.manifestURL, function (actor) {
+      let options = {
+        form: actor,
+        client: clientProxy,
+        chrome: false
+      };
+
+      // Devtools API changed at each 3 last FF version :'(
+      // Either on how to load modules, or how to use the API.
+      try {
+        let devtools;
+        try {
+          // FF24
+          devtools = Cu.import("resource://gre/modules/devtools/Loader.jsm", {}).devtools;
+        } catch(e) {
+          // FF23
+          devtools = Cu.import("resource:///modules/devtools/gDevTools.jsm", {}).devtools;
+        }
+        let promise = devtools.TargetFactory.forRemoteTab(options).then(function (target) {
+          // We have to set tab as BottomHost expect a tab attribute on target whereas
+          // TabTarget ignores any tab being given as options attributes passed to forRemoteTab.
+          let browserWindow = Services.wm.getMostRecentWindow("navigator:browser");
+          Object.defineProperty(target, "tab", {value: browserWindow.gBrowser.selectedTab});
+
+          let promise = gDevTools.showToolbox(target, "webconsole", devtools.Toolbox.HostType.BOTTOM);
+          promise.then(toolboxDisplayed);
+        });
+      } catch(e) {
+        let TargetFactory = Cu.import("resource:///modules/devtools/Target.jsm", {}).TargetFactory;
+        let Toolbox = Cu.import("resource:///modules/devtools/Toolbox.jsm", {}).Toolbox;
+        if (TargetFactory.forRemote) {
+          // FF21
+          let target = TargetFactory.forRemote(options.form, options.client, options.chrome);
+
+          // We have to set tab as BottomHost expect a tab attribute on target whereas
+          // TabTarget ignores any tab being given as options attributes passed to forRemoteTab.
+          let browserWindow = Services.wm.getMostRecentWindow("navigator:browser");
+          Object.defineProperty(target, "tab", {value: browserWindow.gBrowser.selectedTab});
+
+          // XXX: For some unknown reason, the toolbox doesn't get unregistered
+          // on close. Workaround that by manually unregistering it.
+          gDevTools._toolboxes.delete(target);
+
+          let promise = gDevTools.showToolbox(target, "webconsole", Toolbox.HostType.BOTTOM);
+          promise.then(toolboxDisplayed);
+        } else {
+          // FF22
+          let target = TargetFactory.forTab(options);
+          // We have to set tab as BottomHost expect a tab attribute on target whereas
+          // TabTarget ignores any tab being given as options attributes passed to forRemoteTab.
+          let browserWindow = Services.wm.getMostRecentWindow("navigator:browser");
+          Object.defineProperty(target, "tab", {value: browserWindow.gBrowser.selectedTab});
+          target.makeRemote(options).then(function() {
+            let promise = gDevTools.showToolbox(target, "webconsole", Toolbox.HostType.BOTTOM);
+            promise.then(toolboxDisplayed);
+          });
+        }
       }
     });
   },
@@ -997,6 +1193,9 @@ let simulator = module.exports = {
         next();
       });
 
+      // Reset currently opened app list
+      gRunningApps = [];
+
       try {
         this.remoteSimulator.run();
       } catch(e) {
@@ -1019,11 +1218,33 @@ let simulator = module.exports = {
         } else {
           simulator.error(error);
         }
+        return;
       }
-      else {
-        let cb = typeof next === "function" ? (function(res) next(null,res)) : null;
-        simulator.remoteSimulator.runApp(app.xkey, cb);
-      }
+
+      simulator.remoteSimulator.runApp(app.xkey, function(response) {
+        if (!response.success) {
+          if (typeof next === "function") {
+            next(response.error);
+          } else {
+            simulator.error("Error running app: " + response.error);
+          }
+          return;
+        }
+
+        // Listen for app to be finally opened before firing the callback
+        if (typeof next === "function") {
+          if (gRunningApps.indexOf(app) != -1) {
+            next();
+          } else {
+            simulator.remoteSimulator.on("appOpen", function listener({manifestURL}) {
+              if (manifestURL == app.manifestURL) {
+                simulator.remoteSimulator.removeListener("appOpen", listener);
+                next();
+              }
+            });
+          }
+        }
+      });
     });
   },
 
@@ -1075,10 +1296,56 @@ let simulator = module.exports = {
       },
       onExit: function () {
         simulator.postIsRunning();
+
+        // Close any still opened toolbox
+        if (gCurrentToolbox) {
+          gCurrentToolbox.destroy();
+          gCurrentToolbox = null;
+        }
       }
     });
 
+    remoteSimulator.on("appOpen", (function ({ manifestURL }) {
+      let app = this._getAppByManifestURL(manifestURL);
+
+      // Ignore apps not being tracked by the simulator
+      if (!app) {
+        return;
+      }
+
+      gRunningApps.push(app);
+    }).bind(this));
+
+    remoteSimulator.on("appClose", (function ({ manifestURL }) {
+      let app = this._getAppByManifestURL(manifestURL);
+
+      // Ignore apps not being tracked by the simulator
+      if (!app) {
+        return;
+      }
+
+      let idx = gRunningApps.indexOf(app);
+      if (idx != -1) {
+        gRunningApps.splice(idx, 1);
+      }
+
+      // Close the current toolbox if it targets the closed app
+      if (gCurrentToolboxManifestURL == manifestURL) {
+        gCurrentToolbox.destroy();
+        gCurrentToolbox = null;
+      }
+    }).bind(this));
+
     return remoteSimulator;
+  },
+
+  _getAppByManifestURL: function (manifestURL) {
+    for (let id in this.apps) {
+      let app = this.apps[id];
+      if (app.manifestURL == manifestURL)
+        return app;
+    }
+    return null;
   },
 
   observe: function(subject, topic, data) {
@@ -1135,6 +1402,9 @@ let simulator = module.exports = {
           }
         });
         break;
+      case "connectToApp":
+        this.connectToApp(message.id);
+        break;
       case "removeApp":
         this.removeApp(message.id);
         break;
@@ -1145,10 +1415,13 @@ let simulator = module.exports = {
         this.undoRemoveApp(message.id);
         break;
       case "toggle":
-        if (this.isRunning) {
-          this.kill();
+        let start = message.start;
+        if (this.isRunning === start) {
+          this.postIsRunning();
+        } else if (start) {
+          this.run();
         } else {
-          simulator.run();
+          this.kill();
         }
         break;
       case "listTabs":
