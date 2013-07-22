@@ -131,28 +131,32 @@ let simulator = module.exports = {
     let ret = fp.show();
     if (ret == Ci.nsIFilePicker.returnOK || ret == Ci.nsIFilePicker.returnReplace) {
       let manifestFile = fp.file.path;
-      console.log("Selected " + manifestFile);
-
-      let apps = simulator.apps;
-      let xkey = UUID.uuid().toString().slice(1, -1);
-      apps[manifestFile] = {
-        type: "local",
-        xkey: xkey,
-        origin: "app://" + xkey
-      };
-      console.log("Registered App " + JSON.stringify(apps[manifestFile]));
-
-      let next = function next(error, app) {
-        // Update the Dashboard to reflect changes to the record and run the app
-        // if the update succeeded.  Otherwise, it isn't necessary to notify
-        // the user about the error, as it'll show up in the validation results.
-        simulator.sendSingleApp(manifestFile);
-        if (!error) {
-          simulator.runApp(app);
-        }
-      };
-      this.updateApp(manifestFile, next);
+      simulator.addManifestFile(manifestFile);
     }
+  },
+
+  addManifestFile: function (manifestFile) {
+    console.log("Selected " + manifestFile);
+
+    let apps = simulator.apps;
+    let xkey = UUID.uuid().toString().slice(1, -1);
+    apps[manifestFile] = {
+      type: "local",
+      xkey: xkey,
+      origin: "app://" + xkey
+    };
+    console.log("Registered App " + JSON.stringify(apps[manifestFile]));
+
+    let next = function next(error, app) {
+      // Update the Dashboard to reflect changes to the record and run the app
+      // if the update succeeded.  Otherwise, it isn't necessary to notify
+      // the user about the error, as it'll show up in the validation results.
+      simulator.sendSingleApp(manifestFile);
+      if (!error) {
+        simulator.runApp(app);
+      }
+    };
+    this.updateApp(manifestFile, next);
   },
 
   updateAll: function(oncompleted) {
