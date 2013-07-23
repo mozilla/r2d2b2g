@@ -134,7 +134,8 @@ let simulator = module.exports = {
     fp.appendFilters(Ci.nsIFilePicker.filterAll);
 
     let ret = fp.show();
-    if (ret == Ci.nsIFilePicker.returnOK || ret == Ci.nsIFilePicker.returnReplace) {
+    if (ret == Ci.nsIFilePicker.returnOK ||
+        ret == Ci.nsIFilePicker.returnReplace) {
       let manifestFile = fp.file.path;
       console.log("Selected " + manifestFile);
 
@@ -846,6 +847,12 @@ let simulator = module.exports = {
                            app.manifest, app);
     Validator.validateManifest(app.validation.errors, app.validation.warnings,
                                app.manifest);
+
+    if(app.type == "local") {
+      Validator.validateManifestFile(app.validation.errors,
+                                     app.validation.warnings,
+                                     id);
+    }
 
     // Appcache checks
     if (["generated", "hosted"].indexOf(app.type) !== -1) {

@@ -9,6 +9,7 @@ const { AppsUtils, ManifestHelper } = Cu.import("resource://gre/modules/AppsUtil
 const { Services } = Cu.import("resource://gre/modules/Services.jsm");
 const { PermissionsTable, expandPermissions } = Cu.import("resource://gre/modules/PermissionsTable.jsm");
 const { defer } = require('sdk/core/promise');
+const File = require("file");
 
 exports.validateAppCache = function(errors, warnings, rawManifest, origin) {
   let deferred = defer();
@@ -124,6 +125,12 @@ exports.validateNameIcons = function(errors, warnings, manifest, app) {
     if (!manifest.icons["128"]) {
       warnings.push("app submission to the Marketplace needs at least an 128 icon");
     }
+  }
+}
+
+exports.validateManifestFile = function(errors, warnings, path){
+  if (File.basename(path) !== "manifest.webapp") {
+    errors.push("the manifest file must be called 'manifest.webapp'");
   }
 }
 
