@@ -75,6 +75,7 @@ ifeq (win32, $(B2G_PLATFORM))
   LIB_SUFFIX = .dll
 
   ADB_OUT_DIR = android-tools/win-out/
+  ADB_DRIVERS_DIR = android-tools/adb-win-api/
 else
 ifeq (mac64, $(B2G_PLATFORM))
   B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-07-17.en-US.mac64.dmg
@@ -136,6 +137,8 @@ endif
 ifdef TEST
   TEST_ARG = -f $(TEST)
 endif
+
+DATA_ADB_PATH = addon/data/$(B2G_PLATFORM)/adb
 
 unix_to_windows_path = \
   $(shell echo '$(1)' | sed 's/^\///' | sed 's/\//\\/g' | sed 's/^./\0:/')
@@ -213,7 +216,11 @@ adb:
 	fi;
 	if [ "$(LIBADB_LOCATION)" = "local" ]; then \
 	  make -C android-tools lib; \
-	  cp $(ADB_OUT_DIR)libadb$(LIB_SUFFIX) addon/data/$(B2G_PLATFORM)/adb; \
+	  cp $(ADB_OUT_DIR)libadb$(LIB_SUFFIX) $(DATA_ADB_PATH); \
+    make -C android-tools driver; \
+    cp $(ADB_DRIVERS_DIR)api/objfre_wxp_x86/i386/AdbWinApi$(LIB_SUFFIX) $(DATA_ADB_PATH) 2> /dev/null; \
+    cp $(ADB_DRIVERS_DIR)winusb/objfre_wxp_x86/i386/AdbWinUsbApi$(LIB_SUFFIX) $(DATA_ADB_PATH) 2> /dev/null; \
+		true; \
 	fi;
 
 locales:
