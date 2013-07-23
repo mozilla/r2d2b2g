@@ -18,3 +18,13 @@ addon/r2d2b2g.xpi
 
 # locale repositories cloned by build/make-locales.py
 gaia-l10n
+
+# native code objects not covered by standard global gitignores
+android-tools/adb-bin/adb
+android-tools/win-out
+*.idb
+*.pdb
+
+# local build configuration options
+local.mk
+
