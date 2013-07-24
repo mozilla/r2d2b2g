@@ -128,7 +128,7 @@ exports.validateNameIcons = function(errors, warnings, manifest, app) {
   }
 }
 
-exports.validateManifestFile = function(errors, warnings, path){
+exports.validateManifestFile = function(errors, warnings, path) {
   if (File.basename(path) !== "manifest.webapp") {
     errors.push("the manifest file must be called 'manifest.webapp'");
   }

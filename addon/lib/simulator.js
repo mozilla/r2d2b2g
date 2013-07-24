@@ -848,7 +848,7 @@ let simulator = module.exports = {
     Validator.validateManifest(app.validation.errors, app.validation.warnings,
                                app.manifest);
 
-    if(app.type == "local") {
+    if (app.type == "local") {
       Validator.validateManifestFile(app.validation.errors,
                                      app.validation.warnings,
                                      id);
