@@ -43,7 +43,7 @@
   const LPOVERLAPPED = ctypes.void_t.ptr;
 
   const AdbReadEndpointAsyncType =
-    ctypes.FunctionType(ctypes.default_abi, ADBAPIHANDLE, [ ctypes.void_t.ptr, ctypes.uint64_t, ctypes.uint64_t.ptr, ctypes.uint64_t, HANDLE ]);
+    ctypes.FunctionType(ctypes.default_abi, ADBAPIHANDLE, [ ADBAPIHANDLE, ctypes.void_t.ptr, ctypes.uint64_t, ctypes.uint64_t.ptr, ctypes.uint64_t, HANDLE ]);
   const AdbWriteEndpointAsyncType =
     ctypes.FunctionType(ctypes.default_abi, ADBAPIHANDLE, [ ADBAPIHANDLE, ctypes.void_t.ptr, ctypes.uint64_t, ctypes.uint64_t.ptr, ctypes.uint64_t, HANDLE ]);
   const AdbReadEndpointSyncType =

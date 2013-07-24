@@ -1960,15 +1960,13 @@ void fdevent_js_die_setup(int js_die_fd) {
     printf("Added FDE");
 }
 
-ADB_MUTEX_DEFINE( die_fdevent_lock );
-adb_cond_t die_fdevent_cond;
+ADB_COND_DEFINE(die_fdevent_cond);
 
 void should_die_fdevent_() {
-    adb_mutex_lock( &die_fdevent_lock );
+    ADB_COND(die_fdevent_cond);
     while (SHOULD_DIE != 2) {
-        adb_cond_wait( &die_fdevent_cond, &die_fdevent_lock );
+        adb_cond_wait( &die_fdevent_cond, NULL );
     }
-    adb_mutex_unlock( &die_fdevent_lock );
 }
 
 void fdevent_loop(int exit_fd)

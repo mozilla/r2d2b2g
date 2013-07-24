@@ -47,9 +47,11 @@ worker.once("init", function({ libPath, driversPath, threadName, t_ptrS, platfor
     const io_bridge_funcs = [
       { "AdbReadEndpointAsync": AdbReadEndpointAsyncType },
       { "AdbWriteEndpointAsync": AdbWriteEndpointAsyncType },
+      { "AdbHasOvelappedIoComplated": AdbHasOvelappedIoComplatedType },
       { "AdbReadEndpointSync": AdbReadEndpointSyncType },
       { "AdbWriteEndpointSync": AdbWriteEndpointSyncType },
       { "AdbCloseHandle": AdbCloseHandleType },
+      { "AdbGetOvelappedIoResult": AdbGetOvelappedIoResultType }
     ];
 
     let bb = new BridgeBuilder(I, libadbdrivers);
