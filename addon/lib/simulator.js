@@ -21,7 +21,7 @@ const Timer = require("timer");
 const RemoteSimulatorClient = require("remote-simulator-client");
 const xulapp = require("sdk/system/xul-app");
 const JsonLint = require("jsonlint/jsonlint");
-const ADB = require("adb");
+const ADB = require("adb/adb");
 const Promise = require("sdk/core/promise");
 const Runtime = require("runtime");
 const Validator = require("./validator");
@@ -60,13 +60,18 @@ let simulator = module.exports = {
    * Unload the module.
    */
   unload: function unload(reason) {
+
     // Kill the Simulator and ADB processes, so they don't continue to run
     // unnecessarily if the user is quitting Firefox or disabling the addon;
     // and so they close their filehandles if the user is updating the addon,
     // which we need to do on Windows to replace the files.
     this.kill();
-    if (ADB.didRunInitially) {
-      ADB.kill(Runtime.OS == "WINNT" ? true : false /* sync */);
+
+
+    // make sure we only shutdown ADB when the
+    // actual onUnload event fires (the `&& reason`)
+    if (ADB.didRunInitially && reason) {
+      ADB.close();
     }
 
     // Close the Dashboard if the user is disabling or updating the addon.
@@ -129,7 +134,8 @@ let simulator = module.exports = {
     fp.appendFilters(Ci.nsIFilePicker.filterAll);
 
     let ret = fp.show();
-    if (ret == Ci.nsIFilePicker.returnOK || ret == Ci.nsIFilePicker.returnReplace) {
+    if (ret == Ci.nsIFilePicker.returnOK ||
+        ret == Ci.nsIFilePicker.returnReplace) {
       let manifestFile = fp.file.path;
       console.log("Selected " + manifestFile);
 
@@ -842,6 +848,12 @@ let simulator = module.exports = {
     Validator.validateManifest(app.validation.errors, app.validation.warnings,
                                app.manifest);
 
+    if (app.type == "local") {
+      Validator.validateManifestFile(app.validation.errors,
+                                     app.validation.warnings,
+                                     id);
+    }
+
     // Appcache checks
     if (["generated", "hosted"].indexOf(app.type) !== -1) {
       // Only verify appcache for hosted apps
@@ -1352,7 +1364,6 @@ let simulator = module.exports = {
     console.log("simulator.observe: " + topic);
     switch (topic) {
       case "adb-ready":
-        ADB.trackDevices();
         break;
       case "adb-device-connected":
         deviceConnected = true;
@@ -1575,11 +1586,11 @@ let simulator = module.exports = {
 
       let destDir = "/data/local/tmp/b2g/" + app.xkey + "/";
 
-      ADB.push(manifestFile, destDir + "manifest.webapp").then(
+      ADB.pushFile(manifestFile, destDir + "manifest.webapp").then(
         function success(data) {
           console.log("ADB.push manifest file success: " + data);
 
-          ADB.push(metadataFile, destDir + "metadata.json").then(
+          ADB.pushFile(metadataFile, destDir + "metadata.json").then(
             function success(data) {
               console.log("ADB.push metadata file success: " + data);
 
@@ -1660,7 +1671,7 @@ let simulator = module.exports = {
       }
 
       let destDir = "/data/local/tmp/b2g/" + app.xkey + "/";
-      ADB.push(pkg, destDir + "application.zip").then(
+      ADB.pushFile(pkg, destDir + "application.zip").then(
         function success(data) {
           console.log("ADB.push success: " + data);
           Debugger.webappsRequest({
