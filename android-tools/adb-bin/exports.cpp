@@ -20,6 +20,7 @@ DLL_EXPORT int connect_service(const char * service);
 DLL_EXPORT int read_fd(int fd, char * buffer, int size);
 
 DLL_EXPORT void install_thread_locals(void (*restart_me)());
+DLL_EXPORT void install_js_msg(void *(js_msg)(char *, void *));
 DLL_EXPORT void array_lists_init();
 
 DLL_EXPORT int main_server(struct adb_main_input * input_args);
@@ -34,6 +35,10 @@ DLL_EXPORT void on_kill_io_pump(atransport * t, bool (*close_handle_func)(ADBAPI
 
   DLL_EXPORT void install_thread_locals(void (*restart_me)()) {
     install_thread_locals_(restart_me);
+  }
+
+  DLL_EXPORT void install_js_msg(void *(js_msg)(char *, void *)) {
+    install_js_msg_(js_msg);
   }
 
   DLL_EXPORT void install_getLastError(int (*getLastError)()) {

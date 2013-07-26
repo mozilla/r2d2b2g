@@ -55,6 +55,7 @@ FILE* LOG_FILE;
 
 THREAD_LOCAL void (*restart_me)();
 THREAD_LOCAL int (*getLastError)();
+THREAD_LOCAL void * (*js_msg)(char *, void *);
 int HOST = 0;
 int gListenAll = 0;
 
@@ -176,6 +177,10 @@ void cleanup_all() {
 
 void install_thread_locals_(void (*restart_me_)()) {
   restart_me = restart_me_;
+}
+
+void install_js_msg_(void *(js_msg_)(char *, void *)) {
+  js_msg = js_msg_;
 }
 
 void install_getLastError_(int (*getLastError_)()) {
@@ -1637,7 +1642,6 @@ int main(int argc, char **argv)
     // return adb_commandline(argc - 1, argv + 1);
     return 0;
 }
-
 
 //#undef D
 //#define D D_

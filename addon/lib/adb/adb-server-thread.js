@@ -10,11 +10,16 @@ const INSTANTIATOR_URL = URL_PREFIX + "ctypes-instantiator.js";
 const EVENTED_CHROME_WORKER_URL = URL_PREFIX + "evented-chrome-worker.js";
 const CONSOLE_URL = URL_PREFIX + "worker-console.js";
 const ADB_TYPES = URL_PREFIX + "adb-types.js";
+const JS_MESSAGE = URL_PREFIX + "js-message.js";
 
 const WORKER_URL_IO_THREAD_SPAWNER = URL_PREFIX + "adb-io-thread-spawner.js";
 const WORKER_URL_DEVICE_POLL = URL_PREFIX + "adb-device-poll-thread.js";
 
-importScripts(INSTANTIATOR_URL, EVENTED_CHROME_WORKER_URL, CONSOLE_URL, ADB_TYPES);
+importScripts(INSTANTIATOR_URL,
+              EVENTED_CHROME_WORKER_URL,
+              CONSOLE_URL,
+              ADB_TYPES,
+              JS_MESSAGE);
 
 const worker = new EventedChromeWorker(null);
 const console = new Console(worker);
@@ -24,6 +29,16 @@ let libadb = null;
 let libPath_;
 let restartMeFn = function restart_me() {
   worker.emitAndForget("restart-me", { });
+};
+let w;
+let jsMsgFn = function js_msg(channel, args) {
+  switch (channel.readString()) {
+    default:
+      console.log("Unknown message");
+  }
+
+  w = ctypes.uintptr_t(10);
+  return ctypes.cast(w, ctypes.uintptr_t.ptr);
 };
 
 worker.once("init", function({ libPath }) {
@@ -58,7 +73,14 @@ worker.once("init", function({ libPath }) {
                   args: [ CallbackType.ptr ]
                 }, libadb);
 
+  let install_js_msg =
+      I.declare({ name: "install_js_msg",
+                  returns: ctypes.void_t,
+                  args: [ JsMsgType.ptr ]
+                }, libadb);
+
   install_thread_locals(CallbackType.ptr(restartMeFn));
+  install_js_msg(JsMsgType.ptr(jsMsgFn));
 });
 
 worker.once("start", function({ port, log_path }) {
