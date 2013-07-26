@@ -147,10 +147,14 @@ exports = module.exports = {
       let paths = env.PATH.split(':');
       let len = paths.length;
       for (let i = 0; i < len; i++) {
-        let fullyQualified = File.join(paths[i], psCommand);
-        if (File.exists(fullyQualified)) {
-          ps = fullyQualified;
-          break;
+        try {
+          let fullyQualified = File.join(paths[i], psCommand);
+          if (File.exists(fullyQualified)) {
+            ps = fullyQualified;
+            break;
+          }
+        } catch (e) {
+          // keep checking PATH if we run into NS_ERROR_FILE_UNRECOGNIZED_PATH
         }
       }
       if (!ps) {
