@@ -394,11 +394,10 @@ int usb_write(usb_handle* handle, const void* data, int len) {
 
 extern THREAD_LOCAL int (*getLastError)();
 int usb_read(usb_handle *handle, void* data, int len) {
-  unsigned long time_out = 10;
   unsigned long read = 0;
   int ret;
   char * data_ = (char *)data;
-  ADBAPIHANDLE complated_handle = NULL;
+  ADBAPIHANDLE completed_handle = NULL;
 
   D("usb_read %d\n", len);
   if (NULL != handle) {
@@ -408,23 +407,23 @@ int usb_read(usb_handle *handle, void* data, int len) {
       // loop until there is a byte
       int saved_errno = 0;
       
-        D("Pre read call\n");
-        complated_handle = o_bridge->AdbReadEndpointAsync(handle->adb_read_pipe,
-                                    (void*)data_,
-                                    (unsigned long)xfer,
-                                    &read,
-                                    0,
-                                    NULL);
-        saved_errno = getLastError();
-        if (complated_handle == NULL) {
-          D("AdbReadEndpointAsync, errno: %d\n", saved_errno);
-          return -1;
-        }
-        D("Read async started");
+      D("Pre read call\n");
+      completed_handle = o_bridge->AdbReadEndpointAsync(handle->adb_read_pipe,
+                                  (void*)data_,
+                                  (unsigned long)xfer,
+                                  &read,
+                                  0,
+                                  NULL);
+      saved_errno = getLastError();
+      if (completed_handle == NULL) {
+        D("AdbReadEndpointAsync, errno: %d\n", saved_errno);
+        return -1;
+      }
+      D("Read async started");
 
-      int hasComplated = FALSE;
+      int hasCompleted = FALSE;
       do {
-        hasComplated = o_bridge->AdbHasOvelappedIoComplated(complated_handle);
+        hasCompleted = o_bridge->AdbHasOvelappedIoComplated(completed_handle);
         saved_errno = getLastError();
         if (saved_errno != 0) {
           D("HasOvelappedIoComplated, errno: %d\n", saved_errno);
@@ -438,11 +437,11 @@ int usb_read(usb_handle *handle, void* data, int len) {
         }
 
         Sleep(100);
-      } while(!hasComplated);
+      } while(!hasCompleted);
       D("Post hasComplated\n");
 
 
-      ret = o_bridge->AdbGetOvelappedIoResult(complated_handle, NULL, &read, true);
+      ret = o_bridge->AdbGetOvelappedIoResult(completed_handle, NULL, &read, true);
       if (!ret) {
         D("AdbGetOvelappedIoResult(read %u) failure (%u). Error %u, read %u\n",
             xfer, ret, getLastError(), read);
