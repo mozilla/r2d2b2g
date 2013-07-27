@@ -52,7 +52,7 @@ typedef void * ADBAPIHANDLE;
 //    from native code (wtf windows) so make printf log to a file    
 extern FILE* LOG_FILE;
 #undef printf
-#define printf(...) do { fprintf(LOG_FILE, __VA_ARGS__); fflush(LOG_FILE); } while (0); 
+#define printf(...) do { SYSTEMTIME st; GetSystemTime(&st); fprintf(LOG_FILE, "%d::%d::", st.wSecond, st.wMilliseconds); fprintf(LOG_FILE, __VA_ARGS__); fflush(LOG_FILE); } while (0); 
 #endif
 
 #define MAX_PAYLOAD 4096
@@ -306,11 +306,13 @@ struct func_carrier {
 
 #ifdef WIN32
 struct dll_io_bridge {
-  ADBAPIHANDLE (*AdbReadEndpointAsync)(void *, unsigned long, unsigned long *, unsigned long, HANDLE);
+  ADBAPIHANDLE (*AdbReadEndpointAsync)(ADBAPIHANDLE, void *, unsigned long, unsigned long *, unsigned long, HANDLE);
   ADBAPIHANDLE (*AdbWriteEndpointAsync)(ADBAPIHANDLE, void *, unsigned long, unsigned long *, unsigned long, HANDLE);
+  bool (*AdbHasOvelappedIoComplated)(ADBAPIHANDLE adb_io_completion);
   bool (*AdbReadEndpointSync)(ADBAPIHANDLE, void *, unsigned long, unsigned long *, unsigned long);
   bool (*AdbWriteEndpointSync)(ADBAPIHANDLE, void *, unsigned long, unsigned long *, unsigned long);
   bool (*AdbCloseHandle)(ADBAPIHANDLE);
+  bool (*AdbGetOvelappedIoResult)(ADBAPIHANDLE, LPOVERLAPPED, unsigned long*, bool);
 };
 
 struct dll_bridge {

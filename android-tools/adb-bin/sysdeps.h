@@ -46,13 +46,15 @@
 #define __inline__ __inline
 
 typedef CRITICAL_SECTION          adb_mutex_t;
-typedef CONDITION_VARIABLE        adb_cond_t;
+typedef HANDLE                    adb_cond_t;
 
 #define  ADB_MUTEX_DEFINE(x)     adb_mutex_t   x
 
 /* declare all mutexes */
 /* For win32, adb_sysdeps_init() will do the mutex runtime initialization. */
 #define  ADB_MUTEX(x)   extern adb_mutex_t  x;
+#define  ADB_COND_DEFINE(x)    adb_cond_t x;
+#define  ADB_COND(x) x = CreateEvent(0, 0, 0, 0);
 #include "mutex_list.h"
 
 void _cleanup_winsock();
@@ -71,12 +73,13 @@ static __inline__ void  adb_mutex_unlock( adb_mutex_t*  lock )
 
 static __inline__ void adb_cond_wait( adb_cond_t * condition, adb_mutex_t * mutex )
 {
-    SleepConditionVariableCS(condition, mutex, INFINITE);
+    // We can't use SleepConditionVariableCS because it only works on Vista+
+    WaitForSingleObject(condition, INFINITE);
 }
 
 static __inline__ void adb_cond_broadcast( adb_cond_t * condition )
 {
-    WakeAllConditionVariable(condition);
+    SetEvent(condition);
 }
 
 typedef struct { unsigned  tid; }  adb_thread_t;
