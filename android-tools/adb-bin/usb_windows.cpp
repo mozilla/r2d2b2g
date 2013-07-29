@@ -196,7 +196,14 @@ int register_new_device(usb_handle* handle) {
 
 
 static int should_kill = 0;
+extern int is_io_pump_on;
 ADB_COND_DEFINE(should_kill_cond);
+static void inc_should_kill() {
+  adb_mutex_lock(&should_kill_lock);
+  D("Set should_kill to %d\n", should_kill+1);
+  should_kill++;
+  adb_mutex_unlock(&should_kill_lock);
+}
 static void set_should_kill(int val) {
   adb_mutex_lock(&should_kill_lock);
   D("Set should_kill to %d\n", val);
@@ -204,27 +211,15 @@ static void set_should_kill(int val) {
   adb_mutex_unlock(&should_kill_lock);
 }
 
-static int get_should_kill() {
-  adb_mutex_lock(&should_kill_lock);
-  int tmp = should_kill;
-  adb_mutex_unlock(&should_kill_lock);
-  return tmp;
-}
-
-void notify_should_kill(int k, char who) {
-  if (k < 0) {
-    k = get_should_kill();
-    if (k == 0) {
-      return;
-    }
+int notify_should_kill() {
+  if (!should_kill) {
+    return should_kill;
   }
 
-  set_should_kill(k+1);
-  int is_io_pump_on = get_io_pump_status();
-  if (k >= 2 + is_io_pump_on) {
-    D("Broadcasting\n");
-    adb_cond_broadcast(&should_kill_cond);
-  }
+  inc_should_kill();
+  D("Broadcasting\n");
+  adb_cond_broadcast(&should_kill_cond);
+  return should_kill;
 }
 
 // signals the device_loop and device_output_thread
@@ -233,7 +228,6 @@ void should_kill_threads() {
   set_should_kill(1);
 
   // wait for both the device loop's and the input_thread's death (if it exists)
-  int is_io_pump_on = get_io_pump_status();
   D("Waiting for %d notifications\n", 2 + is_io_pump_on - 1);
   while(should_kill < (2 + is_io_pump_on)) {
     // hang on a condition
@@ -248,10 +242,8 @@ void* device_poll_thread(void* _bridge) {
 
   int i = 0;
   while(1) {
-    int k = get_should_kill();
-    if (k) {
-      D("Cleaning in timer handler\n");
-      notify_should_kill(k, 'D');
+    if (notify_should_kill()) {
+      D("Cleaned in timer handler\n");
       return NULL;
     }
 
@@ -430,8 +422,7 @@ int usb_read(usb_handle *handle, void* data, int len) {
           return -1;
         }
         
-        int k = get_should_kill();
-        if (k) {
+        if (should_kill) {
           return -1;
           // the input thread will notify_should_kill
         }
