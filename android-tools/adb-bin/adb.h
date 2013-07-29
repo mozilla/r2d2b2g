@@ -304,6 +304,7 @@ struct func_carrier {
 
 #include "array_lists.h"
 #include "js_message.h"
+extern THREAD_LOCAL void * (*js_msg)(char *, void *);
 
 #ifdef WIN32
 struct dll_io_bridge {
@@ -395,8 +396,6 @@ int adb_main(int is_daemon, int server_port, int is_lib_call);
 void init_transport_registration(int (*spawnIO)(atransport*));
 int  list_transports(char *buf, size_t  bufsize, int long_listing);
 void update_transports(void);
-
-asocket*  create_device_tracker(void);
 
 /* Obtain a transport from the available transports.
 ** If state is != CS_ANY, only transports in that state are considered.

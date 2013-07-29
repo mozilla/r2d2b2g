@@ -483,135 +483,21 @@ static int list_transports_msg(char*  buffer, size_t  bufferlen)
     return len;
 }
 
-/* this adds support required by the 'track-devices' service.
- * this is used to send the content of "list_transport" to any
- * number of client connections that want it through a single
- * live TCP connection
- */
-typedef struct device_tracker  device_tracker;
-struct device_tracker {
-    asocket          socket;
-    int              update_needed;
-    device_tracker*  next;
-};
-
-/* linked list of all device trackers */
-static device_tracker*   device_tracker_list;
-
-static void
-device_tracker_remove( device_tracker*  tracker )
-{
-    device_tracker**  pnode = &device_tracker_list;
-    device_tracker*   node  = *pnode;
-
-    adb_mutex_lock( &transport_lock );
-    while (node) {
-        if (node == tracker) {
-            *pnode = node->next;
-            break;
-        }
-        pnode = &node->next;
-        node  = *pnode;
-    }
-    adb_mutex_unlock( &transport_lock );
-}
-
-static void
-device_tracker_close( asocket*  socket )
-{
-    device_tracker*  tracker = (device_tracker*) socket;
-    asocket*         peer    = socket->peer;
-
-    D( "device tracker %p removed\n", tracker);
-    if (peer) {
-        peer->peer = NULL;
-        peer->close(peer);
-    }
-    device_tracker_remove(tracker);
-    free(tracker);
-}
-
-static int
-device_tracker_enqueue( asocket*  socket, apacket*  p )
-{
-    /* you can't read from a device tracker, close immediately */
-    put_apacket(p);
-    device_tracker_close(socket);
-    return -1;
-}
-
-static int
-device_tracker_send( device_tracker*  tracker,
-                     const char*      buffer,
-                     int              len )
-{
-    apacket*  p = get_apacket();
-    asocket*  peer = tracker->socket.peer;
-
-    D("Device tracker send %p, sending: %s\n", tracker, buffer);
-    memcpy(p->data, buffer, len);
-    p->len = len;
-    return peer->enqueue( peer, p );
-}
-
-
-static void
-device_tracker_ready( asocket*  socket )
-{
-    device_tracker*  tracker = (device_tracker*) socket;
-    D("Device tracker ready\n");
-
-    /* we want to send the device list when the tracker connects
-    * for the first time, even if no update occured */
-    if (tracker->update_needed > 0) {
-        char  buffer[1024];
-        int   len;
-
-        tracker->update_needed = 0;
-
-        len = list_transports_msg(buffer, sizeof(buffer));
-        device_tracker_send(tracker, buffer, len);
-    }
-}
-
-
-asocket*
-create_device_tracker(void)
-{
-    device_tracker*  tracker = (device_tracker*)calloc(1,sizeof(*tracker));
-
-    if(tracker == 0) fatal("cannot allocate device tracker");
-
-    D( "device tracker %p created\n", tracker);
-
-    tracker->socket.enqueue = device_tracker_enqueue;
-    tracker->socket.ready   = device_tracker_ready;
-    tracker->socket.close   = device_tracker_close;
-    tracker->update_needed  = 1;
-
-    tracker->next       = device_tracker_list;
-    device_tracker_list = tracker;
-
-    return &tracker->socket;
-}
-
-
 /* call this function each time the transport list has changed */
 void  update_transports(void)
 {
     char             buffer[1024];
     int              len;
-    device_tracker*  tracker;
 
-    len = list_transports_msg(buffer, sizeof(buffer));
+    len = list_transports(buffer, sizeof(buffer)-1, 0);
 
-    tracker = device_tracker_list;
-    while (tracker != NULL) {
-        device_tracker*  next = tracker->next;
-        /* note: this may destroy the tracker if the connection is closed */
-        device_tracker_send(tracker, buffer, len);
-        tracker = next;
-    }
+    buffer[len] = '\0';
+    void * res;
+    struct device_update_msg {
+      char * updates;
+    };
+    struct device_update_msg m = { buffer };
+    MSG(&res, "device-update", m);
 }
 
 static int

@@ -33,8 +33,12 @@ let restartMeFn = function restart_me() {
 let w;
 let jsMsgFn = function js_msg(channel, args) {
   switch (channel.readString()) {
+    case "device-update":
+      let [updates] = new JsMessage(args).unravel(ctypes.char.ptr);
+      worker.emitAndForget("device-update", { msg: updates.readString() });
+      break;
     default:
-      console.log("Unknown message");
+      console.debug("Unknown message");
   }
 
   w = ctypes.uintptr_t(10);
