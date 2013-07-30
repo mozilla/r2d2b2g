@@ -7,6 +7,12 @@
 
 const { Cc, Ci, Cr, Cu } = require("chrome");
 
+/* Fake require statements so that the module dependency graph has dynamically
+ * loaded adb modules
+  require("adb/adb-fallback");
+  require("adb/adb");
+*/
+
 const Self = require("self");
 const URL = require("url");
 const Tabs = require("tabs");
@@ -21,7 +27,6 @@ const Timer = require("timer");
 const RemoteSimulatorClient = require("remote-simulator-client");
 const xulapp = require("sdk/system/xul-app");
 const JsonLint = require("jsonlint/jsonlint");
-const ADB = require("adb/adb");
 const Promise = require("sdk/core/promise");
 const Runtime = require("runtime");
 const Validator = require("./validator");
@@ -31,6 +36,10 @@ const Debugger = require("debugger");
 
 // The b2gremote debugger port.
 const DEBUGGER_PORT = 6000;
+
+const isAdbRunningPromise = require("adb/adb-running-checker").check();
+
+let ADB = { val: null };
 
 const { rootURI: ROOT_URI } = require('@loader/options');
 const PROFILE_URL = ROOT_URI + "profile/";
@@ -52,6 +61,10 @@ let deviceConnected, adbReady, debuggerReady;
 let gCurrentConnection, gCurrentToolbox, gCurrentToolboxManifestURL;
 let gRunningApps = [];
 
+// HACK: For some reason the isAdbRunning promise still resolves even after
+//       the module unloads. If ADB is initialized, but not closed FF gets
+//       in a bad state. To prevent this, we set isDead to true in unload
+let isDead = false;
 let simulator = module.exports = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIObserver,
                                          Ci.nsISupportsWeakReference]),
@@ -67,11 +80,12 @@ let simulator = module.exports = {
     // which we need to do on Windows to replace the files.
     this.kill();
 
+    isDead = true;
 
     // make sure we only shutdown ADB when the
     // actual onUnload event fires (the `&& reason`)
-    if (ADB.didRunInitially && reason) {
-      ADB.close();
+    if (ADB.val && ADB.val.didRunInitially && reason) {
+      ADB.val.close();
     }
 
     // Close the Dashboard if the user is disabling or updating the addon.
@@ -113,9 +127,17 @@ let simulator = module.exports = {
         worker = null;
       });
 
-      if (!ADB.ready) {
-        ADB.start();
-      }
+
+      isAdbRunningPromise.then(function onSuccess(isAdbRunning) {
+        console.log("isAdbRunningPromise resolved!");
+        if (!isDead) {
+          // Use adb-fallback if an instance of adb is already running
+          ADB.val = isAdbRunning ? require("adb/adb-fallback") : require("adb/adb");
+          if (!ADB.val.ready) {
+            ADB.val.start();
+          }
+        }
+      });
     }
   },
 
@@ -1364,6 +1386,7 @@ let simulator = module.exports = {
     console.log("simulator.observe: " + topic);
     switch (topic) {
       case "adb-ready":
+        ADB.val.trackDevices();
         break;
       case "adb-device-connected":
         deviceConnected = true;
@@ -1535,7 +1558,7 @@ let simulator = module.exports = {
     if (adbReady) {
       deferred.resolve();
     } else {
-      ADB.forwardPort(DEBUGGER_PORT).then(
+      ADB.val.forwardPort(DEBUGGER_PORT).then(
         function success(data) {
           console.log("ADB.forwardPort success: " + data);
           adbReady = true;
@@ -1586,11 +1609,11 @@ let simulator = module.exports = {
 
       let destDir = "/data/local/tmp/b2g/" + app.xkey + "/";
 
-      ADB.pushFile(manifestFile, destDir + "manifest.webapp").then(
+      ADB.val.push(manifestFile, destDir + "manifest.webapp").then(
         function success(data) {
           console.log("ADB.push manifest file success: " + data);
 
-          ADB.pushFile(metadataFile, destDir + "metadata.json").then(
+          ADB.val.push(metadataFile, destDir + "metadata.json").then(
             function success(data) {
               console.log("ADB.push metadata file success: " + data);
 
@@ -1671,7 +1694,7 @@ let simulator = module.exports = {
       }
 
       let destDir = "/data/local/tmp/b2g/" + app.xkey + "/";
-      ADB.pushFile(pkg, destDir + "application.zip").then(
+      ADB.val.push(pkg, destDir + "application.zip").then(
         function success(data) {
           console.log("ADB.push success: " + data);
           Debugger.webappsRequest({
