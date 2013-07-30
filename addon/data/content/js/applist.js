@@ -39,6 +39,9 @@ var AppList = (function() {
         console.log('updating', id);
         var app = apps[id];
         if (!app) {
+            apps[id] = data;
+            appIds = Object.keys(apps).sort();
+            render();
             return;
         }
         if ('key' in app) {
