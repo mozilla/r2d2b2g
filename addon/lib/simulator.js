@@ -119,9 +119,7 @@ let simulator = module.exports = {
         worker = null;
       });
 
-      const isAdbRunningPromise = require("adb/adb-running-checker").check();
-      isAdbRunningPromise.then(function onSuccess(isAdbRunning) {
-        console.log("isAdbRunningPromise resolved!");
+      require("adb/adb-running-checker").check().then(function(isAdbRunning) {
         // Use adb-fallback if an instance of adb is already running
         ADB = isAdbRunning ? require("adb/adb-fallback") : require("adb/adb");
         if (!ADB.ready) {
