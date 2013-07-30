@@ -37,9 +37,7 @@ const Debugger = require("debugger");
 // The b2gremote debugger port.
 const DEBUGGER_PORT = 6000;
 
-const isAdbRunningPromise = require("adb/adb-running-checker").check();
-
-let ADB = { val: null };
+let ADB = null;
 
 const { rootURI: ROOT_URI } = require('@loader/options');
 const PROFILE_URL = ROOT_URI + "profile/";
@@ -61,10 +59,6 @@ let deviceConnected, adbReady, debuggerReady;
 let gCurrentConnection, gCurrentToolbox, gCurrentToolboxManifestURL;
 let gRunningApps = [];
 
-// HACK: For some reason the isAdbRunning promise still resolves even after
-//       the module unloads. If ADB is initialized, but not closed FF gets
-//       in a bad state. To prevent this, we set isDead to true in unload
-let isDead = false;
 let simulator = module.exports = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIObserver,
                                          Ci.nsISupportsWeakReference]),
@@ -80,12 +74,10 @@ let simulator = module.exports = {
     // which we need to do on Windows to replace the files.
     this.kill();
 
-    isDead = true;
-
     // make sure we only shutdown ADB when the
     // actual onUnload event fires (the `&& reason`)
-    if (ADB.val && ADB.val.didRunInitially && reason) {
-      ADB.val.close();
+    if (ADB && ADB.didRunInitially && reason) {
+      ADB.close();
     }
 
     // Close the Dashboard if the user is disabling or updating the addon.
@@ -127,15 +119,13 @@ let simulator = module.exports = {
         worker = null;
       });
 
-
+      const isAdbRunningPromise = require("adb/adb-running-checker").check();
       isAdbRunningPromise.then(function onSuccess(isAdbRunning) {
         console.log("isAdbRunningPromise resolved!");
-        if (!isDead) {
-          // Use adb-fallback if an instance of adb is already running
-          ADB.val = isAdbRunning ? require("adb/adb-fallback") : require("adb/adb");
-          if (!ADB.val.ready) {
-            ADB.val.start();
-          }
+        // Use adb-fallback if an instance of adb is already running
+        ADB = isAdbRunning ? require("adb/adb-fallback") : require("adb/adb");
+        if (!ADB.ready) {
+          ADB.start();
         }
       });
     }
@@ -1386,7 +1376,7 @@ let simulator = module.exports = {
     console.log("simulator.observe: " + topic);
     switch (topic) {
       case "adb-ready":
-        ADB.val.trackDevices();
+        ADB.trackDevices();
         break;
       case "adb-device-connected":
         deviceConnected = true;
@@ -1558,7 +1548,7 @@ let simulator = module.exports = {
     if (adbReady) {
       deferred.resolve();
     } else {
-      ADB.val.forwardPort(DEBUGGER_PORT).then(
+      ADB.forwardPort(DEBUGGER_PORT).then(
         function success(data) {
           console.log("ADB.forwardPort success: " + data);
           adbReady = true;
@@ -1609,11 +1599,11 @@ let simulator = module.exports = {
 
       let destDir = "/data/local/tmp/b2g/" + app.xkey + "/";
 
-      ADB.val.push(manifestFile, destDir + "manifest.webapp").then(
+      ADB.push(manifestFile, destDir + "manifest.webapp").then(
         function success(data) {
           console.log("ADB.push manifest file success: " + data);
 
-          ADB.val.push(metadataFile, destDir + "metadata.json").then(
+          ADB.push(metadataFile, destDir + "metadata.json").then(
             function success(data) {
               console.log("ADB.push metadata file success: " + data);
 
@@ -1694,7 +1684,7 @@ let simulator = module.exports = {
       }
 
       let destDir = "/data/local/tmp/b2g/" + app.xkey + "/";
-      ADB.val.push(pkg, destDir + "application.zip").then(
+      ADB.push(pkg, destDir + "application.zip").then(
         function success(data) {
           console.log("ADB.push success: " + data);
           Debugger.webappsRequest({
