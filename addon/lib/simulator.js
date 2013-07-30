@@ -7,6 +7,12 @@
 
 const { Cc, Ci, Cr, Cu } = require("chrome");
 
+/* Fake require statements so that the module dependency graph has dynamically
+ * loaded adb modules
+  require("adb/adb-fallback");
+  require("adb/adb");
+*/
+
 const Self = require("self");
 const URL = require("url");
 const Tabs = require("tabs");
@@ -21,7 +27,6 @@ const Timer = require("timer");
 const RemoteSimulatorClient = require("remote-simulator-client");
 const xulapp = require("sdk/system/xul-app");
 const JsonLint = require("jsonlint/jsonlint");
-const ADB = require("adb/adb");
 const Promise = require("sdk/core/promise");
 const Runtime = require("runtime");
 const Validator = require("./validator");
@@ -31,6 +36,8 @@ const Debugger = require("debugger");
 
 // The b2gremote debugger port.
 const DEBUGGER_PORT = 6000;
+
+let ADB = null;
 
 const { rootURI: ROOT_URI } = require('@loader/options');
 const PROFILE_URL = ROOT_URI + "profile/";
@@ -67,10 +74,9 @@ let simulator = module.exports = {
     // which we need to do on Windows to replace the files.
     this.kill();
 
-
     // make sure we only shutdown ADB when the
     // actual onUnload event fires (the `&& reason`)
-    if (ADB.didRunInitially && reason) {
+    if (ADB && ADB.didRunInitially && reason) {
       ADB.close();
     }
 
@@ -113,9 +119,13 @@ let simulator = module.exports = {
         worker = null;
       });
 
-      if (!ADB.ready) {
-        ADB.start();
-      }
+      require("adb/adb-running-checker").check().then(function(isAdbRunning) {
+        // Use adb-fallback if an instance of adb is already running
+        ADB = isAdbRunning ? require("adb/adb-fallback") : require("adb/adb");
+        if (!ADB.ready) {
+          ADB.start();
+        }
+      });
     }
   },
 
@@ -1364,6 +1374,7 @@ let simulator = module.exports = {
     console.log("simulator.observe: " + topic);
     switch (topic) {
       case "adb-ready":
+        ADB.trackDevices();
         break;
       case "adb-device-connected":
         deviceConnected = true;
@@ -1586,11 +1597,11 @@ let simulator = module.exports = {
 
       let destDir = "/data/local/tmp/b2g/" + app.xkey + "/";
 
-      ADB.pushFile(manifestFile, destDir + "manifest.webapp").then(
+      ADB.push(manifestFile, destDir + "manifest.webapp").then(
         function success(data) {
           console.log("ADB.push manifest file success: " + data);
 
-          ADB.pushFile(metadataFile, destDir + "metadata.json").then(
+          ADB.push(metadataFile, destDir + "metadata.json").then(
             function success(data) {
               console.log("ADB.push metadata file success: " + data);
 
@@ -1671,7 +1682,7 @@ let simulator = module.exports = {
       }
 
       let destDir = "/data/local/tmp/b2g/" + app.xkey + "/";
-      ADB.pushFile(pkg, destDir + "application.zip").then(
+      ADB.push(pkg, destDir + "application.zip").then(
         function success(data) {
           console.log("ADB.push success: " + data);
           Debugger.webappsRequest({
