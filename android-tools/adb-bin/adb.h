@@ -343,8 +343,7 @@ struct dll_io_bridge { };
 #endif
 
 #ifdef WIN32
-  void notify_should_kill(int k, char who);
-  int get_io_pump_status();
+  int notify_should_kill();
   void should_kill_threads();
 #endif
 #ifdef __APPLE__
