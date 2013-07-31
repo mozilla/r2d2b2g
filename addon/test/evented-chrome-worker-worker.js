@@ -11,7 +11,7 @@ let worker = new EventedChromeWorker(null);
 
 const console = {
   log: function() {
-    worker.emitAndForget("log", Array.prototype.slice.call(arguments, 0));
+    worker.emitAndForget("log", "log", Array.prototype.slice.call(arguments, 0));
   }
 };
 

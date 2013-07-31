@@ -124,7 +124,7 @@ exports["test c adb push, no phone"] = function (assert, done) {
   let str = "astring" + Math.random();
   let pathToFile = require("sdk/test/tmp-file").createFromString(str);
 
-  ADB.pushFile(pathToFile,
+  ADB.push(pathToFile,
                "/sdcard/test.txt").then(
     function success(e) {
       assert.fail("Should reject promise when phone unplugged");
@@ -166,7 +166,7 @@ exports["test e adb push, with phone"] = function (assert, done) {
   let str = "astring" + Math.random();
   let pathToFile = require("sdk/test/tmp-file").createFromString(str);
 
-  ADB.pushFile(pathToFile,
+  ADB.push(pathToFile,
                "/sdcard/test.txt").then(
     function success(e) {
       ADB.shell("cat /sdcard/test.txt").then(
