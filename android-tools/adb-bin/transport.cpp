@@ -312,18 +312,11 @@ void kill_io_pump(atransport * t, bool (*close_handle_func)(ADBAPIHANDLE)){
     handle_output_oops(t, close_handle_func);
 }
 
-static int io_pump_status;
-// io_pump_status is 1 for on, 0 for off
-int get_io_pump_status() {
-  adb_mutex_lock( &io_pump_status_lock );
-  int tmp = io_pump_status;
-  adb_mutex_unlock( &io_pump_status_lock );
-  return tmp;
-}
+int is_io_pump_on;
 
 static void set_io_pump_status(int status) {
   adb_mutex_lock( &io_pump_status_lock );
-  io_pump_status = status;
+  is_io_pump_on = status;
   adb_mutex_unlock( &io_pump_status_lock );
 }
 
@@ -466,7 +459,7 @@ void *input_thread(void *_t, struct dll_io_bridge * _io_bridge)
     transport_unref(t);
 	D("Post-unref transport input-thread\n");
 #ifdef WIN32
-    notify_should_kill(-1, 'I');
+    notify_should_kill();
     set_io_pump_status(0);
 #endif
     return 0;
