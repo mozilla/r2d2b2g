@@ -214,6 +214,7 @@ adb:
 	if [ "$(LIBADB_LOCATION)" = "local" ]; then \
 	  make -C android-tools lib; \
 	  cp $(ADB_OUT_DIR)libadb$(LIB_SUFFIX) addon/data/$(B2G_PLATFORM)/adb; \
+	  cp $(ADB_OUT_DIR)libtest$(LIB_SUFFIX) addon/data/$(B2G_PLATFORM)/adb; \
 	fi;
 
 locales:

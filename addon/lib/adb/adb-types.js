@@ -16,6 +16,8 @@
 
   const NULL = ctypes.cast(ctypes.uint64_t(0x0), ctypes.void_t.ptr);
   const CallbackType = ctypes.FunctionType(ctypes.default_abi, ctypes.void_t, []);
+  // js-ctypes doesn't support variadic callback functions so this will have to do
+  const JsMsgType = ctypes.FunctionType(ctypes.default_abi, ctypes.void_t.ptr, [ ctypes.char.ptr, ctypes.void_t.ptr ]);
   const IntCallableType = ctypes.FunctionType(ctypes.default_abi, ctypes.int, []);
   const AdbOpenAccessType = ctypes.int;
   const AdbOpenSharingMode = ctypes.int;
@@ -114,6 +116,7 @@
   module.exports = {
     NULL: NULL,
     CallbackType: CallbackType,
+    JsMsgType: JsMsgType,
     IntCallableType: IntCallableType,
     AdbOpenAccessType: AdbOpenAccessType,
     AdbOpenSharingMode: AdbOpenSharingMode,
