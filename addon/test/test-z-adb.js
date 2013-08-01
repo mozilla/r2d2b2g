@@ -1,4 +1,4 @@
-const ADB = require("adb/adb");
+let ADB = null;
 const Timer = require("timer");
 const Promise = require("sdk/core/promise");
 const { Cu, Ci } = require("chrome");
@@ -34,7 +34,19 @@ Services.obs.addObserver(observer, "adb-device-connected", true);
 Services.obs.addObserver(observer, "adb-device-disconnected", true);
 
 // Before all
-ADB._startAdbInBackground();
+exports["test a start adb"] = function(assert, done) {
+  require("adb/adb-running-checker").check().then(function(isAdbRunning) {
+    // Use adb-fallback if an instance of adb is already running
+    ADB = isAdbRunning ? require("adb/adb-fallback") : require("adb/adb");
+    if (!ADB.ready) {
+      ADB.start();
+      assert.pass("ADB started in process");
+    } else {
+      assert.pass("ADB was already running out of process");
+    }
+    done();
+  });
+};
 
 function dumpBanner(msg) {
   let starCount = msg.length + 8;
@@ -63,7 +75,7 @@ function waitUntil(trigger, andThen) {
   }, 50);
 }
 
-exports["test a list devices"] = function(assert, done) {
+exports["test aa list devices"] = function(assert, done) {
   // Give adb 2 seconds to startup
   Timer.setTimeout(function listDevices() {
     ADB.listDevices().then(
@@ -96,7 +108,7 @@ exports["test a list devices"] = function(assert, done) {
 };
 
 exports["test b adb.shell, no phone"] = function (assert, done) {
-  if (isPhonePluggedIn) {
+  if (isPhonePluggedIn || !ADB.didRunInitially) {
     assert.pass("Skipping test");
     done();
     return;
@@ -137,7 +149,7 @@ exports["test c adb push, no phone"] = function (assert, done) {
 };
 
 exports["test d adb shell, with phone"] = function (assert, done) {
-  if (!isPhonePluggedIn) {
+  if (!isPhonePluggedIn || !ADB.didRunInitially) {
     assert.pass("Skipping test");
     done();
     return;
@@ -157,7 +169,7 @@ exports["test d adb shell, with phone"] = function (assert, done) {
 };
 
 exports["test e adb push, with phone"] = function (assert, done) {
-  if (!isPhonePluggedIn) {
+  if (!isPhonePluggedIn || !ADB.didRunInitially) {
     assert.pass("Skipping test");
     done();
     return;
@@ -210,7 +222,9 @@ exports["test f device tracking, with phone"] = function(assert, done) {
 */
 
 exports["test zz after"] = function(assert, done) {
-  ADB.close();
+  if (ADB.didRunInitially) {
+    ADB.close();
+  }
   assert.pass("Done!");
   done();
 };
