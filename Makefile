@@ -75,6 +75,11 @@ ifeq (win32, $(B2G_PLATFORM))
   LIB_SUFFIX = .dll
 
   ADB_OUT_DIR = android-tools/win-out/
+  ADB_DRIVERS_DIR = android-tools/adb-win-api/
+  ADB_LIBS = \
+    android-tools/win-out/libadb$(LIB_SUFFIX) \
+    $(ADB_DRIVERS_DIR)api/objfre_wxp_x86/i386/AdbWinApi$(LIB_SUFFIX) \
+    $(ADB_DRIVERS_DIR)winusb/objfre_wxp_x86/i386/AdbWinUsbApi$(LIB_SUFFIX)
 else
 ifeq (mac64, $(B2G_PLATFORM))
   B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-07-24.en-US.mac64.dmg
@@ -85,6 +90,7 @@ ifeq (mac64, $(B2G_PLATFORM))
 
   DOWNLOAD_CMD = /usr/bin/curl -O
   ADB_OUT_DIR = android-tools/adb-bin/
+  ADB_LIBS = android-tools/adb-bin/libadb$(LIB_SUFFIX)
 else
 ifeq (linux64, $(B2G_PLATFORM))
   B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-07-24.en-US.linux-x86_64.tar.bz2
@@ -93,6 +99,7 @@ ifeq (linux64, $(B2G_PLATFORM))
   ADB_BINARIES = libadb.so
   LIB_SUFFIX = .so
   ADB_OUT_DIR = android-tools/adb-bin/
+  ADB_LIBS = android-tools/adb-bin/libadb$(LIB_SUFFIX)
 else
 ifeq (linux, $(B2G_PLATFORM))
   B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-07-24.en-US.linux-i686.tar.bz2
@@ -101,6 +108,7 @@ ifeq (linux, $(B2G_PLATFORM))
   ADB_BINARIES = libadb.so
   LIB_SUFFIX = .so
   ADB_OUT_DIR = android-tools/adb-bin/
+  ADB_LIBS = android-tools/adb-bin/libadb$(LIB_SUFFIX)
 endif
 endif
 endif
@@ -136,6 +144,8 @@ endif
 ifdef TEST
   TEST_ARG = -f $(TEST)
 endif
+
+ADB_DATA_PATH = addon/data/$(B2G_PLATFORM)/adb
 
 unix_to_windows_path = \
   $(shell echo '$(1)' | sed 's/^\///' | sed 's/\//\\/g' | sed 's/^./\0:/')
@@ -212,8 +222,9 @@ adb:
 	  unzip $(ADB_PACKAGE) -d addon/data/$(B2G_PLATFORM)/adb; \
 	fi;
 	if [ "$(LIBADB_LOCATION)" = "local" ]; then \
-	  make -C android-tools lib; \
-	  cp $(ADB_OUT_DIR)libadb$(LIB_SUFFIX) addon/data/$(B2G_PLATFORM)/adb; \
+	  make -C android-tools lib && \
+	  make -C android-tools driver && \
+	  cp $(ADB_LIBS) $(ADB_DATA_PATH); \
 	fi;
 
 locales:

@@ -24,6 +24,8 @@ android-tools/adb-bin/adb
 android-tools/win-out
 *.idb
 *.pdb
+obj*_*_x86
+build*_*_x86*
 
 # local build configuration options
 local.mk

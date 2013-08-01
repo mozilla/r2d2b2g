@@ -12,3 +12,7 @@ clean:
 	make -C adb-bin clean
 lib:
 	make -C adb-bin $(LIB_TARGET)
+driver:
+	if [ "$(LIB_TARGET)" = "winlib" ]; then \
+	  make -C adb-win-api; \
+  fi
