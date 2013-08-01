@@ -138,7 +138,10 @@ ifdef TEST
   TEST_ARG = -f $(TEST)
 endif
 
-DATA_ADB_PATH = addon/data/$(B2G_PLATFORM)/adb
+ADB_DATA_PATH = addon/data/$(B2G_PLATFORM)/adb
+ADBWINAPI_PATH = $(ADB_DRIVERS_DIR)api/objfre_wxp_x86/i386/AdbWinApi$(LIB_SUFFIX)
+ADBWINUSBAPI_PATH = $(ADB_DRIVERS_DIR)winusb/objfre_wxp_x86/i386/AdbWinUsbApi$(LIB_SUFFIX) 
+
 
 unix_to_windows_path = \
   $(shell echo '$(1)' | sed 's/^\///' | sed 's/\//\\/g' | sed 's/^./\0:/')
@@ -215,12 +218,11 @@ adb:
 	  unzip $(ADB_PACKAGE) -d addon/data/$(B2G_PLATFORM)/adb; \
 	fi;
 	if [ "$(LIBADB_LOCATION)" = "local" ]; then \
-	  make -C android-tools lib; \
-	  cp $(ADB_OUT_DIR)libadb$(LIB_SUFFIX) $(DATA_ADB_PATH); \
-    make -C android-tools driver; \
-    cp $(ADB_DRIVERS_DIR)api/objfre_wxp_x86/i386/AdbWinApi$(LIB_SUFFIX) $(DATA_ADB_PATH) 2> /dev/null; \
-    cp $(ADB_DRIVERS_DIR)winusb/objfre_wxp_x86/i386/AdbWinUsbApi$(LIB_SUFFIX) $(DATA_ADB_PATH) 2> /dev/null; \
-		true; \
+	  make -C android-tools lib && \
+	  cp $(ADB_OUT_DIR)libadb$(LIB_SUFFIX) $(ADB_DATA_PATH) && \
+	  make -C android-tools driver && \
+	  ( ( [ -e $(ADBWINAPI_PATH) ] && cp $(ADBWINAPI_PATH) $(ADB_DATA_PATH) ) || [ ! -e $(ADBWINAPI_PATH) ] ) && \
+	  ( ( [ -e $(ADBWINUSBAPI_PATH) ] && cp $(ADBWINUSBAPI_PATH) $(ADB_DATA_PATH) ) || [ ! -e $(ADBWINAPI_PATH) ] ); \
 	fi;
 
 locales:
