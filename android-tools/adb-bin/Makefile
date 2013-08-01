@@ -94,17 +94,29 @@ endif
 OBJS= $(CSRCS:.c=.o) $(CPPSRCS:.cpp=.o)
 SRCS= $(CSRCS) $(CPPSRCS)
 
+TESTSRCS= test-js-message.c
+TESTOBJS= $(TESTSRCS:.c=.o)
+
 all: $(ADB_TARGETS)
 
 adb: $(OBJS)
 	$(CC) -o adb$(EXE) $(LDFLAGS) $(OBJS) $(LIBS)
 
 clean:
-	rm -rf $(OBJS) adb$(EXE) libadb$(DLL)
+	rm -rf $(OBJS) $(TESTOBJS) adb$(EXE) libadb$(DLL) libtest$(DLL)
 
-nixlib: $(OBJS)
+nixlib: nixlibadb nixlibtest
+
+nixlibadb: $(OBJS)
 	$(CC) -shared -o libadb$(DLL) $(LDFLAGS) $(OBJS) $(LIBS)
 
-winlib:
+nixlibtest: $(TESTOBJS)
+	$(CC) test-js-message.c -shared -fPIC -o libtest$(DLL)
+
+winlib: winlibadb winlibtest
+
+winlibadb:
 	echo make-win.bat | cmd $(VS_DEVELOPER_CMD_PATH)
 
+winlibtest: $(TESTOBJS)
+	echo "cl.exe test-js-message.c /link /DLL /OUT:..\\win-out\\libtest.dll" | cmd $(VS_DEVELOPER_CMD_PATH)

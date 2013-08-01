@@ -303,6 +303,7 @@ struct func_carrier {
 };
 
 #include "array_lists.h"
+#include "js_message.h"
 
 #ifdef WIN32
 struct dll_io_bridge {
@@ -351,6 +352,7 @@ struct dll_io_bridge { };
 #endif
 void array_lists_init_();
 void install_thread_locals_(void (*restart_me_)());
+void install_js_msg_(void * (*js_msg_)(char *, void *));
 void install_getLastError_(int (*getLastError)());
 int adb_thread_create( adb_thread_t  *thread, adb_thread_func_t  start, void*  arg, char * tag );
 void dump_thread_tag();
