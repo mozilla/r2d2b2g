@@ -76,6 +76,10 @@ ifeq (win32, $(B2G_PLATFORM))
 
   ADB_OUT_DIR = android-tools/win-out/
   ADB_DRIVERS_DIR = android-tools/adb-win-api/
+  ADB_LIBS = \
+    android-tools/win-out/libadb$(LIB_SUFFIX) \
+    $(ADB_DRIVERS_DIR)api/objfre_wxp_x86/i386/AdbWinApi$(LIB_SUFFIX) \
+    $(ADB_DRIVERS_DIR)winusb/objfre_wxp_x86/i386/AdbWinUsbApi$(LIB_SUFFIX)
 else
 ifeq (mac64, $(B2G_PLATFORM))
   B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-07-17.en-US.mac64.dmg
@@ -86,6 +90,7 @@ ifeq (mac64, $(B2G_PLATFORM))
 
   DOWNLOAD_CMD = /usr/bin/curl -O
   ADB_OUT_DIR = android-tools/adb-bin/
+  ADB_LIBS = android-tools/adb-bin/libadb$(LIB_SUFFIX)
 else
 ifeq (linux64, $(B2G_PLATFORM))
   B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-07-17.en-US.linux-x86_64.tar.bz2
@@ -94,6 +99,7 @@ ifeq (linux64, $(B2G_PLATFORM))
   ADB_BINARIES = libadb.so
   LIB_SUFFIX = .so
   ADB_OUT_DIR = android-tools/adb-bin/
+  ADB_LIBS = android-tools/adb-bin/libadb$(LIB_SUFFIX)
 else
 ifeq (linux, $(B2G_PLATFORM))
   B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-07-17.en-US.linux-i686.tar.bz2
@@ -102,6 +108,7 @@ ifeq (linux, $(B2G_PLATFORM))
   ADB_BINARIES = libadb.so
   LIB_SUFFIX = .so
   ADB_OUT_DIR = android-tools/adb-bin/
+  ADB_LIBS = android-tools/adb-bin/libadb$(LIB_SUFFIX)
 endif
 endif
 endif
@@ -139,9 +146,6 @@ ifdef TEST
 endif
 
 ADB_DATA_PATH = addon/data/$(B2G_PLATFORM)/adb
-ADBWINAPI_PATH = $(ADB_DRIVERS_DIR)api/objfre_wxp_x86/i386/AdbWinApi$(LIB_SUFFIX)
-ADBWINUSBAPI_PATH = $(ADB_DRIVERS_DIR)winusb/objfre_wxp_x86/i386/AdbWinUsbApi$(LIB_SUFFIX) 
-
 
 unix_to_windows_path = \
   $(shell echo '$(1)' | sed 's/^\///' | sed 's/\//\\/g' | sed 's/^./\0:/')
@@ -219,10 +223,8 @@ adb:
 	fi;
 	if [ "$(LIBADB_LOCATION)" = "local" ]; then \
 	  make -C android-tools lib && \
-	  cp $(ADB_OUT_DIR)libadb$(LIB_SUFFIX) $(ADB_DATA_PATH) && \
 	  make -C android-tools driver && \
-	  ( ( [ -e $(ADBWINAPI_PATH) ] && cp $(ADBWINAPI_PATH) $(ADB_DATA_PATH) ) || [ ! -e $(ADBWINAPI_PATH) ] ) && \
-	  ( ( [ -e $(ADBWINUSBAPI_PATH) ] && cp $(ADBWINUSBAPI_PATH) $(ADB_DATA_PATH) ) || [ ! -e $(ADBWINAPI_PATH) ] ); \
+	  cp $(ADB_LIBS) $(ADB_DATA_PATH); \
 	fi;
 
 locales:
