@@ -19,6 +19,8 @@ const Gcli = require('gcli');
 const Simulator = require("simulator.js");
 const Prefs = require("preferences-service");
 
+require("marketplace-mod");
+
 Cu.import("resource://gre/modules/Services.jsm");
 
 PageMod({
