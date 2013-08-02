@@ -13,6 +13,8 @@ const { Cc, Ci, Cr, Cu } = require("chrome");
 const { Class } = require("sdk/core/heritage");
 const client = require("adb/adb-client");
 
+const Promise = require("sdk/core/promise");
+
 Cu.import("resource://gre/modules/Services.jsm");
 
 let { TextDecoder } = Cu.import("resource://gre/modules/Services.jsm");
@@ -28,6 +30,16 @@ let worker = null;
 module.exports = {
   get hasDevice() {
     return hasDevice;
+  },
+
+  listDevices: function() {
+    let deferred = Promise.defer();
+    let buf = [];
+    for (let dev in devices) {
+      buf.push([dev, devices[dev]]);
+    }
+    deferred.resolve(buf);
+    return deferred.promise;
   },
 
   start: function(worker_) {
