@@ -118,5 +118,5 @@ winlib: winlibadb winlibtest
 winlibadb:
 	echo make-win.bat | cmd $(VS_DEVELOPER_CMD_PATH)
 
-winlibtest: $(TESTOBJS)
+winlibtest:
 	echo "cl.exe test-js-message.c /link /DLL /OUT:..\\win-out\\libtest.dll" | cmd $(VS_DEVELOPER_CMD_PATH)
