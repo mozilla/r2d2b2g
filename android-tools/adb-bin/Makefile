@@ -4,11 +4,15 @@
 ADB_AUTH ?= off
 
 ifeq ($(OS), Windows_NT)
+  ECHO=echo
   VS_DEVELOPER_CMD_PATH = vcvars32.bat
   ADB_TARGETS = winlib
+  WINDOWS_ARTIFACTS = ../win-out/* vc110.idb vc110.pdb ../adb-win-api/api/build*_w*_x86.* \
+      ../adb-win-api/api/obj* ../adb-win-api/api/*.idb ../adb-win-api/api/*.pdb \
+      ../adb-win-api/winusb/obj* ../adb-win-api/winusb/build*_w*_x86.*
 else
 ADB_TARGETS = adb nixlib
-
+WINDOWS_ARTIFACTS =
 CSRCS+= sockets.c
 CPPSRCS+= adb.cpp
 CPPSRCS+= adb_client.cpp
@@ -25,6 +29,7 @@ CPPSRCS+= declare_array_lists.cpp
 CPPSRCS+= exports.cpp
 
 ifeq ($(shell uname -s), Darwin)
+  ECHO=@/bin/echo
   CPPSRCS+= usb_osx.cpp
   CPPSRCS+= get_my_path_darwin.cpp
   CPPSRCS+= fdevent.cpp
@@ -38,6 +43,7 @@ ifeq ($(shell uname -s), Darwin)
   LIBS+= -lz -lpthread -framework CoreFoundation -framework IOKit -framework Carbon
 endif
 ifeq ($(shell uname -s), Linux)
+  ECHO=echo
   CSRCS+= usb_linux.c
   CSRCS+= get_my_path_linux.c
   CSRCS+= fdevent.c
@@ -103,7 +109,9 @@ adb: $(OBJS)
 	$(CC) -o adb$(EXE) $(LDFLAGS) $(OBJS) $(LIBS)
 
 clean:
-	rm -rf $(OBJS) $(TESTOBJS) adb$(EXE) libadb$(DLL) libtest$(DLL)
+	rm -rf $(OBJS) $(TESTOBJS) test-js-message.obj adb$(EXE) libadb$(DLL) \
+	  libtest$(DLL) $(WINDOWS_ARTIFACTS)
+	$(ECHO) -n ". " > ../win-out/.exist
 
 nixlib: nixlibadb nixlibtest
 
