@@ -12,6 +12,7 @@
   require("adb/adb-io-thread-spawner.js");
   require("adb/ctypes-bridge-builder.js");
   require("adb/worker-console.js");
+  require("adb/js-message.js");
  */
 
 const { Cc, Ci, Cr, Cu, ChromeWorker } = require("chrome");
