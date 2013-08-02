@@ -28,7 +28,7 @@ DLL_EXPORT int call_test1() {
     int y;
   };
   struct test1_msg m = { 27, 3 };
-  MSG(&res, "test1", m);
+  res = MSG("test1", &m);
   return (int)res;
 }
 
@@ -40,7 +40,7 @@ DLL_EXPORT char * call_test2() {
     int c;
   };
   struct test2_msg m = { 11, "hello", 72 };
-  MSG(&res, "test2", m);
+  res = MSG("test2", &m);
   return (char *)res;
 }
 
@@ -50,7 +50,7 @@ DLL_EXPORT int call_garbage() {
     char * s;
   };
   struct garbage_msg g = { "_" };
-  MSG(&res, "s", g);
+  res = MSG("s", &g);
   return (int)res;
 }
 

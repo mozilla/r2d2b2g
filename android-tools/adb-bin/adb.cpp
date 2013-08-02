@@ -53,8 +53,6 @@ FILE* LOG_FILE;
 //#undef D
 //#define D printf
 
-THREAD_LOCAL void (*restart_me)();
-THREAD_LOCAL int (*getLastError)();
 THREAD_LOCAL void * (*js_msg)(char *, void *);
 int HOST = 0;
 int gListenAll = 0;
@@ -175,16 +173,8 @@ void cleanup_all() {
 #endif
 }
 
-void install_thread_locals_(void (*restart_me_)()) {
-  restart_me = restart_me_;
-}
-
 void install_js_msg_(void *(js_msg_)(char *, void *)) {
   js_msg = js_msg_;
-}
-
-void install_getLastError_(int (*getLastError_)()) {
-  getLastError = getLastError_;
 }
 
 void fatal(const char *fmt, ...)
@@ -195,7 +185,7 @@ void fatal(const char *fmt, ...)
     vprintf(fmt, ap);
     printf("\n");
     va_end(ap);
-    restart_me();
+    MSG("restart-adb", NULL);
 }
 
 void fatal_errno(const char *fmt, ...)
@@ -206,7 +196,7 @@ void fatal_errno(const char *fmt, ...)
     vprintf(fmt, ap);
     printf("\n");
     va_end(ap);
-    restart_me();
+    MSG("restart-adb", NULL);
 }
 
 int   adb_trace_mask;
@@ -1204,9 +1194,6 @@ void * server_thread(void * args) {
 
   void (*on_track_ready)() = input->on_track_ready;
 
-  int (*spawnIO)(atransport*) = input->spawnIO;
-  int (*spawnD)() = input->spawnD;
-
   char * log_path = input->log_path;
 
 #ifdef WIN32
@@ -1230,12 +1217,12 @@ void * server_thread(void * args) {
     signal(SIGPIPE, SIG_IGN);
 #endif
 
-    init_transport_registration(spawnIO);
+    init_transport_registration();
 
     HOST = 1;
     usb_vendors_init();
     D("Before USB init\n");
-    usb_init(spawnD);
+    usb_init();
     D("After USB init\n");
 	#ifndef NO_AUTH
     adb_auth_init();
