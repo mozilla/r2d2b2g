@@ -89,7 +89,9 @@ ifeq (mac64, $(B2G_PLATFORM))
   ADB_BINARIES = libadb.so
   LIB_SUFFIX = .so
   ADB_OUT_DIR = android-tools/adb-bin
-  ADB_LIBS = $(ADB_OUT_DIR)/libadb$(LIB_SUFFIX)
+  ADB_LIBS = \
+    $(ADB_OUT_DIR)/libadb$(LIB_SUFFIX) \
+    $(ADB_OUT_DIR)/libtest$(LIB_SUFFIX)
 
   DOWNLOAD_CMD = /usr/bin/curl -O
 else
@@ -100,7 +102,9 @@ ifeq (linux64, $(B2G_PLATFORM))
   ADB_BINARIES = libadb.so
   LIB_SUFFIX = .so
   ADB_OUT_DIR = android-tools/adb-bin
-  ADB_LIBS = $(ADB_OUT_DIR)/libadb$(LIB_SUFFIX)
+  ADB_LIBS = \
+    $(ADB_OUT_DIR)/libadb$(LIB_SUFFIX) \
+    $(ADB_OUT_DIR)/libtest$(LIB_SUFFIX)
 else
 ifeq (linux, $(B2G_PLATFORM))
   B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-07-24.en-US.linux-i686.tar.bz2
@@ -109,7 +113,9 @@ ifeq (linux, $(B2G_PLATFORM))
   ADB_BINARIES = libadb.so
   LIB_SUFFIX = .so
   ADB_OUT_DIR = android-tools/adb-bin
-  ADB_LIBS = $(ADB_OUT_DIR)/libadb$(LIB_SUFFIX)
+  ADB_LIBS = \
+    $(ADB_OUT_DIR)/libadb$(LIB_SUFFIX) \
+    $(ADB_OUT_DIR)/libtest$(LIB_SUFFIX)
 endif
 endif
 endif
