@@ -30,16 +30,8 @@ var Simulator = {
 
     $('#form-add-app').on('submit', function(evt) {
       evt.preventDefault();
-
-      var input = $('#add-app-url');
-      var valid = input[0].checkValidity();
-      // hosted and generated apps
-      window.postMessage({
-        name: "addAppByTab",
-        url: input.val().trim()
-      }, "*");
-      $("#form-add-app").get(0).reset();
-    });
+      this.submit();
+    }.bind(this));
 
     document.documentElement.addEventListener(
       "addon-message",
@@ -107,6 +99,19 @@ var Simulator = {
     // Clears removed apps on reload
     window.postMessage({ name: "listApps", flush: true }, "*");
     window.postMessage({ name: "listTabs" }, "*");
+
+    this.checkForQueryString();
+  },
+
+  submit: function(evt) {
+    var input = $('#add-app-url');
+    var valid = input[0].checkValidity();
+    // hosted and generated apps
+    window.postMessage({
+      name: "addAppByTab",
+      url: input.val().trim()
+    }, "*");
+    $("#form-add-app").get(0).reset();
   },
 
   updateDeviceView: function() {
@@ -129,7 +134,24 @@ var Simulator = {
 
   openConnectDevtools: function() {
     window.postMessage({ name: "openConnectDevtools" }, "*");
-  }
+  },
+
+  checkForQueryString: function() {
+    var manifestLocationRE = /install=([^&]+)/;
+    var manifestLocation = '';
+    var match = null;
+    var querystring = location.search.slice(1);
+    if (querystring) {
+      match = manifestLocationRE.exec(querystring);
+      if (match && match.length === 2) {
+        // the url should be encoded using `encodeURIComponent(btoa(url));`
+        manifestLocation = atob(decodeURIComponent(match[1]));
+        console.log("Install the manifest from: " + manifestLocation);
+        $('#add-app-url').val(manifestLocation);
+        this.submit();
+      }
+    }
+  },
 
 };
 
