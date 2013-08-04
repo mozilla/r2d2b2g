@@ -47,7 +47,7 @@ B2G_TYPE ?= specific
 
 B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/
 
-LIBADB_VERSION = 0.1
+LIBADB_VERSION = 0.2
 
 # The location of libadb for making ADB. Set this variable to "local" to build 
 # libadb.{so, dll} from source locally. Set to "remote" to grab prebuilt ADB 
@@ -67,40 +67,55 @@ export ADB_AUTH
 # Platform-specific Defines
 ifeq (win32, $(B2G_PLATFORM))
   # The URL of the specific B2G build.
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-07-24.en-US.win32.zip
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-07-31.en-US.win32.zip
 
   ADB_PACKAGE = libadb-$(LIBADB_VERSION)-windows.zip
   DEPS = AdbWinApi.dll
   ADB_BINARIES = libadb.dll $(DEPS)
   LIB_SUFFIX = .dll
 
-  ADB_OUT_DIR = android-tools/win-out/
+  ADB_OUT_DIR = android-tools/win-out
+  ADB_DRIVERS_DIR = android-tools/adb-win-api
+  ADB_LIBS = \
+    $(ADB_OUT_DIR)/libadb$(LIB_SUFFIX) \
+    $(ADB_OUT_DIR)/libtest$(LIB_SUFFIX) \
+    $(ADB_DRIVERS_DIR)/api/objfre_wxp_x86/i386/AdbWinApi$(LIB_SUFFIX) \
+    $(ADB_DRIVERS_DIR)/winusb/objfre_wxp_x86/i386/AdbWinUsbApi$(LIB_SUFFIX)
 else
 ifeq (mac64, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-07-24.en-US.mac64.dmg
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-07-31.en-US.mac64.dmg
 
   ADB_PACKAGE = libadb-$(LIBADB_VERSION)-mac.zip
   ADB_BINARIES = libadb.so
   LIB_SUFFIX = .so
+  ADB_OUT_DIR = android-tools/adb-bin
+  ADB_LIBS = \
+    $(ADB_OUT_DIR)/libadb$(LIB_SUFFIX) \
+    $(ADB_OUT_DIR)/libtest$(LIB_SUFFIX)
 
   DOWNLOAD_CMD = /usr/bin/curl -O
-  ADB_OUT_DIR = android-tools/adb-bin/
 else
 ifeq (linux64, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-07-24.en-US.linux-x86_64.tar.bz2
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-07-31.en-US.linux-x86_64.tar.bz2
 
   ADB_PACKAGE = libadb-$(LIBADB_VERSION)-linux64.zip
   ADB_BINARIES = libadb.so
   LIB_SUFFIX = .so
-  ADB_OUT_DIR = android-tools/adb-bin/
+  ADB_OUT_DIR = android-tools/adb-bin
+  ADB_LIBS = \
+    $(ADB_OUT_DIR)/libadb$(LIB_SUFFIX) \
+    $(ADB_OUT_DIR)/libtest$(LIB_SUFFIX)
 else
 ifeq (linux, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-07-24.en-US.linux-i686.tar.bz2
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-07-31.en-US.linux-i686.tar.bz2
 
   ADB_PACKAGE = libadb-$(LIBADB_VERSION)-linux.zip
   ADB_BINARIES = libadb.so
   LIB_SUFFIX = .so
-  ADB_OUT_DIR = android-tools/adb-bin/
+  ADB_OUT_DIR = android-tools/adb-bin
+  ADB_LIBS = \
+    $(ADB_OUT_DIR)/libadb$(LIB_SUFFIX) \
+    $(ADB_OUT_DIR)/libtest$(LIB_SUFFIX)
 endif
 endif
 endif
@@ -136,6 +151,8 @@ endif
 ifdef TEST
   TEST_ARG = -f $(TEST)
 endif
+
+ADB_DATA_PATH = addon/data/$(B2G_PLATFORM)/adb
 
 unix_to_windows_path = \
   $(shell echo '$(1)' | sed 's/^\///' | sed 's/\//\\/g' | sed 's/^./\0:/')
@@ -212,8 +229,9 @@ adb:
 	  unzip $(ADB_PACKAGE) -d addon/data/$(B2G_PLATFORM)/adb; \
 	fi;
 	if [ "$(LIBADB_LOCATION)" = "local" ]; then \
-	  make -C android-tools lib; \
-	  cp $(ADB_OUT_DIR)libadb$(LIB_SUFFIX) addon/data/$(B2G_PLATFORM)/adb; \
+	  make -C android-tools lib && \
+	  make -C android-tools driver && \
+	  cp $(ADB_LIBS) $(ADB_DATA_PATH); \
 	fi;
 
 locales:

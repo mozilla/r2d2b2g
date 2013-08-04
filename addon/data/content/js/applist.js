@@ -16,6 +16,10 @@ function timedelta(d1) {
     return ~~(d / 365) + ' years ago';
 }
 
+function escapeSelector(str) {
+  return str.replace(/[!"#$%&'()*+,.\/:;<=>?@\[\\\]^`{|}~]/g, '\\$&');
+}
+
 var AppList = (function() {
 
     window.appTemplate = new nunjucks.Template($('#app-template').html());
@@ -37,14 +41,22 @@ var AppList = (function() {
 
     function update(id, data) {
         console.log('updating', id);
-        var app = apps[id];
-        if (!app) {
-            return;
-        }
-        if ('key' in app) {
+        if ('xkey' in data) {
             // if data is a whole app, replace the record.
-            apps[id] = app;
+            var newApp = !(id in apps);
+            apps[id] = data;
+            if (newApp) {
+                appIds.push(id);
+                appIds.sort();
+                render();
+                return;
+            }
         } else {
+            var app = apps[id];
+            if (!app) {
+                console.error("Unable to update inexistant app " + id);
+                return;
+            }
             // otherwise, extend the app object.
             for (key in data) {
                 app[key] = data[key];
@@ -56,7 +68,8 @@ var AppList = (function() {
     function render(id) {
         if (id) {
             // re-render a single app in place.
-            var row = $('[data-id="'+id+'"]');
+            // On windows with need to escape backslashes used in paths
+            var row = $('[data-id="' + escapeSelector(id) + '"]');
             if (row.length) {
                 row.replaceWith(renderSingle(id));
             }

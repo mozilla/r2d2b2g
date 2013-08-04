@@ -26,16 +26,10 @@ exports["test EventedChromeWorker"] = function (assert, done) {
   });
 
   function wait(x) {
-    if (x >= 4) {
+    if (x >= 2) {
       done();
     }
   }
-
-  worker.listenAndForget("log", function(args) {
-    console.log("Log: " + JSON.stringify(args));
-    x++;
-    wait(x);
-  });
 }
 
 require("test").run(exports);
