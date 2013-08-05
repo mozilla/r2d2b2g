@@ -460,9 +460,7 @@ let simulator = module.exports = {
         } else {
           app.receipt = receipt;
           app.receiptType = receiptType;
-          this._updateApp(appId, function() {
-            this.sendSingleApp(appId);
-          });
+          this._updateApp(appId, this.sendSingleApp.bind(this, appId));
         }
       }.bind(this));
     }
