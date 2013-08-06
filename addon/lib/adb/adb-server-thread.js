@@ -30,15 +30,17 @@ let libPath_;
 let restartMeFn = function restart_me() {
   worker.emitAndForget("restart-me", { });
 };
-let w;
+
 let jsMsgFn = function js_msg(channel, args) {
   switch (channel.readString()) {
+    case "device-update":
+      let [updates] = JsMessage.unpack(args, ctypes.char.ptr);
+      worker.emitAndForget("device-update", { msg: updates.readString() });
+      return JsMessage.pack(10, Number);
     default:
-      console.log("Unknown message");
+      console.debug("Unknown message");
+      return JsMessage.pack(-1, Number);
   }
-
-  w = ctypes.uintptr_t(10);
-  return ctypes.cast(w, ctypes.uintptr_t.ptr);
 };
 
 worker.once("init", function({ libPath }) {

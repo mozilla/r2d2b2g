@@ -264,6 +264,8 @@ exports._startAdbInBackground = function startAdbInBackground() {
   ioWorker = new EventedChromeWorker(WORKER_URL_IO, "io_thread", context);
   utilWorker = new EventedChromeWorker(WORKER_URL_UTIL, "util_thread", context);
 
+  deviceTracker.start(serverWorker);
+
   serverWorker.emit("init", { libPath: libPath }, function initack() {
     serverWorker.emit("start", { port: 5037, log_path: File.join(TmpD, "adb.log") }, function started(res) {
       console.debug("adb server thread returned: " + res.result);
@@ -272,9 +274,6 @@ exports._startAdbInBackground = function startAdbInBackground() {
 
   serverWorker.onceAndForget("kill-server-fd", function({ fd }) {
     server_die_fd = fd;
-  });
-  serverWorker.onceAndForget("track-ready", function trackack() {
-    deviceTracker.start();
   });
 
   [ioWorker, utilWorker].forEach(function initworker(w) {
