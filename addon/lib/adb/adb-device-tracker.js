@@ -81,6 +81,7 @@ module.exports = {
   },
 
   reset: function reset() {
+    worker = null;
     devices = { };
     hasDevice = false;
     listenId = null;
