@@ -1192,7 +1192,7 @@ void build_local_name(char* target_str, size_t target_size, int server_port)
   snprintf(target_str, target_size, "tcp:%d", server_port);
 }
 
-void * server_thread(void * args) {
+int server_thread(void * args) {
   adb_sysdeps_init();
 
   struct adb_main_input* input = (struct adb_main_input*)args;
@@ -1247,8 +1247,7 @@ void * server_thread(void * args) {
     build_local_name(local_name, sizeof(local_name), server_port);
     if(install_listener(local_name, "*smartsocket*", NULL, 0)) {
         D("Error installing listener\n");
-        return NULL;
-
+        return -1;
     }
 
     if (is_daemon)
@@ -1481,11 +1480,8 @@ int handle_host_request(char *service, transport_type ttype, char* serial, int r
   //
     // returns our value for ADB_SERVER_VERSION
     if (!strcmp(service, "version")) {
-        char version[12];
-        snprintf(version, sizeof version, "%04x", ADB_SERVER_VERSION);
-        snprintf(buf, sizeof buf, "OKAY%04x%s", (unsigned)strlen(version), version);
-        writex(reply_fd, buf, strlen(buf));
-        return 0;
+        printf("the version service is disabled.\n");
+        return -1;
     }
 
     if(!strncmp(service,"get-serialno",strlen("get-serialno"))) {

@@ -268,7 +268,10 @@ exports._startAdbInBackground = function startAdbInBackground() {
 
   serverWorker.emit("init", { libPath: libPath }, function initack() {
     serverWorker.emit("start", { port: 5037, log_path: File.join(TmpD, "adb.log") }, function started(res) {
-      console.debug("adb server thread returned: " + res.result);
+      console.debug("adb server thread returned: " + res.ret);
+      if (res.ret == -1) {
+        Services.obs.notifyObservers(null, "adb-port-in-use", null);
+      }
     });
   });
 

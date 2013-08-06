@@ -116,8 +116,7 @@ DLL_EXPORT void on_kill_io_pump(atransport * t, bool (*close_handle_func)(ADBAPI
   // NOTE: input_args is free'd with `free` so must be alloc'd with malloc.
   //       This call loops forever.
   DLL_EXPORT int main_server(struct adb_main_input * input_args) {
-    server_thread((void *)input_args);
-    return 0;
+    return server_thread((void *)input_args);
   }
 
 #ifdef __APPLE__

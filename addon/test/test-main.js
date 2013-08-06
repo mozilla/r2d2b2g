@@ -4,7 +4,7 @@
 
 /* Note: all tests that depend on firefox state should be put in this
  * file.  Re-requiring main in other tests causes the simulator to be
- * reinstantiated. 
+ * reinstantiated.
  */
 
 //==========================
@@ -25,6 +25,7 @@ exports = (function(exports) {
   Cu.import("resource://gre/modules/Services.jsm");
 
   let isPhonePluggedIn = null;
+  let isPortInUse = false;
 
   let observer = {
     QueryInterface: XPCOMUtils.generateQI([Ci.nsIObserver,
@@ -40,6 +41,9 @@ exports = (function(exports) {
           break;
         case "adb-device-disconnected":
           isPhonePluggedIn = false;
+          break;
+        case "adb-port-in-use":
+          isPortInUse = true;
           break;
       }
     }
@@ -58,6 +62,8 @@ exports = (function(exports) {
         }
         Services.obs.addObserver(observer, "adb-device-connected", true);
         Services.obs.addObserver(observer, "adb-device-disconnected", true);
+        Services.obs.addObserver(observer, "adb-ready", true);
+        Services.obs.addObserver(observer, "adb-port-in-use", true);
         assert.pass("Started");
         done();
       });
@@ -93,6 +99,14 @@ exports = (function(exports) {
   exports["test ab list devices"] = function(assert, done) {
     // Give adb 2 seconds to startup
     Timer.setTimeout(function listDevices() {
+      if (isPortInUse) {
+        isPhonePluggedIn = false;
+        assert.fail("Error: Port 5037 is in use.\nHave you opened the " +
+                    "Simulator in a different Firefox profile?\nMake " +
+                    "sure you quit that process before running the tests.");
+        done();
+        return;
+      }
       ADB.listDevices().then(
         function success(e) {
           if (ADB.didRunInitially && e[0]) {
@@ -241,7 +255,13 @@ exports = (function(exports) {
 
   exports["test zz after"] = function(assert, done) {
     if (ADB.didRunInitially) {
-      ADB.close();
+      try {
+        ADB.close();
+      } catch (e) {
+        if (!isPortInUse) {
+          throw e;
+        }
+      }
     }
     assert.pass("Done!");
     done();
