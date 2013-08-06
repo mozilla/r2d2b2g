@@ -70,7 +70,7 @@ module.exports = {
         }
 
         let [dev, status] = aLine.split("\t");
-        newDev[dev] = status !== "offline";
+        newDev[dev] = status;
       });
       // Check which device changed state.
       for (let dev in newDev) {
