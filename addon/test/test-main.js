@@ -12,7 +12,7 @@
 //==========================
 
 exports = (function(exports) {
-  const ADB = require("adb/adb");
+  let ADB = null;
   const Timer = require("timer");
   const Promise = require("sdk/core/promise");
   const { Cu, Ci } = require("chrome");
@@ -33,6 +33,7 @@ exports = (function(exports) {
       console.log("simulator.observe: " + topic);
       switch (topic) {
         case "adb-ready":
+          ADB.trackDevices();
           break;
         case "adb-device-connected":
           isPhonePluggedIn = true;
@@ -46,12 +47,21 @@ exports = (function(exports) {
 
   // Before all
   exports["test a before"] = function(assert, done) {
-    ADB._startAdbInBackground();
-    Services.obs.addObserver(observer, "adb-device-connected", true);
-    Services.obs.addObserver(observer, "adb-device-disconnected", true);
-    assert.pass("Started");
-    done();
-  }
+    require("adb/adb-running-checker").check().then(function(isAdbRunning) {
+        // Use adb-fallback if an instance of adb is already running
+        /* Fake require
+          require("adb/adb");
+         */
+        ADB = isAdbRunning ? require("adb/adb-fallback") : require("adb/adb");
+        if (!ADB.ready) {
+          ADB.start();
+        }
+        Services.obs.addObserver(observer, "adb-device-connected", true);
+        Services.obs.addObserver(observer, "adb-device-disconnected", true);
+        assert.pass("Started");
+        done();
+      });
+  };
 
   function dumpBanner(msg) {
     let starCount = msg.length + 8;
@@ -85,7 +95,7 @@ exports = (function(exports) {
     Timer.setTimeout(function listDevices() {
       ADB.listDevices().then(
         function success(e) {
-          if (e[0]) {
+          if (ADB.didRunInitially && e[0]) {
             let [, status] = e[0];
             if (status === "offline") {
               isPhonePluggedIn = false;
@@ -93,6 +103,9 @@ exports = (function(exports) {
               done();
               return;
             }
+          } else {
+            // adb-fallback returns a string if the device is plugged in
+            isPhonePluggedIn = !!e[0];
           }
 
           if (isPhonePluggedIn) {
@@ -113,7 +126,7 @@ exports = (function(exports) {
   };
 
   exports["test b adb.shell, no phone"] = function (assert, done) {
-    if (isPhonePluggedIn) {
+    if (isPhonePluggedIn || !ADB.didRunInitially) {
       assert.pass("Skipping test");
       done();
       return;
@@ -132,7 +145,7 @@ exports = (function(exports) {
   };
 
   exports["test c adb push, no phone"] = function (assert, done) {
-    if (isPhonePluggedIn) {
+    if (isPhonePluggedIn || !ADB.didRunInitially) {
       assert.pass("Skipping test");
       done();
       return;
@@ -154,7 +167,7 @@ exports = (function(exports) {
   };
 
   exports["test d adb shell, with phone"] = function (assert, done) {
-    if (!isPhonePluggedIn) {
+    if (!isPhonePluggedIn || !ADB.didRunInitially) {
       assert.pass("Skipping test");
       done();
       return;
@@ -174,7 +187,7 @@ exports = (function(exports) {
   };
 
   exports["test e adb push, with phone"] = function (assert, done) {
-    if (!isPhonePluggedIn) {
+    if (!isPhonePluggedIn || !ADB.didRunInitially) {
       assert.pass("Skipping test");
       done();
       return;
@@ -227,7 +240,9 @@ exports = (function(exports) {
   */
 
   exports["test zz after"] = function(assert, done) {
-    ADB.close();
+    if (ADB.didRunInitially) {
+      ADB.close();
+    }
     assert.pass("Done!");
     done();
   };
