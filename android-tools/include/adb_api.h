@@ -268,7 +268,7 @@ ADBWIN_API bool __cdecl AdbResetInterfaceEnum(ADBAPIHANDLE adb_handle);
   @return Handle to the interface object or NULL on failure. If NULL is
           returned GetLastError() provides extended error information.
 */
-ADBWIN_API ADBAPIHANDLE __cdecl AdbCreateInterfaceByName(const wchar_t* interface_name);
+ADBWIN_API ADBAPIHANDLE __cdecl AdbCreateInterfaceByName(const wchar_t* interface_name, const wchar_t* dll_path);
 
 /** \brief Creates USB interface object based on vendor, product and
   interface IDs.

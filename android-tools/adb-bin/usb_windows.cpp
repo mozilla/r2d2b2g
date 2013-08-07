@@ -43,9 +43,9 @@
 #define AdbCloseHandle(...) (false)
 #endif
 
-//#define D_ D
-//#undef D
-//#define D printf
+#define D_ D
+#undef D
+#define D printf
 
 
 /** Structure usb_handle describes our connection to the usb device via
@@ -273,6 +273,7 @@ void usb_cleanup() {
 
 usb_handle* do_usb_open(const wchar_t* interface_name) {
   // Allocate our handle
+  D("Allocate our handle\n");
   usb_handle* ret = (usb_handle*)malloc(sizeof(usb_handle));
   if (NULL == ret)
     return NULL;
@@ -281,14 +282,23 @@ usb_handle* do_usb_open(const wchar_t* interface_name) {
   ret->next = ret;
   ret->prev = ret;
 
+  // Get dll_path and put it into a wchar_t
+  char * dll_path = "C:\\Users\\bkase\\Documents\\work\\r2d2b2g\\addon\\data\\win32\\adb\\AdbWinUsbApi.dll";
+  long len = strlen(dll_path) + 1;
+  wchar_t * dll_path_w = (wchar_t *)malloc(len * sizeof(wchar_t));
+  mbstowcs(dll_path_w, dll_path, len);
+  
   // Create interface.
-  ret->adb_interface = bridge->AdbCreateInterfaceByName(interface_name);
-
+  ret->adb_interface = bridge->AdbCreateInterfaceByName(interface_name, dll_path_w);
+  free(dll_path_w);
+  D("trying to create adb_interface\n");
   if (NULL == ret->adb_interface) {
     free(ret);
-    errno = GetLastError();
+    errno = (int)MSG("get-last-error", NULL);
+    D("Error is %d\n", errno);
     return NULL;
   }
+  D("adb_interface created\n");
 
   // Open read pipe (endpoint)
   ret->adb_read_pipe =
@@ -296,12 +306,14 @@ usb_handle* do_usb_open(const wchar_t* interface_name) {
                                    AdbOpenAccessTypeReadWrite,
                                    AdbOpenSharingModeReadWrite);
   if (NULL != ret->adb_read_pipe) {
+    D("read pipe create\n");
     // Open write pipe (endpoint)
     ret->adb_write_pipe =
       bridge->AdbOpenDefaultBulkWriteEndpoint(ret->adb_interface,
                                       AdbOpenAccessTypeReadWrite,
                                       AdbOpenSharingModeReadWrite);
     if (NULL != ret->adb_write_pipe) {
+      D("write pipe created\n");
       // Save interface name
       unsigned long name_len = 0;
 
@@ -311,14 +323,17 @@ usb_handle* do_usb_open(const wchar_t* interface_name) {
                           &name_len,
                           true);
       if (0 != name_len) {
+        D("Name length is non-zero\n");
         ret->interface_name = (char*)malloc(name_len);
 
         if (NULL != ret->interface_name) {
+          D("malloc'd interface_name\n");
           // Now save the name
           if (bridge->AdbGetInterfaceName(ret->adb_interface,
                                   ret->interface_name,
                                   &name_len,
                                   true)) {
+            D("saved the name\n");
             // We're done at this point
             return ret;
           }
@@ -581,7 +596,8 @@ void find_devices() {
   if (NULL == enum_handle)
     return;
 
-  while (bridge->AdbNextInterface(enum_handle, next_interface, &entry_buffer_size)) {
+  while (bridge->AdbNextInterface(enum_handle, next_interface, &entry_buffer_size)) { 
+    D("Within the bridge->AdbNextInterface list\n");
     // TODO: FIXME - temp hack converting wchar_t into char.
     // It would be better to change AdbNextInterface so it will return
     // interface name as single char string.
@@ -595,9 +611,11 @@ void find_devices() {
 
     // Lets see if we already have this device in the list
     if (!known_device(interf_name)) {
+      D("It's not a known device\n");
       // This seems to be a new device. Open it!
         handle = do_usb_open(next_interface->device_name);
         if (NULL != handle) {
+        D("handle is not null!\n");
         // Lets see if this interface (device) belongs to us
         if (recognized_device(handle)) {
           D("adding a new device %s\n", interf_name);
@@ -634,5 +652,5 @@ void find_devices() {
   
 }
 
-//#undef D
-//#define D D_
+#undef D
+#define D D_

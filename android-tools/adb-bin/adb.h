@@ -316,7 +316,7 @@ struct dll_io_bridge {
 
 struct dll_bridge {
   ADBAPIHANDLE (*AdbEnumInterfaces)(GUID, bool, bool, bool);
-  ADBAPIHANDLE (*AdbCreateInterfaceByName)(const wchar_t *);
+  ADBAPIHANDLE (*AdbCreateInterfaceByName)(const wchar_t *, const wchar_t *);
   ADBAPIHANDLE (*AdbCreateInterface)(GUID, unsigned short, unsigned short, unsigned char);
   bool (*AdbGetInterfaceName)(ADBAPIHANDLE, void *, unsigned long *, bool);
   bool (*AdbGetSerialNumber)(ADBAPIHANDLE, void *, unsigned long *, bool);

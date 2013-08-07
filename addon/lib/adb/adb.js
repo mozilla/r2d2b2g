@@ -45,6 +45,8 @@ let serverWorker, ioWorker, utilWorker;
 
 let extension = (platform === "winnt") ? ".dll" : ".so";
 
+require("sdk/preferences/service").set("extensions.sdk.console.logLevel", "debug");
+
 let platformDir;
 if (platform === "winnt") {
   platformDir = "win32";
@@ -268,7 +270,7 @@ exports._startAdbInBackground = function startAdbInBackground() {
   deviceTracker.start(serverWorker);
 
   serverWorker.emit("init", { libPath: libPath }, function initack() {
-    serverWorker.emit("start", { port: 5037, log_path: File.join(TmpD, "adb.log") }, function started(res) {
+    serverWorker.emit("start", { port: 5037, log_path: "C:\\Users\\bkase\\Documents\\work\\r2d2b2g\\adb.log" /* File.join(TmpD, "adb.log") */ }, function started(res) {
       console.debug("adb server thread returned: " + res.result);
     });
   });

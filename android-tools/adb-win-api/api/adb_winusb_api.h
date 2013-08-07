@@ -44,5 +44,7 @@
 */
 typedef class AdbInterfaceObject* \
     (__cdecl *PFN_INSTWINUSBINTERFACE)(const wchar_t*);
+    
+void initWinUsbDll(const wchar_t * dll_path);
 
 #endif  // ANDROID_USB_API_ADBWINUSBAPI_H__

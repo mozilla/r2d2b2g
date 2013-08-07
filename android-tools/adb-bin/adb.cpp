@@ -49,9 +49,9 @@ FILE* debugLog;
 FILE* LOG_FILE;
 #endif
 
-//#define D_ D
-//#undef D
-//#define D printf
+#define D_ D
+#undef D
+#define D printf
 
 THREAD_LOCAL void * (*js_msg)(char *, void *);
 int HOST = 0;
@@ -1630,5 +1630,5 @@ int main(int argc, char **argv)
     return 0;
 }
 
-//#undef D
-//#define D D_
+#undef D
+#define D D_

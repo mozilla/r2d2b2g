@@ -52,7 +52,7 @@ class CAdbWinApiModule : public CAtlDllModuleT< CAdbWinApiModule > {
     installed, and if it is we will load AdbWinUsbApi.dll and cache address of
     InstantiateWinUsbInterface routine exported from AdbWinUsbApi.dll
   */
-  void AttachToAdbWinUsbApi() {
+  void AttachToAdbWinUsbApi(const wchar_t * dll_path) {
     // We only need to run this only once.
     if (is_initialized_) {
       return;
@@ -77,10 +77,7 @@ class CAdbWinApiModule : public CAtlDllModuleT< CAdbWinApiModule > {
 
     // WINUSB.DLL is installed. Lets load AdbWinUsbApi.dll and cache its
     // InstantiateWinUsbInterface export.
-    // We require that AdbWinUsbApi.dll is located in the same folder
-    // where AdbWinApi.dll and adb.exe are located, so by Windows
-    // conventions we can pass just module name, and not the full path.
-    adbwinusbapi_handle_ = LoadLibrary(L"AdbWinUsbApi.dll");
+    adbwinusbapi_handle_ = LoadLibrary(dll_path);
     if (NULL != adbwinusbapi_handle_) {
       InstantiateWinUsbInterface = reinterpret_cast<PFN_INSTWINUSBINTERFACE>
           (GetProcAddress(adbwinusbapi_handle_, "InstantiateWinUsbInterface"));
@@ -97,6 +94,10 @@ class CAdbWinApiModule : public CAtlDllModuleT< CAdbWinApiModule > {
 
 CAdbWinApiModule _AtlModule;
 
+void initWinUsbDll(const wchar_t * dll_path) {
+  _AtlModule.AttachToAdbWinUsbApi(dll_path);
+}
+
 // DLL Entry Point
 extern "C" BOOL WINAPI DllMain(HINSTANCE instance,
                                DWORD reason,
@@ -105,8 +106,10 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance,
   // variable. We do that only once, on condition that this DLL is
   // being attached to the process and InstantiateWinUsbInterface
   // address has not been calculated yet.
-  if (DLL_PROCESS_ATTACH == reason) {
+  // 
+  // Do this lazily so we know the path to the DLL
+  /*if (DLL_PROCESS_ATTACH == reason) {
     _AtlModule.AttachToAdbWinUsbApi();
-  }
+  }*/
   return _AtlModule.DllMain(reason, reserved);
 }
