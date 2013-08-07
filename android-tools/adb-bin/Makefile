@@ -6,9 +6,12 @@ ADB_AUTH ?= off
 ifeq ($(OS), Windows_NT)
   VS_DEVELOPER_CMD_PATH = vcvars32.bat
   ADB_TARGETS = winlib
+  WINDOWS_ARTIFACTS = ../win-out vc110.idb vc110.pdb ../adb-win-api/api/build*_w*_x86.* \
+      ../adb-win-api/api/obj* ../adb-win-api/api/*.idb ../adb-win-api/api/*.pdb \
+      ../adb-win-api/winusb/obj* ../adb-win-api/winusb/build*_w*_x86.*
 else
 ADB_TARGETS = adb nixlib
-
+WINDOWS_ARTIFACTS =
 CSRCS+= sockets.c
 CPPSRCS+= adb.cpp
 CPPSRCS+= adb_client.cpp
@@ -103,7 +106,8 @@ adb: $(OBJS)
 	$(CC) -o adb$(EXE) $(LDFLAGS) $(OBJS) $(LIBS)
 
 clean:
-	rm -rf $(OBJS) $(TESTOBJS) adb$(EXE) libadb$(DLL) libtest$(DLL)
+	rm -rf $(OBJS) $(TESTOBJS) test-js-message.obj adb$(EXE) libadb$(DLL) \
+	  libtest$(DLL) $(WINDOWS_ARTIFACTS)
 
 nixlib: nixlibadb nixlibtest
 
@@ -116,6 +120,7 @@ nixlibtest: $(TESTOBJS)
 winlib: winlibadb winlibtest
 
 winlibadb:
+	mkdir -p ../win-out
 	echo make-win.bat | cmd $(VS_DEVELOPER_CMD_PATH)
 
 winlibtest:
