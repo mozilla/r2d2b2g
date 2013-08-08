@@ -5,9 +5,7 @@
 #ifndef JS_MESSAGE_H
 #define JS_MESSAGE_H
 
-#define MSG(save, channel, instance) do {\
-    *save = js_msg(channel, (void *)&instance);\
-  } while(0)
+#define MSG(channel, instance_ptr) js_msg(channel, (void *)instance_ptr)
 
 #endif
 

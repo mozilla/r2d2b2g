@@ -14,28 +14,42 @@ const EVENTED_CHROME_WORKER_URL = URL_PREFIX + "evented-chrome-worker.js";
 const CONSOLE_URL = URL_PREFIX + "worker-console.js";
 const ADB_TYPES = URL_PREFIX + "adb-types.js";
 const CTYPES_BRIDGE_BUILDER = URL_PREFIX + "ctypes-bridge-builder.js";
+const JS_MESSAGE = URL_PREFIX + "js-message.js";
+const COMMON_MESSAGE_HANDLER = URL_PREFIX + "common-message-handler.js";
 
-importScripts(INSTANTIATOR_URL, EVENTED_CHROME_WORKER_URL, CONSOLE_URL, ADB_TYPES, CTYPES_BRIDGE_BUILDER);
+importScripts(INSTANTIATOR_URL,
+              EVENTED_CHROME_WORKER_URL,
+              CONSOLE_URL,
+              ADB_TYPES,
+              CTYPES_BRIDGE_BUILDER,
+              JS_MESSAGE,
+              COMMON_MESSAGE_HANDLER);
 
 const worker = new EventedChromeWorker(null, false);
 const console = new Console(worker);
 
 const I = new Instantiator;
 let libadb = null;
-let restartMeFn = function restart_me() {
-  worker.emitAndForget("restart-me", { });
-};
+let jsMsgFn = CommonMessageHandler(worker, console, function(channel, args) {
+  switch(channel) {
+    default:
+      console.log("Unknown message: " + channel);
+  }
+
+  return JsMessage.pack(-1, Number);
+});
+
 
 worker.once("init", function({ libPath, driversPath, platform }) {
   libadb = ctypes.open(libPath);
 
-  let install_thread_locals =
-      I.declare({ name: "install_thread_locals",
+  let install_js_msg =
+      I.declare({ name: "install_js_msg",
                   returns: ctypes.void_t,
-                  args: [ CallbackType.ptr ]
+                  args: [ JsMsgType.ptr ]
                 }, libadb);
 
-  install_thread_locals(CallbackType.ptr(restartMeFn));
+  install_js_msg(JsMsgType.ptr(jsMsgFn));
 
   // on Linux, fallback to pthreads here
   if (platform === "linux") {

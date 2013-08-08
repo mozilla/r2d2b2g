@@ -14,18 +14,33 @@ const EVENTED_CHROME_WORKER_URL = URL_PREFIX + "evented-chrome-worker.js";
 const CONSOLE_URL = URL_PREFIX + "worker-console.js";
 const ADB_TYPES = URL_PREFIX + "adb-types.js";
 const CTYPES_BRIDGE_BUILDER = URL_PREFIX + "ctypes-bridge-builder.js";
+const JS_MESSAGE = URL_PREFIX + "js-message.js";
+const COMMON_MESSAGE_HANDLER = URL_PREFIX + "common-message-handler.js";
 
-importScripts(INSTANTIATOR_URL, EVENTED_CHROME_WORKER_URL, CONSOLE_URL, ADB_TYPES, CTYPES_BRIDGE_BUILDER);
+importScripts(INSTANTIATOR_URL,
+              EVENTED_CHROME_WORKER_URL,
+              CONSOLE_URL, ADB_TYPES,
+              CTYPES_BRIDGE_BUILDER,
+              JS_MESSAGE,
+              COMMON_MESSAGE_HANDLER);
 
 const worker = new EventedChromeWorker(null, false);
 const console = new Console(worker);
 
 let I = null;
 let libadb = null;
-let restartMeFn = function restart_me() {
-  worker.emitAndForget("restart-me", { });
-};
-let getLastError;
+let getLastError = function() { return 0; };
+let jsMsgFn = CommonMessageHandler(worker, console, function(channel, args) {
+  switch(channel) {
+    case "get-last-error":
+      return JsMessage.pack(getLastError(), Number);
+    default:
+      console.log("Unknown message: " + channel);
+  }
+
+  return JsMessage.pack(-1, Number);
+});
+
 worker.once("init", function({ libPath, driversPath, threadName, t_ptrS, platform }) {
   I = new Instantiator();
 
@@ -33,13 +48,13 @@ worker.once("init", function({ libPath, driversPath, threadName, t_ptrS, platfor
 
   libadb = ctypes.open(libPath);
 
-  let install_thread_locals =
-      I.declare({ name: "install_thread_locals",
+  let install_js_msg =
+      I.declare({ name: "install_js_msg",
                   returns: ctypes.void_t,
-                  args: [ CallbackType.ptr ]
+                  args: [ JsMsgType.ptr ]
                 }, libadb);
 
-  install_thread_locals(CallbackType.ptr(restartMeFn));
+  install_js_msg(JsMsgType.ptr(jsMsgFn));
 
   if (platform === "winnt") {
     const libadbdrivers = ctypes.open(driversPath);
@@ -58,13 +73,7 @@ worker.once("init", function({ libPath, driversPath, threadName, t_ptrS, platfor
     let [struct_dll_io_bridge, io_bridge, ref] =
       bb.build("dll_io_bridge", io_bridge_funcs);
 
-    let install_getLastError =
-        I.declare({ name: "install_getLastError",
-                    returns: ctypes.void_t,
-                    args: [ IntCallableType.ptr ]
-                  }, libadb);
     getLastError = bb.getLastError.bind(bb);
-    install_getLastError(IntCallableType.ptr(getLastError));
 
     I.declare({ name: threadName,
                 returns: ctypes.int,
