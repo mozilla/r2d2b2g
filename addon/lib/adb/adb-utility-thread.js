@@ -10,8 +10,15 @@ const INSTANTIATOR_URL = URL_PREFIX + "ctypes-instantiator.js";
 const EVENTED_CHROME_WORKER_URL = URL_PREFIX + "evented-chrome-worker.js";
 const CONSOLE_URL = URL_PREFIX + "worker-console.js";
 const ADB_TYPES = URL_PREFIX + "adb-types.js";
+const JS_MESSAGE = URL_PREFIX + "js-message.js";
+const COMMON_MESSAGE_HANDLER = URL_PREFIX + "common-message-handler.js";
 
-importScripts(INSTANTIATOR_URL, EVENTED_CHROME_WORKER_URL, CONSOLE_URL, ADB_TYPES);
+importScripts(INSTANTIATOR_URL,
+              EVENTED_CHROME_WORKER_URL,
+              CONSOLE_URL,
+              ADB_TYPES,
+              JS_MESSAGE,
+              COMMON_MESSAGE_HANDLER);
 
 const worker = new EventedChromeWorker(null, false);
 const console = new Console(worker);
@@ -19,9 +26,14 @@ const console = new Console(worker);
 let I = null;
 let libadb = null;
 let platform_ = null;
-let restartMeFn = function restart_me() {
-  worker.emitAndForget("restart-me", { });
-};
+let jsMsgFn = CommonMessageHandler(worker, console, function(channel, args) {
+  switch(channel) {
+    default:
+      console.log("Unknown message: " + channel);
+  }
+
+  return JsMessage.pack(-1, Number);
+});
 
 worker.listen("init", function({ libPath, driversPath, platform }) {
   platform_ = platform;
@@ -35,13 +47,13 @@ worker.listen("init", function({ libPath, driversPath, platform }) {
               args: [ctypes.char.ptr] // service
             }, libadb);
 
-  let install_thread_locals =
-      I.declare({ name: "install_thread_locals",
+  let install_js_msg =
+      I.declare({ name: "install_js_msg",
                   returns: ctypes.void_t,
-                  args: [ CallbackType.ptr ]
+                  args: [ JsMsgType.ptr ]
                 }, libadb);
 
-  install_thread_locals(CallbackType.ptr(restartMeFn));
+  install_js_msg(JsMsgType.ptr(jsMsgFn));
 });
 
 worker.listen("query", function({ service }) {

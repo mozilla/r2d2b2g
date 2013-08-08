@@ -112,7 +112,7 @@ void find_devices();
 void* device_poll_thread(void* unused);
 
 /// Initializes this module
-void usb_init(int(*spawnD)());
+void usb_init();
 
 /// Cleans up this module
 void usb_cleanup();
@@ -141,6 +141,7 @@ const char *usb_name(usb_handle* handle);
 static struct dll_bridge * bridge;
 extern struct dll_io_bridge * i_bridge;
 extern struct dll_io_bridge * o_bridge;
+extern THREAD_LOCAL void * (*js_msg)(char *, void *);
 
 int known_device_locked(const char* dev_name) {
   usb_handle* usb;
@@ -261,9 +262,9 @@ void* device_poll_thread(void* _bridge) {
   return NULL;
 }
 
-void usb_init(int(*spawnD)()) {
+void usb_init() {
   D("Pre-spawnD\n");
-  spawnD();
+  MSG("spawn-device-loop", NULL);
   D("Post-spawnD\n");
 }
 
@@ -384,7 +385,6 @@ int usb_write(usb_handle* handle, const void* data, int len) {
   return -1;
 }
 
-extern THREAD_LOCAL int (*getLastError)();
 int usb_read(usb_handle *handle, void* data, int len) {
   unsigned long read = 0;
   int ret;
@@ -406,7 +406,7 @@ int usb_read(usb_handle *handle, void* data, int len) {
                                   &read,
                                   0,
                                   NULL);
-      saved_errno = getLastError();
+      saved_errno = (int)MSG("get-last-error", NULL);
       if (completed_handle == NULL) {
         D("AdbReadEndpointAsync, errno: %d\n", saved_errno);
         return -1;
@@ -416,7 +416,7 @@ int usb_read(usb_handle *handle, void* data, int len) {
       int hasCompleted = FALSE;
       do {
         hasCompleted = o_bridge->AdbHasOvelappedIoComplated(completed_handle);
-        saved_errno = getLastError();
+        saved_errno = (int)MSG("get-last-error", NULL);
         if (saved_errno != 0) {
           D("HasOvelappedIoComplated, errno: %d\n", saved_errno);
           return -1;
@@ -435,7 +435,7 @@ int usb_read(usb_handle *handle, void* data, int len) {
       ret = o_bridge->AdbGetOvelappedIoResult(completed_handle, NULL, &read, true);
       if (!ret) {
         D("AdbGetOvelappedIoResult(read %u) failure (%u). Error %u, read %u\n",
-            xfer, ret, getLastError(), read);
+            xfer, ret, (int)MSG("get-last-error", NULL), read);
         return -1;
       }
       D("usb_read got: %ld, expected: %d, errno: %d\n", read, xfer, saved_errno);

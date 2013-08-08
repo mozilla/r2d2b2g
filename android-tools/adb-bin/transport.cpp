@@ -43,6 +43,7 @@ static atransport transport_list = {
 
 struct dll_io_bridge * i_bridge;
 struct dll_io_bridge * o_bridge;
+extern THREAD_LOCAL void * (*js_msg)(char *, void *);
 
 ADB_MUTEX_DEFINE( transport_lock );
 ADB_MUTEX_DEFINE( io_pump_status_lock );
@@ -492,12 +493,12 @@ void  update_transports(void)
     len = list_transports(buffer, sizeof(buffer)-1, 0);
 
     buffer[len] = '\0';
-    void * res;
     struct device_update_msg {
       char * updates;
     };
     struct device_update_msg m = { buffer };
-    MSG(&res, "device-update", m);
+
+    MSG("device-update", &m);
 }
 
 static int
@@ -561,9 +562,6 @@ static tmsg * addTMessage() {
 
 static void transport_registration_func(int _fd, unsigned ev, void *data)
 {
-    struct spawnFunc_carrier * c = (struct spawnFunc_carrier *)data;
-    int (*spawnIO)(atransport *) = c->spawnIO;
-
     tmsg * m = addTMessage();
    int s[2];
     atransport *t;
@@ -636,7 +634,11 @@ static void transport_registration_func(int _fd, unsigned ev, void *data)
 
         fdevent_set(&(t->transport_fde), FDE_READ);
 
-        spawnIO(t);
+        struct msg {
+          atransport * t;
+        };
+        struct msg m = { t };
+        MSG("spawn-io-threads", &m);
 
         /*char i_tag[1024];
         char o_tag[1024];
@@ -666,9 +668,7 @@ static void transport_registration_func(int _fd, unsigned ev, void *data)
     update_transports();
 }
 
-static struct spawnFunc_carrier * s_carrier;
 void cleanup_transport() {
-    free(s_carrier);
     int len = _tmsgs->length;
     for (int i = 0; i < len; i++) {
       free(_tmsgs->base[i]);
@@ -676,7 +676,7 @@ void cleanup_transport() {
     free_tmsg_ptr_array_list(_tmsgs);
 }
 
-void init_transport_registration(int (*spawnIO)(atransport*))
+void init_transport_registration()
 {
     int s[2];
 
@@ -687,14 +687,10 @@ void init_transport_registration(int (*spawnIO)(atransport*))
     transport_registration_send = s[0];
     transport_registration_recv = s[1];
 
-    struct spawnFunc_carrier * c = (struct spawnFunc_carrier *)malloc(sizeof(struct spawnFunc_carrier));
-    c->spawnIO = spawnIO;
-    s_carrier = c; // this is freed in cleanup_transport
-
     fdevent_install(&transport_registration_fde,
                     transport_registration_recv,
                     transport_registration_func,
-                    (void *)c);
+                    NULL);
 
     fdevent_set(&transport_registration_fde, FDE_READ);
 }
