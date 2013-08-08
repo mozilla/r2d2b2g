@@ -33,13 +33,11 @@ module.exports = {
   },
 
   listDevices: function() {
-    let deferred = Promise.defer();
     let buf = [];
     for (let dev in devices) {
       buf.push([dev, devices[dev]]);
     }
-    deferred.resolve(buf);
-    return deferred.promise;
+    return Promise.resolve(buf);
   },
 
   start: function(worker_) {
