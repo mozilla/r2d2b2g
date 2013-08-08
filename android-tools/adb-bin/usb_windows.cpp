@@ -231,6 +231,11 @@ void should_kill_threads() {
   // wait for both the device loop's and the input_thread's death (if it exists)
   D("Waiting for %d notifications\n", 2 + is_io_pump_on - 1);
   while(should_kill < (2 + is_io_pump_on)) {
+    // TODO: HACK: For some reason Geeksphone Peak will not close its device
+    //   input thread unless there is a sleep here. (probably starvation)
+    //   I think the adb_cond_wait/adb_broadcast implementations don't work.
+    //   This should be removed when we patch adb_cond_wait/adb_broadcast.
+    adb_sleep_ms(1);
     // hang on a condition
     adb_cond_wait(&should_kill_cond, NULL);
   }

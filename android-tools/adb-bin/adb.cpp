@@ -643,6 +643,7 @@ void handle_packet(apacket *p, atransport *t)
 
     case A_CLSE: /* CLOSE(local-id, remote-id, "") */
         if (t->online) {
+            D("CLOSE(%d, %d, \"\")\n", p->msg.arg0, p->msg.arg1);
             if((s = find_local_socket(p->msg.arg1))) {
                 s->close(s);
             }

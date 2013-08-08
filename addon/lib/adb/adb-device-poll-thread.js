@@ -30,9 +30,11 @@ const console = new Console(worker);
 
 const I = new Instantiator;
 let libadb = null;
-<<<<<<< HEAD
+let getLastError = function() { return 0; };
 let jsMsgFn = CommonMessageHandler(worker, console, function(channel, args) {
   switch(channel) {
+    case "get-last-error":
+      return JsMessage.pack(getLastError(), Number);
     default:
       console.log("Unknown message: " + channel);
   }
@@ -40,13 +42,6 @@ let jsMsgFn = CommonMessageHandler(worker, console, function(channel, args) {
   return JsMessage.pack(-1, Number);
 });
 
-
-=======
-let restartMeFn = function restart_me() {
-  worker.emitAndForget("restart-me", { });
-};
-let getLastError;
->>>>>>> AdbWinUsbApi.dll never loaded correctly
 worker.once("init", function({ libPath, driversPath, platform }) {
   libadb = ctypes.open(libPath);
 
@@ -103,14 +98,8 @@ worker.once("init", function({ libPath, driversPath, platform }) {
                 returns: ctypes.int,
                 args: [ struct_dll_bridge.ptr ]
               }, libadb);
-              
-    let install_getLastError =
-        I.declare({ name: "install_getLastError",
-                    returns: ctypes.void_t,
-                    args: [ IntCallableType.ptr ]
-                  }, libadb);
+
     getLastError = bb.getLastError.bind(bb);
-    install_getLastError(IntCallableType.ptr(getLastError));
 
     I.use("usb_monitor")(bridge.address());
     libadbdrivers.close();
