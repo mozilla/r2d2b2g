@@ -152,7 +152,7 @@
         this.msgToCallbacksRespond[msg] = [];
       }
 
-      let idx = this.msgToCallbacksRespond[msg].push(cb);
+      let idx = this.msgToCallbacksRespond[msg].push(cb) - 1;
       return idx;
     },
 
@@ -162,7 +162,7 @@
         this.msgToCallbacksFree[msg] = [];
       }
 
-      let idx = this.msgToCallbacksFree[msg].push(cb);
+      let idx = this.msgToCallbacksFree[msg].push(cb) - 1;
       return idx;
     },
 
@@ -195,8 +195,8 @@
     },
 
     _callCbs: function _callCbs(cbs, data, andThenCb) {
-      for (let i = 0; i < cbs.length; i++) {
-        let res = cbs[i](data);
+      for (let key in cbs) {
+        let res = cbs[key](data);
         andThenCb(res);
       }
     }
