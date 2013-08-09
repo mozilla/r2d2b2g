@@ -30,11 +30,15 @@ const console = new Console(worker);
 
 const I = new Instantiator;
 let libadb = null;
+let winusbPath_ = null;
 let getLastError = function() { return 0; };
 let jsMsgFn = CommonMessageHandler(worker, console, function(channel, args) {
   switch(channel) {
     case "get-last-error":
       return JsMessage.pack(getLastError(), Number);
+    case "winusbdll-path":
+      console.log("Got request for winusbdll-path");
+      return JsMessage.pack(winusbPath_, String);
     default:
       console.log("Unknown message: " + channel);
   }
@@ -42,8 +46,9 @@ let jsMsgFn = CommonMessageHandler(worker, console, function(channel, args) {
   return JsMessage.pack(-1, Number);
 });
 
-worker.once("init", function({ libPath, driversPath, platform }) {
+worker.once("init", function({ winusbPath, libPath, driversPath, platform }) {
   libadb = ctypes.open(libPath);
+  winusbPath_ = winusbPath;
 
   let install_js_msg =
       I.declare({ name: "install_js_msg",

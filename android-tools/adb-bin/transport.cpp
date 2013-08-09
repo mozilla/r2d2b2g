@@ -402,6 +402,8 @@ oops:
     return NULL;
 }
 
+// TODO: BUG: The Peak on Windows rarely doesn't close the input thread.
+//   This causes the UI thread to hang on exit.
 void *input_thread(void *_t, struct dll_io_bridge * _io_bridge)
 {
     i_bridge = _io_bridge;

@@ -288,7 +288,7 @@ usb_handle* do_usb_open(const wchar_t* interface_name) {
   ret->prev = ret;
 
   // Get dll_path and put it into a wchar_t
-  char * dll_path = "C:\\Users\\bkase\\Documents\\work\\r2d2b2g\\addon\\data\\win32\\adb\\AdbWinUsbApi.dll";
+  char * dll_path = (char *)MSG("winusbdll-path", NULL);
   long len = strlen(dll_path) + 1;
   wchar_t * dll_path_w = (wchar_t *)malloc(len * sizeof(wchar_t));
   mbstowcs(dll_path_w, dll_path, len);

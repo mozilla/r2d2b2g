@@ -63,14 +63,16 @@ if (platform === "winnt") {
   throw "Unsupported platform";
 }
 let libPath = URL.toFilename(self.data.url(platformDir + "/adb/libadb" + extension));
-let driversPath = (platform === "winnt") ?
-  URL.toFilename(self.data.url("win32/adb/AdbWinApi.dll")) : null;
+let [driversPath, winusbPath] = (platform === "winnt") ?
+  [URL.toFilename(self.data.url("win32/adb/AdbWinApi.dll")),
+   URL.toFilename(self.data.url("win32/adb/AdbWinUsbApi.dll"))] : [null, null];
 
 // the context is used as shared state between EventedChromeWorker runOnPeerThread calls and this module
 let context = { __workers: [], // this array is populated automatically by EventedChromeWorker
                 platform: platform,
                 driversPath: driversPath,
-                libPath: libPath
+                libPath: libPath,
+                winusbPath: winusbPath
               };
 
 const DEVICE_NOT_CONNECTED = "Device not connected";
