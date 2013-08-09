@@ -3,7 +3,7 @@
 
 #include "adb.h"
 
-void * server_thread(void * args);
+int server_thread(void * args);
 #ifdef __APPLE__
 void * RunLoopThread(void * unused);
 #else
