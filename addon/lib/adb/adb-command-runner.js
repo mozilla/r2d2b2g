@@ -55,28 +55,6 @@ function runCommand(aCommand) {
   return deferred.promise;
 }
 
-exports.devices = function devices() {
-  debug("devices");
-  let deferred = Promise.defer();
-
-  let promise = runCommand("host:devices");
-
-  return promise.then(
-    function onSuccess(data) {
-      let lines = data.split("\n");
-      let res = [];
-      lines.forEach(function(aLine) {
-        if (aLine.length == 0) {
-          return;
-        }
-        let [device, status] = aLine.split("\t");
-        res.push([device, status]);
-      });
-      return res;
-    }
-  );
-};
-
 exports.reset = function() {
 
 };

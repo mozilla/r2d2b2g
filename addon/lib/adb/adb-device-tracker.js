@@ -13,6 +13,8 @@ const { Cc, Ci, Cr, Cu } = require("chrome");
 const { Class } = require("sdk/core/heritage");
 const client = require("adb/adb-client");
 
+const Promise = require("sdk/core/promise");
+
 Cu.import("resource://gre/modules/Services.jsm");
 
 let { TextDecoder } = Cu.import("resource://gre/modules/Services.jsm");
@@ -28,6 +30,14 @@ let worker = null;
 module.exports = {
   get hasDevice() {
     return hasDevice;
+  },
+
+  listDevices: function() {
+    let buf = [];
+    for (let dev in devices) {
+      buf.push([dev, devices[dev]]);
+    }
+    return Promise.resolve(buf);
   },
 
   start: function(worker_) {
@@ -58,7 +68,7 @@ module.exports = {
         }
 
         let [dev, status] = aLine.split("\t");
-        newDev[dev] = status !== "offline";
+        newDev[dev] = status;
       });
       // Check which device changed state.
       for (let dev in newDev) {
