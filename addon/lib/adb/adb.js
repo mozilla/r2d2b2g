@@ -163,8 +163,7 @@ exports = module.exports = {
   },
 
   listDevices: function listDevices() {
-    console.debug("Listing adb devices");
-    return commandRunner.devices();
+    return deviceTracker.listDevices();
   },
 
   close: function close() {
