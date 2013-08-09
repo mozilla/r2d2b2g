@@ -40,7 +40,7 @@ exports.check = function check() {
         let { length, data } = client.unpackPacket(aData);
         debug("length: ", length, "data: ", data);
         socket.close();
-        deferred.resolve(true);
+        deferred.resolve(data.indexOf("001f") != -1);
         break;
       default:
         debug("Unexpected State: " + state);
