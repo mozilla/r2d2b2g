@@ -106,7 +106,7 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance,
   // variable. We do that only once, on condition that this DLL is
   // being attached to the process and InstantiateWinUsbInterface
   // address has not been calculated yet.
-  // 
+  //
   // Do this lazily so we know the path to the DLL
   /*if (DLL_PROCESS_ATTACH == reason) {
     _AtlModule.AttachToAdbWinUsbApi();

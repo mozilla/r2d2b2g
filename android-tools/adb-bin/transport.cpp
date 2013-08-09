@@ -30,9 +30,9 @@
 #include "array_lists.h"
 #include "threads.h"
 
-#define D_ D
-#undef D
-#define D printf
+//#define D_ D
+//#undef D
+//#define D printf
 
 static void transport_unref(atransport *t);
 
@@ -1216,5 +1216,5 @@ int check_data(apacket *p)
     }
 }
 
-#undef D
-#define D D_
+//#undef D
+//#define D D_

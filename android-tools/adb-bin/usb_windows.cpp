@@ -43,9 +43,9 @@
 #define AdbCloseHandle(...) (false)
 #endif
 
-#define D_ D
-#undef D
-#define D printf
+//#define D_ D
+//#undef D
+//#define D printf
 
 
 /** Structure usb_handle describes our connection to the usb device via
@@ -292,7 +292,7 @@ usb_handle* do_usb_open(const wchar_t* interface_name) {
   long len = strlen(dll_path) + 1;
   wchar_t * dll_path_w = (wchar_t *)malloc(len * sizeof(wchar_t));
   mbstowcs(dll_path_w, dll_path, len);
-  
+
   // Create interface.
   ret->adb_interface = bridge->AdbCreateInterfaceByName(interface_name, dll_path_w);
   free(dll_path_w);
@@ -418,7 +418,7 @@ int usb_read(usb_handle *handle, void* data, int len) {
 
       // loop until there is a byte
       int saved_errno = 0;
-      
+
       D("Pre read call\n");
       completed_handle = o_bridge->AdbReadEndpointAsync(handle->adb_read_pipe,
                                   (void*)data_,
@@ -441,7 +441,7 @@ int usb_read(usb_handle *handle, void* data, int len) {
           D("HasOvelappedIoComplated, errno: %d\n", saved_errno);
           return -1;
         }
-        
+
         if (should_kill) {
           return -1;
           // the input thread will notify_should_kill
@@ -601,7 +601,7 @@ void find_devices() {
   if (NULL == enum_handle)
     return;
 
-  while (bridge->AdbNextInterface(enum_handle, next_interface, &entry_buffer_size)) { 
+  while (bridge->AdbNextInterface(enum_handle, next_interface, &entry_buffer_size)) {
     D("Within the bridge->AdbNextInterface list\n");
     // TODO: FIXME - temp hack converting wchar_t into char.
     // It would be better to change AdbNextInterface so it will return
@@ -654,8 +654,8 @@ void find_devices() {
   }
 
   bridge->AdbCloseHandle(enum_handle);
-  
+
 }
 
-#undef D
-#define D D_
+//#undef D
+//#define D D_

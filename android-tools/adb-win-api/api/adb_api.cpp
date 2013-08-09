@@ -119,7 +119,7 @@ ADBAPIHANDLE __cdecl AdbCreateInterfaceByName(
       if (NULL == InstantiateWinUsbInterface && NULL != dll_path) {
         initWinUsbDll(dll_path);
       }
-      
+
       // We have WinUsb driver underneath us. Make sure that AdbWinUsbApi.dll
       // is loaded and its InstantiateWinUsbInterface routine address has
       // been cached.
