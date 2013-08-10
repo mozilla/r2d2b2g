@@ -1268,7 +1268,7 @@ int server_thread(void * args) {
 
 int adb_main(int is_daemon, int server_port, int is_lib_call) {
 
-  struct adb_main_input * in = (struct adb_main_input*)malloc(sizeof(struct adb_main_input));
+  /*struct adb_main_input * in = (struct adb_main_input*)malloc(sizeof(struct adb_main_input));
   in->is_daemon = is_daemon;
   in->server_port = server_port;
   in->is_lib_call = is_lib_call;
@@ -1282,7 +1282,7 @@ int adb_main(int is_daemon, int server_port, int is_lib_call) {
   // usleep(1000000);
 
   // pthread_kill(*__adb_threads_active[1], SIGUSR2);
-
+  */
   return 0;
 }
 
