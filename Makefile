@@ -177,15 +177,15 @@ clean:
 	rm -f gaia/build/custom-prefs.js
 	rm -f gaia/build/custom-settings.json
 	rm -f $(ADB_PACKAGE)
-	make -C gaia clean
+	$(MAKE) -C gaia clean
 	python build/make-b2g.py $(B2G_TYPE_ARG) $(B2G_PLATFORM_ARG) $(B2G_ID_ARG) $(B2G_URL_ARG) --clean
-	make -C android-tools clean
+	$(MAKE) -C android-tools clean
 
 profile:
 	cp build/override-prefs.js gaia/build/custom-prefs.js
 	cp build/override-settings.json gaia/build/custom-settings.json
-	NOFTU=1 GAIA_APP_SRCDIRS=apps make -C gaia
-	DESKTOP=1 NOFTU=1 GAIA_APP_SRCDIRS=apps make -C gaia preferences
+	NOFTU=1 GAIA_APP_SRCDIRS=apps $(MAKE) -C gaia
+	DESKTOP=1 NOFTU=1 GAIA_APP_SRCDIRS=apps $(MAKE) -C gaia preferences
 	python build/override-webapps.py
 	cd gaia/tools/extensions/desktop-helper/ && zip -r ../../../profile/extensions/desktop-helper\@gaiamobile.org.xpi *
 	cd gaia/tools/extensions/activities/ && zip -r ../../../profile/extensions/activities\@gaiamobile.org.xpi *
@@ -229,8 +229,8 @@ adb:
 	  unzip $(ADB_PACKAGE) -d addon/data/$(B2G_PLATFORM)/adb; \
 	fi;
 	if [ "$(LIBADB_LOCATION)" = "local" ]; then \
-	  make -C android-tools lib && \
-	  make -C android-tools driver && \
+	  $(MAKE) -C android-tools lib && \
+	  $(MAKE) -C android-tools driver && \
 	  cp $(ADB_LIBS) $(ADB_DATA_PATH); \
 	fi;
 
