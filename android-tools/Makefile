@@ -5,14 +5,14 @@ else
 endif
 
 all:
-	make -C adb-bin
+	$(MAKE) -C adb-bin
 adb:
-	make -C adb-bin adb
+	$(MAKE) -C adb-bin adb
 clean:
-	make -C adb-bin clean
+	$(MAKE) -C adb-bin clean
 lib:
-	make -C adb-bin $(LIB_TARGET)
+	$(MAKE) -C adb-bin $(LIB_TARGET)
 driver:
 	if [ "$(LIB_TARGET)" = "winlib" ]; then \
-	  make -C adb-win-api; \
+	  $(MAKE) -C adb-win-api; \
   fi
