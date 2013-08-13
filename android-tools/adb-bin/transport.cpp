@@ -402,6 +402,8 @@ oops:
     return NULL;
 }
 
+// TODO: BUG: The Peak on Windows rarely doesn't close the input thread.
+//   This causes the UI thread to hang on exit.
 void *input_thread(void *_t, struct dll_io_bridge * _io_bridge)
 {
     i_bridge = _io_bridge;
@@ -435,7 +437,7 @@ void *input_thread(void *_t, struct dll_io_bridge * _io_bridge)
             }
         } else {
             if(active) {
-                D("%s: transport got packet, sending to remote\n", t->serial);
+                D("%s: transport got packet %d, sending to remote\n", t->serial, p->msg.command);
                 t->write_to_remote(p, t);
             } else {
                 D("%s: transport ignoring packet while offline\n", t->serial);
@@ -460,6 +462,7 @@ void *input_thread(void *_t, struct dll_io_bridge * _io_bridge)
     transport_unref(t);
 	D("Post-unref transport input-thread\n");
 #ifdef WIN32
+    D("Let device-loop close\n");
     notify_should_kill();
     set_io_pump_status(0);
 #endif

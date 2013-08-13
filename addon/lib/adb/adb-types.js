@@ -56,7 +56,7 @@
   const AdbEnumInterfacesType =
     ctypes.FunctionType(ctypes.default_abi, ADBAPIHANDLE, [ GUID, bool, bool, bool ]);
   const AdbCreateInterfaceByNameType = 
-    ctypes.FunctionType(ctypes.default_abi, ADBAPIHANDLE, [ wchar_t.ptr ]);
+    ctypes.FunctionType(ctypes.default_abi, ADBAPIHANDLE, [ wchar_t.ptr, wchar_t.ptr ]);
   const AdbCreateInterfaceType = 
     ctypes.FunctionType(ctypes.default_abi, ADBAPIHANDLE, [ GUID, ctypes.uint16_t, ctypes.uint16_t, ctypes.uint8_t ]);
   const AdbGetInterfaceNameType =

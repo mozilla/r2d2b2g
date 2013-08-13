@@ -70,7 +70,8 @@ let jsMsgFn = CommonMessageHandler(worker, console, function(channel, args) {
         let devicePollWorker = this.newWorker(workerURI, "device_poll_thread");
         devicePollWorker.emitAndForget("init", { libPath: context.libPath,
                                                  driversPath: context.driversPath,
-                                                 platform: context.platform });
+                                                 platform: context.platform,
+                                                 winusbPath: context.winusbPath });
       }, WORKER_URL_DEVICE_POLL);
       return JsMessage.pack(0, Number);
     default:

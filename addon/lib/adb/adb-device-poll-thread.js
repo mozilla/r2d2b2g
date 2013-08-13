@@ -30,8 +30,15 @@ const console = new Console(worker);
 
 const I = new Instantiator;
 let libadb = null;
+let winusbPath_ = null;
+let getLastError = function() { return 0; };
 let jsMsgFn = CommonMessageHandler(worker, console, function(channel, args) {
   switch(channel) {
+    case "get-last-error":
+      return JsMessage.pack(getLastError(), Number);
+    case "winusbdll-path":
+      console.log("Got request for winusbdll-path");
+      return JsMessage.pack(winusbPath_, String);
     default:
       console.log("Unknown message: " + channel);
   }
@@ -39,9 +46,9 @@ let jsMsgFn = CommonMessageHandler(worker, console, function(channel, args) {
   return JsMessage.pack(-1, Number);
 });
 
-
-worker.once("init", function({ libPath, driversPath, platform }) {
+worker.once("init", function({ winusbPath, libPath, driversPath, platform }) {
   libadb = ctypes.open(libPath);
+  winusbPath_ = winusbPath;
 
   let install_js_msg =
       I.declare({ name: "install_js_msg",
@@ -89,12 +96,15 @@ worker.once("init", function({ libPath, driversPath, platform }) {
         { "AdbNextInterface": AdbNextInterfaceType }
       ];
 
-    let [struct_dll_bridge, bridge, ref] = new BridgeBuilder(I, libadbdrivers).build("dll_bridge", bridge_funcs);
+    let bb = new BridgeBuilder(I, libadbdrivers);
+    let [struct_dll_bridge, bridge, ref] = bb.build("dll_bridge", bridge_funcs);
 
     I.declare({ name: "usb_monitor",
                 returns: ctypes.int,
                 args: [ struct_dll_bridge.ptr ]
               }, libadb);
+
+    getLastError = bb.getLastError.bind(bb);
 
     I.use("usb_monitor")(bridge.address());
     libadbdrivers.close();

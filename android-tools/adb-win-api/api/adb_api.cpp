@@ -104,7 +104,8 @@ bool __cdecl AdbResetInterfaceEnum(ADBAPIHANDLE adb_handle) {
 }
 
 ADBAPIHANDLE __cdecl AdbCreateInterfaceByName(
-    const wchar_t* interface_name) {
+    const wchar_t* interface_name,
+    const wchar_t* dll_path) {
   AdbInterfaceObject* obj = NULL;
   ADBAPIHANDLE ret = NULL;
 
@@ -114,6 +115,11 @@ ADBAPIHANDLE __cdecl AdbCreateInterfaceByName(
       // We have legacy USB driver underneath us.
       obj = new AdbLegacyInterfaceObject(interface_name);
     } else {
+      // Try to load the InstantiateWinUsbInterface routine if necessary
+      if (NULL == InstantiateWinUsbInterface && NULL != dll_path) {
+        initWinUsbDll(dll_path);
+      }
+
       // We have WinUsb driver underneath us. Make sure that AdbWinUsbApi.dll
       // is loaded and its InstantiateWinUsbInterface routine address has
       // been cached.
@@ -188,7 +194,7 @@ ADBAPIHANDLE __cdecl AdbCreateInterface(GUID class_id,
                       next_interface.device_name().c_str(),
                       match_len)) {
       // Found requested interface among active interfaces.
-      return AdbCreateInterfaceByName(next_interface.device_name().c_str());
+      return AdbCreateInterfaceByName(next_interface.device_name().c_str(), (wchar_t *)NULL);
     }
   }
 

@@ -268,7 +268,7 @@ ADBWIN_API bool __cdecl AdbResetInterfaceEnum(ADBAPIHANDLE adb_handle);
   @return Handle to the interface object or NULL on failure. If NULL is
           returned GetLastError() provides extended error information.
 */
-ADBWIN_API ADBAPIHANDLE __cdecl AdbCreateInterfaceByName(const wchar_t* interface_name);
+ADBWIN_API ADBAPIHANDLE __cdecl AdbCreateInterfaceByName(const wchar_t* interface_name, const wchar_t* dll_path);
 
 /** \brief Creates USB interface object based on vendor, product and
   interface IDs.
@@ -291,7 +291,7 @@ ADBWIN_API ADBAPIHANDLE __cdecl AdbCreateInterface(GUID class_id,
 
 /** \brief Gets interface name.
 
-  @param[in] adb_interface A handle to interface object created with 
+  @param[in] adb_interface A handle to interface object created with
          AdbCreateInterface call.
   @param[out] buffer Buffer for the name. Can be NULL in which case
          buffer_char_size will contain number of characters required for
@@ -312,7 +312,7 @@ ADBWIN_API bool __cdecl AdbGetInterfaceName(ADBAPIHANDLE adb_interface,
 
 /** \brief Gets serial number for interface's device.
 
-  @param[in] adb_interface A handle to interface object created with 
+  @param[in] adb_interface A handle to interface object created with
          AdbCreateInterface call.
   @param[out] buffer Buffer for the serail number string. Can be NULL in which
          case buffer_char_size will contain number of characters required for
@@ -334,7 +334,7 @@ ADBWIN_API bool __cdecl AdbGetSerialNumber(ADBAPIHANDLE adb_interface,
 /** \brief Gets device descriptor for the USB device associated with
   the given interface.
 
-  @param[in] adb_interface A handle to interface object created with 
+  @param[in] adb_interface A handle to interface object created with
          AdbCreateInterface call.
   @param[out] desc Upon successful completion will have usb device
          descriptor.
@@ -346,7 +346,7 @@ ADBWIN_API bool __cdecl AdbGetUsbDeviceDescriptor(ADBAPIHANDLE adb_interface,
 
 /** \brief Gets descriptor for the selected USB device configuration.
 
-  @param[in] adb_interface A handle to interface object created with 
+  @param[in] adb_interface A handle to interface object created with
          AdbCreateInterface call.
   @param[out] desc Upon successful completion will have usb device
          configuration descriptor.
@@ -359,7 +359,7 @@ ADBWIN_API bool __cdecl AdbGetUsbConfigurationDescriptor(
 
 /** \brief Gets descriptor for the given interface.
 
-  @param[in] adb_interface A handle to interface object created with 
+  @param[in] adb_interface A handle to interface object created with
          AdbCreateInterface call.
   @param[out] desc Upon successful completion will have usb device
          configuration descriptor.
@@ -371,7 +371,7 @@ ADBWIN_API bool __cdecl AdbGetUsbInterfaceDescriptor(ADBAPIHANDLE adb_interface,
 
 /** \brief Gets information about an endpoint on the given interface.
 
-  @param[in] adb_interface A handle to interface object created with 
+  @param[in] adb_interface A handle to interface object created with
          AdbCreateInterface call.
   @param[in] endpoint_index Zero-based endpoint index. There are two
          shortcuts for this parameter: ADB_QUERY_BULK_WRITE_ENDPOINT_INDEX
@@ -388,7 +388,7 @@ ADBWIN_API bool __cdecl AdbGetEndpointInformation(ADBAPIHANDLE adb_interface,
 /** \brief Gets information about default bulk read endpoint on the given
   interface.
 
-  @param[in] adb_interface A handle to interface object created with 
+  @param[in] adb_interface A handle to interface object created with
          AdbCreateInterface call.
   @param[out] info Upon successful completion will have endpoint information.
   @return true on success, false on failure. If false is returned
@@ -401,7 +401,7 @@ ADBWIN_API bool __cdecl AdbGetDefaultBulkReadEndpointInformation(
 /** \brief Gets information about default bulk write endpoint on the given
   interface.
 
-  @param[in] adb_interface A handle to interface object created with 
+  @param[in] adb_interface A handle to interface object created with
          AdbCreateInterface call.
   @param[out] info Upon successful completion will have endpoint information.
   @return true on success, false on failure. If false is returned
@@ -414,7 +414,7 @@ ADBWIN_API bool __cdecl AdbGetDefaultBulkWriteEndpointInformation(
 /** \brief Opens an endpoint on the given interface.
 
   Endpoints are always opened for overlapped I/O.
-  @param[in] adb_interface A handle to interface object created with 
+  @param[in] adb_interface A handle to interface object created with
          AdbCreateInterface call.
   @param[in] endpoint_index Zero-based endpoint index. There are two
          shortcuts for this parameter: ADB_QUERY_BULK_WRITE_ENDPOINT_INDEX
@@ -437,7 +437,7 @@ ADBWIN_API ADBAPIHANDLE __cdecl AdbOpenEndpoint(ADBAPIHANDLE adb_interface,
 /** \brief Opens default bulk read endpoint on the given interface.
 
   Endpoints are always opened for overlapped I/O.
-  @param[in] adb_interface A handle to interface object created with 
+  @param[in] adb_interface A handle to interface object created with
          AdbCreateInterface call.
   @param[in] access_type Desired access type. In the current implementation
          this parameter has no effect on the way endpoint is opened. It's
@@ -456,7 +456,7 @@ ADBWIN_API ADBAPIHANDLE __cdecl AdbOpenDefaultBulkReadEndpoint(
 /** \brief Opens default bulk write endpoint on the given interface.
 
   Endpoints are always opened for overlapped I/O.
-  @param[in] adb_interface A handle to interface object created with 
+  @param[in] adb_interface A handle to interface object created with
          AdbCreateInterface call.
   @param[in] access_type Desired access type. In the current implementation
          this parameter has no effect on the way endpoint is opened. It's
