@@ -32,7 +32,7 @@ ADB_MUTEX_DEFINE( socket_list_lock );
 
 static void local_socket_close_locked(asocket *s);
 
-extern THREAD_LOCAL void (*restart_me)();
+extern THREAD_LOCAL void * (*js_msg)(char *, void *);
 int sendfailmsg(int fd, const char *reason)
 {
     char buf[9];
@@ -222,7 +222,7 @@ static void local_socket_destroy(asocket  *s)
 
     if (exit_on_close) {
         D("local_socket_destroy: exiting\n");
-        restart_me();
+        MSG("restart-adb", NULL);
         return;
     }
 }

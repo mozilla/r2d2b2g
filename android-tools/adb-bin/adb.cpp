@@ -53,8 +53,6 @@ FILE* LOG_FILE;
 //#undef D
 //#define D printf
 
-THREAD_LOCAL void (*restart_me)();
-THREAD_LOCAL int (*getLastError)();
 THREAD_LOCAL void * (*js_msg)(char *, void *);
 int HOST = 0;
 int gListenAll = 0;
@@ -175,16 +173,8 @@ void cleanup_all() {
 #endif
 }
 
-void install_thread_locals_(void (*restart_me_)()) {
-  restart_me = restart_me_;
-}
-
 void install_js_msg_(void *(js_msg_)(char *, void *)) {
   js_msg = js_msg_;
-}
-
-void install_getLastError_(int (*getLastError_)()) {
-  getLastError = getLastError_;
 }
 
 void fatal(const char *fmt, ...)
@@ -195,7 +185,7 @@ void fatal(const char *fmt, ...)
     vprintf(fmt, ap);
     printf("\n");
     va_end(ap);
-    restart_me();
+    MSG("restart-adb", NULL);
 }
 
 void fatal_errno(const char *fmt, ...)
@@ -206,7 +196,7 @@ void fatal_errno(const char *fmt, ...)
     vprintf(fmt, ap);
     printf("\n");
     va_end(ap);
-    restart_me();
+    MSG("restart-adb", NULL);
 }
 
 int   adb_trace_mask;
@@ -1192,7 +1182,7 @@ void build_local_name(char* target_str, size_t target_size, int server_port)
   snprintf(target_str, target_size, "tcp:%d", server_port);
 }
 
-void * server_thread(void * args) {
+int server_thread(void * args) {
   adb_sysdeps_init();
 
   struct adb_main_input* input = (struct adb_main_input*)args;
@@ -1203,9 +1193,6 @@ void * server_thread(void * args) {
   int exit_fd = input->exit_fd;
 
   void (*on_track_ready)() = input->on_track_ready;
-
-  int (*spawnIO)(atransport*) = input->spawnIO;
-  int (*spawnD)() = input->spawnD;
 
   char * log_path = input->log_path;
 
@@ -1230,12 +1217,12 @@ void * server_thread(void * args) {
     signal(SIGPIPE, SIG_IGN);
 #endif
 
-    init_transport_registration(spawnIO);
+    init_transport_registration();
 
     HOST = 1;
     usb_vendors_init();
     D("Before USB init\n");
-    usb_init(spawnD);
+    usb_init();
     D("After USB init\n");
 	#ifndef NO_AUTH
     adb_auth_init();
@@ -1247,8 +1234,7 @@ void * server_thread(void * args) {
     build_local_name(local_name, sizeof(local_name), server_port);
     if(install_listener(local_name, "*smartsocket*", NULL, 0)) {
         D("Error installing listener\n");
-        return NULL;
-
+        return -1;
     }
 
     if (is_daemon)
@@ -1282,7 +1268,7 @@ void * server_thread(void * args) {
 
 int adb_main(int is_daemon, int server_port, int is_lib_call) {
 
-  struct adb_main_input * in = (struct adb_main_input*)malloc(sizeof(struct adb_main_input));
+  /*struct adb_main_input * in = (struct adb_main_input*)malloc(sizeof(struct adb_main_input));
   in->is_daemon = is_daemon;
   in->server_port = server_port;
   in->is_lib_call = is_lib_call;
@@ -1296,7 +1282,7 @@ int adb_main(int is_daemon, int server_port, int is_lib_call) {
   // usleep(1000000);
 
   // pthread_kill(*__adb_threads_active[1], SIGUSR2);
-
+  */
   return 0;
 }
 
@@ -1481,11 +1467,8 @@ int handle_host_request(char *service, transport_type ttype, char* serial, int r
   //
     // returns our value for ADB_SERVER_VERSION
     if (!strcmp(service, "version")) {
-        char version[12];
-        snprintf(version, sizeof version, "%04x", ADB_SERVER_VERSION);
-        snprintf(buf, sizeof buf, "OKAY%04x%s", (unsigned)strlen(version), version);
-        writex(reply_fd, buf, strlen(buf));
-        return 0;
+        printf("the version service is disabled.\n");
+        return -1;
     }
 
     if(!strncmp(service,"get-serialno",strlen("get-serialno"))) {

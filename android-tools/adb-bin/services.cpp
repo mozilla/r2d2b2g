@@ -342,7 +342,8 @@ static void wait_for_state(int fd, void* cookie)
 asocket*  host_service_to_socket(const char*  name, const char *serial)
 {
     if (!strcmp(name,"track-devices")) {
-        return create_device_tracker();
+        printf("the track-devices service is disabled. Listen for the \"device-update\" channel\n");
+        return NULL;
     } else if (!strncmp(name, "wait-for-", strlen("wait-for-"))) {
         struct state_info* sinfo = (struct state_info *)malloc(sizeof(struct state_info));
 

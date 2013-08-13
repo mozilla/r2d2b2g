@@ -3,67 +3,75 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+/*
+ * Uses host:version service to detect if ADB is running
+ * Modified from adb-file-transfer from original ADB
+ */
+
 'use strict';
 
+const { Cu, Cc, Ci } = require("chrome");
+
 const Promise = require("sdk/core/promise");
-const subprocess = require("subprocess");
+const client = require("adb/adb-client");
 
-const { platform } = require("system");
-const env = require("api-utils/environment").env;
-const File = require("file");
+function debug() {
+  console.debug.apply(console, ["ADB: "].concat(Array.prototype.slice.call(arguments, 0)));
+}
 
-const psRegexNix = /.*adb .*fork\-server/;
-const psRegexWin = /adb.exe.*/;
-module.exports = {
-  check: function check() {
-    let deferred = Promise.defer();
+exports.check = function check() {
+  let deferred = Promise.defer();
+  let socket;
+  let state;
 
-    let ps, args;
-    if (platform === "winnt") {
-      ps = "C:\\windows\\system32\\tasklist.exe";
-      args = [];
-    } else {
-      args = ["aux"];
-      let psCommand = "ps";
+  debug("Asking for host:version");
 
-      let paths = env.PATH.split(':');
-      let len = paths.length;
-      for (let i = 0; i < len; i++) {
-        try {
-          let fullyQualified = File.join(paths[i], psCommand);
-          if (File.exists(fullyQualified)) {
-            ps = fullyQualified;
-            break;
-          }
-        } catch (e) {
-          // keep checking PATH if we run into NS_ERROR_FILE_UNRECOGNIZED_PATH
-        }
-      }
-      if (!ps) {
-        console.warn("a task list executable not found on filesystem");
-        deferred.resolve(false); // default to restart adb
-        return deferred.promise;
-      }
+  let runFSM = function runFSM(aData) {
+    debug("runFSM " + state);
+    switch(state) {
+      case "start":
+        let req = client.createRequest("host:version");
+        socket.send(req);
+        state = "wait-version";
+        break
+      case "wait-version":
+        // TODO: Actually check the version number to make sure the daemon
+        //       supports the commands we want to use
+        let { length, data } = client.unpackPacket(aData);
+        debug("length: ", length, "data: ", data);
+        socket.close();
+        deferred.resolve(data.indexOf("001f") != -1);
+        break;
+      default:
+        debug("Unexpected State: " + state);
+        deferred.resolve(false);
+    }
+  };
+
+  let setupSocket = function() {
+    socket.s.onerror = function(aEvent) {
+      debug("running checker onerror");
+      deferred.resolve(false);
+    };
+
+    socket.s.onopen = function(aEvent) {
+      debug("running checker onopen");
+      state = "start";
+      runFSM();
     }
 
-    let buffer = [];
+    socket.s.onclose = function(aEvent) {
+      debug("running checker onclose");
+    };
 
-    subprocess.call({
-      command: ps,
-      arguments: args,
-      stdout: function(data) {
-        buffer.push(data);
-      },
-      done: function() {
-        let lines = buffer.join('').split('\n');
-        let regex = (platform === "winnt") ? psRegexWin : psRegexNix;
-        let isAdbRunning = lines.some(function(line) {
-          return regex.test(line);
-        });
-        deferred.resolve(isAdbRunning);
-      }
-    });
+    socket.s.ondata = function(aEvent) {
+      debug("running checker ondata");
+      runFSM(aEvent.data);
+    };
+  };
 
-    return deferred.promise;
-  }
-}
+  socket = client.connect();
+  setupSocket();
+
+  return deferred.promise;
+};

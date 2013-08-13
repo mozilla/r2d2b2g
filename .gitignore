@@ -21,6 +21,7 @@ gaia-l10n
 
 # native code objects not covered by standard global gitignores
 android-tools/adb-bin/adb
+android-tools/adb-bin/*.obj
 android-tools/win-out
 *.idb
 *.pdb

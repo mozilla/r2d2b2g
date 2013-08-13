@@ -13,6 +13,7 @@
   require("adb/ctypes-bridge-builder.js");
   require("adb/worker-console.js");
   require("adb/js-message.js");
+  require("adb/common-message-handler.js");
  */
 
 const { Cc, Ci, Cr, Cu, ChromeWorker } = require("chrome");
@@ -162,8 +163,7 @@ exports = module.exports = {
   },
 
   listDevices: function listDevices() {
-    console.debug("Listing adb devices");
-    return commandRunner.devices();
+    return deviceTracker.listDevices();
   },
 
   close: function close() {
@@ -264,17 +264,19 @@ exports._startAdbInBackground = function startAdbInBackground() {
   ioWorker = new EventedChromeWorker(WORKER_URL_IO, "io_thread", context);
   utilWorker = new EventedChromeWorker(WORKER_URL_UTIL, "util_thread", context);
 
+  deviceTracker.start(serverWorker);
+
   serverWorker.emit("init", { libPath: libPath }, function initack() {
     serverWorker.emit("start", { port: 5037, log_path: File.join(TmpD, "adb.log") }, function started(res) {
-      console.debug("adb server thread returned: " + res.result);
+      console.debug("adb server thread returned: " + res.ret);
+      if (res.ret == -1) {
+        Services.obs.notifyObservers(null, "adb-port-in-use", null);
+      }
     });
   });
 
   serverWorker.onceAndForget("kill-server-fd", function({ fd }) {
     server_die_fd = fd;
-  });
-  serverWorker.onceAndForget("track-ready", function trackack() {
-    deviceTracker.start();
   });
 
   [ioWorker, utilWorker].forEach(function initworker(w) {

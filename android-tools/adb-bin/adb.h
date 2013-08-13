@@ -282,9 +282,6 @@ struct adb_main_input {
 
   void (*on_track_ready)();
 
-  int (*spawnIO)(atransport*);
-  int (*spawnD)();
-
   // this is a string pointing to a valid path for the adb.log
   // because windows won't printf to stdout
   char * log_path;
@@ -304,6 +301,7 @@ struct func_carrier {
 
 #include "array_lists.h"
 #include "js_message.h"
+extern THREAD_LOCAL void * (*js_msg)(char *, void *);
 
 #ifdef WIN32
 struct dll_io_bridge {
@@ -351,9 +349,7 @@ struct dll_io_bridge { };
   void should_kill_device_loop();
 #endif
 void array_lists_init_();
-void install_thread_locals_(void (*restart_me_)());
 void install_js_msg_(void * (*js_msg_)(char *, void *));
-void install_getLastError_(int (*getLastError)());
 int adb_thread_create( adb_thread_t  *thread, adb_thread_func_t  start, void*  arg, char * tag );
 void dump_thread_tag();
 int get_guid();
@@ -392,11 +388,9 @@ int adb_main(int is_daemon, int server_port, int is_lib_call);
 /* transports are ref-counted
 ** get_device_transport does an acquire on your behalf before returning
 */
-void init_transport_registration(int (*spawnIO)(atransport*));
+void init_transport_registration();
 int  list_transports(char *buf, size_t  bufsize, int long_listing);
 void update_transports(void);
-
-asocket*  create_device_tracker(void);
 
 /* Obtain a transport from the available transports.
 ** If state is != CS_ANY, only transports in that state are considered.
@@ -538,7 +532,7 @@ int  local_connect(int  port);
 int  local_connect_arbitrary_ports(int console_port, int adb_port);
 
 /* usb host/client interface */
-void usb_init(int(*spawnD)());
+void usb_init();
 void usb_cleanup();
 int usb_write(usb_handle *h, const void *data, int len);
 int usb_read(usb_handle *h, void *data, int len);

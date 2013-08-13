@@ -698,7 +698,7 @@ static void sigalrm_handler(int signo)
     // don't need to do anything here
 }
 
-void usb_init(int (*spawnD)())
+void usb_init()
 {
     // spawnD();
     adb_thread_t * tid = malloc(sizeof(adb_thread_t));

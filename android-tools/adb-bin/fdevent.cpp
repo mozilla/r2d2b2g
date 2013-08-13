@@ -113,7 +113,7 @@ static int fd_table_max = 0;
 
 static int epoll_fd = -1;
 
-extern THREAD_LOCAL void (*restart_me)();
+extern THREAD_LOCAL void * (*js_msg)(char *, void *);
 static void fdevent_init()
 {
         /* XXX: what's a good size for the passed in hint? */
@@ -121,7 +121,7 @@ static void fdevent_init()
 
     if(epoll_fd < 0) {
         perror("epoll_create() failed");
-        restart_me();
+        MSG("restart-adb", NULL);
         return;
     }
 
@@ -186,13 +186,13 @@ static void fdevent_update(fdevent *fde, unsigned events)
         if(ev.events) {
             if(epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fde->fd, &ev)) {
                 perror("epoll_ctl() failed\n");
-                restart_me();
+                MSG("restart-adb", NULL);
                 return;
             }
         } else {
             if(epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fde->fd, &ev)) {
                 perror("epoll_ctl() failed\n");
-                restart_me();
+                MSG("restart-adb", NULL);
                 return;
             }
         }
@@ -203,7 +203,7 @@ static void fdevent_update(fdevent *fde, unsigned events)
         if(ev.events) {
             if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fde->fd, &ev)) {
                 perror("epoll_ctl() failed\n");
-                restart_me();
+                MSG("restart-adb", NULL);
                 return;
             }
         }
@@ -221,7 +221,7 @@ static void fdevent_process()
     if(n < 0) {
         if(errno == EINTR) return;
         perror("epoll_wait");
-        restart_me();
+        MSG("restart-adb", NULL);
         return;
     }
 
