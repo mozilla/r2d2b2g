@@ -81,6 +81,11 @@ h1 {
     width: 140px;
     text-indent: -9999px;
 }
+@media (min-resolution: 2dppx) {
+    .wordmark {
+        background-image: url('../fxos-wordmark@2x.png');
+    }
+}
 .badge, .badge:before, .badge:after {
     text-align: center;
     display: block;
