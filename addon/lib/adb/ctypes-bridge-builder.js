@@ -7,6 +7,10 @@
  *
  * where a bridge is defined as simply intercepting function calls from native code
  * and re-firing them from a different library
+ *
+ *
+ * TODO: This code could (and probably should) be replaced by calling 
+ *    LoadLibrary properly in Windows native code
  */
 
 'use strict';
