@@ -121,7 +121,6 @@ int adb_thread_create( adb_thread_t  *thread, adb_thread_func_t  start, void*  a
 void cleanup_all() {
   int err = 0;
   int i = 0;
-  D("Cleaning USB (async)\n");
   D("Killing threads!\n");
   int len = __adb_threads_active->length;
   for (i = 0; i < len; i++) {
