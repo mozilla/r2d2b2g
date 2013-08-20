@@ -177,6 +177,20 @@ Gcli.addCommand({
 });
 
 Gcli.addCommand({
+  name: "firefoxos debuggerport",
+  description: "Show the allocated remote debugger port",
+  returnType: 'string',
+  exec: function(args, context) {
+    if (Simulator.isRunning) {
+      return "Simulator debugger port: " +
+        Simulator.remoteSimulator.remoteDebuggerPort;
+    } else {
+      return "Simulator is not running.";
+    }
+  },
+});
+
+Gcli.addCommand({
   name: "firefoxos start",
   description: "Start Firefox OS Simulator (restarts if running)",
   params: [],
