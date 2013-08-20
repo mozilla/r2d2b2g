@@ -1,4 +1,4 @@
-.PHONY: build clean profile prosthesis b2g adb locales run package test help
+.PHONY: build clean profile prosthesis b2g appinfo adb locales run package test help
 
 -include local.mk
 
@@ -169,7 +169,7 @@ ifneq ($(strip $(LOCALES_FILE)),)
   endif
 endif
 
-build: profile b2g adb
+build: profile b2g adb appinfo
 
 clean:
 	rm -rf addon/data/$(B2G_PLATFORM)
@@ -202,6 +202,9 @@ profile:
 # The 'prosthesis' target was folded into the 'profile' target, so it is just
 # an alias to that target now.
 prosthesis: profile
+
+appinfo: profile b2g
+	python build/make-appinfo.py --gecko addon/data/$(B2G_PLATFORM)/b2g/ --gaia gaia/ --data addon/data/
 
 b2g:
 	python build/make-b2g.py $(B2G_TYPE_ARG) $(B2G_PLATFORM_ARG) $(B2G_ID_ARG) $(B2G_URL_ARG)

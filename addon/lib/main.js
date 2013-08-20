@@ -20,6 +20,7 @@ const Simulator = require("simulator.js");
 const Prefs = require("preferences-service");
 
 require("marketplace-mod");
+require("./register-simulator");
 
 Cu.import("resource://gre/modules/Services.jsm");
 
