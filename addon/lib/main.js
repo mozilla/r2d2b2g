@@ -193,8 +193,16 @@ Gcli.addCommand({
 Gcli.addCommand({
   name: "firefoxos start",
   description: "Start Firefox OS Simulator (restarts if running)",
-  params: [],
+  params: [{
+    name: 'port',
+    type: 'number',
+    description: 'Set a specific remote debugger port'
+  }],
   exec: function(args, context) {
+    if (args.port) {
+      // TODO: port to #756 once ready
+      Simulator.remoteSimulator.remoteDebuggerPort = args.port;
+    }
     Simulator.run();
   },
 });
