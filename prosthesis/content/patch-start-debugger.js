@@ -1,5 +1,4 @@
-// patch startDebugger to add simulator-actors and pingback simulator manager
-// on ready.
+// patch startDebugger to add actors and pingback simulator manager on ready.
 {
   debug("patch RemoteDebugger.start");
 
@@ -8,6 +7,8 @@
   RemoteDebugger.start = function simulatorRemoteDebuggerStart() {
     presimulator_RemoteDebugger_start(); // call original RemoteDebugger.start
     DebuggerServer.addActors('chrome://prosthesis/content/dbg-simulator-actors.js');
+    DebuggerServer.addActors('chrome://prosthesis/content/dbg-geolocation-actors.js');
+    DebuggerServer.addActors('chrome://prosthesis/content/dbg-geolocation-ui-actors.js');
     // NOTE: add temporary simulatorWebAppsActor
     DebuggerServer.addActors('chrome://prosthesis/content/dbg-webapps-actors.js');
     // Register our copy of styleeditor until it gets uplifted to b2g18

@@ -57,7 +57,8 @@ document.getElementById("rotateButton").addEventListener("click", function() {
 
         if (params.useCurrent && !useCurrent) {
           debug("Current coordinates requested in shell, notifying Simulator");
-          Services.obs.notifyObservers(null, "r2d2b2g:geolocation-start", null);
+          Services.obs.notifyObservers(null, "r2d2b2g:enable-real-geolocation",
+                                       null);
         } else if (!params.useCurrent) {
           debug("custom coordinates requested in shell");
 
@@ -66,7 +67,8 @@ document.getElementById("rotateButton").addEventListener("click", function() {
           // Firefox to stop watching geolocation.
           if (useCurrent) {
             debug("current coordinates previously requested");
-            Services.obs.notifyObservers(null, "r2d2b2g:geolocation-stop",
+            Services.obs.notifyObservers(null,
+                                         "r2d2b2g:disable-real-geolocation",
                                          null);
           }
 
@@ -81,7 +83,7 @@ document.getElementById("rotateButton").addEventListener("click", function() {
                 lat: latitude,
                 lon: longitude,
               }
-            }, "r2d2b2g:geolocation-update", null);
+            }, "r2d2b2g:update-geolocation", null);
           }
         }
         useCurrent = params.useCurrent;
