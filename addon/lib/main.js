@@ -177,7 +177,7 @@ Gcli.addCommand({
 });
 
 Gcli.addCommand({
-  name: "firefoxos debuggerport",
+  name: "firefoxos port",
   description: "Show the allocated remote debugger port",
   returnType: 'string',
   exec: function(args, context) {
