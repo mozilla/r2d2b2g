@@ -18,8 +18,6 @@ let SimulatorActor = function SimulatorActor(aConnection) {
   this._listeners = {};
 
   Services.obs.addObserver(this, "r2d2b2g:app-update", false);
-  Services.obs.addObserver(this, "r2d2b2g:geolocation-start", false);
-  Services.obs.addObserver(this, "r2d2b2g:geolocation-stop", false);
 };
 
 SimulatorActor.prototype = {
@@ -29,12 +27,6 @@ SimulatorActor.prototype = {
     switch(aTopic) {
       case "r2d2b2g:app-update":
         this.appUpdateObserver(aSubject);
-        break;
-      case "r2d2b2g:geolocation-start":
-        this.geolocationStart();
-        break;
-      case "r2d2b2g:geolocation-stop":
-        this.geolocationStop();
         break;
     }
   },
@@ -46,22 +38,6 @@ SimulatorActor.prototype = {
       type: "appUpdateRequest",
       origin: message.wrappedJSObject.origin,
       appId: message.wrappedJSObject.appId
-    });
-  },
-
-  geolocationStart: function() {
-    this.debug("Simulator requesting to start watching geolocation");
-    this._connection.send({
-      from: this.actorID,
-      type: "geolocationStart"
-    });
-  },
-
-  geolocationStop: function() {
-    this.debug("Simulator requesting to stop watching geolocation");
-    this._connection.send({
-      from: this.actorID,
-      type: "geolocationStop"
     });
   },
 
@@ -384,21 +360,6 @@ SimulatorActor.prototype = {
     };
   },
 
-  onGeolocationUpdate: function (aRequest) {
-    this.debug("Simulator received a geolocation response, updating provider");
-    Services.obs.notifyObservers({
-      wrappedJSObject: {
-        lat: aRequest.message.lat,
-        lon: aRequest.message.lon,
-      }
-    }, "r2d2b2g:geolocation-update", null);
-
-    return {
-      message: "geolocationUpdate request received",
-      success: true
-    };
-  },
-
   get homescreenWindow() {
     var shellw = this.simulatorWindow.document.getElementById("homescreen").contentWindow;
     return shellw;
@@ -422,7 +383,6 @@ SimulatorActor.prototype.requestTypes = {
   "uninstallApp": SimulatorActor.prototype.onUninstallApp,
   "appNotFound": SimulatorActor.prototype.onAppNotFound,
   "showNotification": SimulatorActor.prototype.onShowNotification,
-  "geolocationUpdate": SimulatorActor.prototype.onGeolocationUpdate,
 };
 
 DebuggerServer.removeGlobalActor(SimulatorActor);
