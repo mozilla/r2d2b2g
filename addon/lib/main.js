@@ -196,7 +196,8 @@ Gcli.addCommand({
   params: [{
     name: 'port',
     type: 'number',
-    description: 'Set a specific remote debugger port'
+    description: 'Set a specific remote debugger port',
+    defaultValue: null
   }],
   exec: function(args, context) {
     if (args.port) {
