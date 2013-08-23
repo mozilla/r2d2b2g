@@ -30,8 +30,8 @@ const Geolocation = Cc["@mozilla.org/geolocation;1"].getService(Ci.nsISupports);
 const DEBUGGER_CONNECT_TIMEOUT = 30000;
 
 // add unsolicited notifications
-dbgClient.UnsolicitedNotifications.geolocationStart = "geolocationStart";
-dbgClient.UnsolicitedNotifications.geolocationStop = "geolocationStop";
+dbgClient.UnsolicitedNotifications.enableRealGeolocation = "enableRealGeolocation";
+dbgClient.UnsolicitedNotifications.disableRealGeolocation = "disableRealGeolocation";
 dbgClient.UnsolicitedNotifications.appUpdateRequest = "appUpdateRequest";
 dbgClient.UnsolicitedNotifications.appOpen = "appOpen";
 dbgClient.UnsolicitedNotifications.appClose = "appClose";
@@ -95,7 +95,9 @@ const RemoteSimulatorClient = Class({
           tabs: reply.tabs,
           selected: reply.selected,
           simulator: reply.simulatorActor,
-          webapps: reply.simulatorWebappsActor
+          webapps: reply.simulatorWebappsActor,
+          geolocation: reply.simulatorGeolocationActor,
+          geolocationUI: reply.simulatorGeolocationUIActor
         });
       }).bind(this));
     });
@@ -104,8 +106,11 @@ const RemoteSimulatorClient = Class({
     // listeners and emit an high level "ready" event
     this.on("clientReady", function (remote) {
       console.debug("rsc.onClientReady");
-      // Needed for Debugger Server to initialize SimulatorActor
+      // Actors are initialized lazily, so if they have any initialization work
+      // to perform (set up listeners / observers, etc.), then some message must
+      // be sent to trigger that process.
       remote.client.request({to: remote.simulator, type: "ping"});
+      remote.client.request({to: remote.geolocationUI, type: "attach"});
       this._remote = remote;
       // Start watching app open/close
       this.client.request({to: this._remote.webapps, type: "watchApps"},
@@ -252,8 +257,10 @@ const RemoteSimulatorClient = Class({
       emit(this, "clientClosed", {client: client});
     }).bind(this));
 
-    client.addListener("geolocationStart", this.onGeolocationStart.bind(this));
-    client.addListener("geolocationStop", this.onGeolocationStop.bind(this));
+    client.addListener("enableRealGeolocation",
+                       this.onEnableRealGeolocation.bind(this));
+    client.addListener("disableRealGeolocation",
+                       this.onDisableRealGeolocation.bind(this));
     client.addListener("appOpen", this.onAppOpen.bind(this));
     client.addListener("appClose", this.onAppClose.bind(this));
 
@@ -274,8 +281,8 @@ const RemoteSimulatorClient = Class({
 
   _geolocationID: null,
 
-  onGeolocationStart: function onGeolocationStart() {
-    console.log("Firefox received geolocation start request");
+  onEnableRealGeolocation: function onEnableRealGeolocation() {
+    console.log("Firefox received enable real geolocation request");
 
     let onSuccess = (function onSuccess(position) {
       if (!this._remote) {
@@ -288,12 +295,12 @@ const RemoteSimulatorClient = Class({
       console.log("Firefox sending geolocation response");
 
       this._remote.client.request({
-        to: this._remote.simulator,
+        to: this._remote.geolocation,
         message: {
           lat: position.coords.latitude,
           lon: position.coords.longitude,
         },
-        type: "geolocationUpdate"
+        type: "update"
       });
     }).bind(this);
 
@@ -304,8 +311,8 @@ const RemoteSimulatorClient = Class({
     this._geolocationID = Geolocation.watchPosition(onSuccess, onError);
   },
 
-  onGeolocationStop: function onGeolocationStop() {
-    console.log("Firefox received geolocation stop request");
+  onDisableRealGeolocation: function onDisableRealGeolocation() {
+    console.log("Firefox received disable real geolocation request");
     this._stopGeolocation();
   },
 
