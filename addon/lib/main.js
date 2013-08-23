@@ -209,6 +209,30 @@ Gcli.addCommand({
 });
 
 Gcli.addCommand({
+  name: "firefoxos listen",
+  description: "Specify a remote debugger port to listen on",
+  params: [{
+    name: 'port',
+    type: 'number',
+    description: 'Set a specific remote debugger port'
+  }],
+  returnType: 'string',
+  exec: function(args, context) {
+    if (args.port) {
+      // TODO: port to #756 once ready
+      if (Simulator.isRunning && args.port != Simulator.remoteSimulator.remoteDebuggerPort) {
+        Simulator.remoteSimulator.startSecondaryListener(args.port);
+      } else {
+        Simulator.remoteSimulator.remoteDebuggerPort = args.port;
+        Simulator.run();
+      }
+    } else {
+      return "port arguments is mandatory";
+    }
+  },
+});
+
+Gcli.addCommand({
   name: "firefoxos stop",
   description: "Stop Firefox OS Simulator",
   params: [],

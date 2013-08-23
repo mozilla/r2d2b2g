@@ -360,6 +360,23 @@ SimulatorActor.prototype = {
     };
   },
 
+  onStartSecondaryListener: function (aRequest) {
+    this.debug("Simulator received a start secondary listener request");
+    let res = this.simulatorWindow.wrappedJSObject.DebuggerServer.openSecondaryListener(aRequest.port);
+
+    if (!res) {
+      return {
+        success: false,
+        message: "secondary listener not started"
+      };
+    }
+
+    return {
+      success: true,
+      message: "secondary listener started"
+    };
+  },
+
   get homescreenWindow() {
     var shellw = this.simulatorWindow.document.getElementById("homescreen").contentWindow;
     return shellw;
@@ -383,6 +400,7 @@ SimulatorActor.prototype.requestTypes = {
   "uninstallApp": SimulatorActor.prototype.onUninstallApp,
   "appNotFound": SimulatorActor.prototype.onAppNotFound,
   "showNotification": SimulatorActor.prototype.onShowNotification,
+  "startSecondaryListener": SimulatorActor.prototype.onStartSecondaryListener,
 };
 
 DebuggerServer.removeGlobalActor(SimulatorActor);
