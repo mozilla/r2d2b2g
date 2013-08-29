@@ -45,7 +45,8 @@ B2G_TYPE ?= specific
 # https://releases.mozilla.com/b2g/promoted_to_stable/ (private URL).
 # B2G_ID
 
-B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/
+# Use the current last know revision that sucessfully builds on windows
+B2G_URL_BASE = http://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2013-08-22-04-02-02-mozilla-central/
 
 LIBADB_VERSION = 0.3
 
@@ -67,7 +68,7 @@ export ADB_AUTH
 # Platform-specific Defines
 ifeq (win32, $(B2G_PLATFORM))
   # The URL of the specific B2G build.
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-08-30.en-US.win32.zip
+  B2G_URL ?= $(B2G_URL_BASE)b2g-26.0a1.multi.win32.zip
 
   ADB_PACKAGE = libadb-$(LIBADB_VERSION)-windows.zip
   DEPS = AdbWinApi.dll
@@ -83,7 +84,7 @@ ifeq (win32, $(B2G_PLATFORM))
     $(ADB_DRIVERS_DIR)/winusb/objfre_wxp_x86/i386/AdbWinUsbApi$(LIB_SUFFIX)
 else
 ifeq (mac64, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-08-30.en-US.mac64.dmg
+  B2G_URL ?= $(B2G_URL_BASE)b2g-26.0a1.multi.mac64.dmg
 
   ADB_PACKAGE = libadb-$(LIBADB_VERSION)-mac.zip
   ADB_BINARIES = libadb.so
@@ -96,7 +97,7 @@ ifeq (mac64, $(B2G_PLATFORM))
   DOWNLOAD_CMD = /usr/bin/curl -O
 else
 ifeq (linux64, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-08-30.en-US.linux-x86_64.tar.bz2
+  B2G_URL ?= $(B2G_URL_BASE)b2g-26.0a1.multi.linux-x86_64.tar.bz2
 
   ADB_PACKAGE = libadb-$(LIBADB_VERSION)-linux64.zip
   ADB_BINARIES = libadb.so
@@ -107,7 +108,7 @@ ifeq (linux64, $(B2G_PLATFORM))
     $(ADB_OUT_DIR)/libtest$(LIB_SUFFIX)
 else
 ifeq (linux, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-08-30.en-US.linux-i686.tar.bz2
+  B2G_URL ?= $(B2G_URL_BASE)b2g-26.0a1.multi.linux-i686.tar.bz2
 
   ADB_PACKAGE = libadb-$(LIBADB_VERSION)-linux.zip
   ADB_BINARIES = libadb.so
@@ -121,7 +122,7 @@ endif
 endif
 endif
 
-ADB_URL_BASE = $(B2G_URL_BASE)
+ADB_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/
 ADB_URL ?= $(ADB_URL_BASE)$(ADB_PACKAGE)
 
 ifdef B2G_PLATFORM
