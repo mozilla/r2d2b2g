@@ -135,4 +135,4 @@ winlibtest:
 	echo "cl.exe test-js-message.c /link /DLL /OUT:..\\win-out\\libtest.dll" | cmd $(VS_DEVELOPER_CMD_PATH)
 
 package:
-	zip libadb.zip $(PACKAGE_FILES)
+	zip -j libadb.zip $(PACKAGE_FILES)
