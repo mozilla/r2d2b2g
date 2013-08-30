@@ -4,15 +4,19 @@ else
   LIB_TARGET = nixlib
 endif
 
-all:
-	$(MAKE) -C adb-bin
-adb:
-	$(MAKE) -C adb-bin adb
-clean:
-	$(MAKE) -C adb-bin clean
-lib:
-	$(MAKE) -C adb-bin $(LIB_TARGET)
+build: lib
+
 driver:
 	if [ "$(LIB_TARGET)" = "winlib" ]; then \
 	  $(MAKE) -C adb-win-api; \
-  fi
+	fi
+lib: driver
+	$(MAKE) -C adb-bin $(LIB_TARGET)
+adb: driver
+	$(MAKE) -C adb-bin adb
+
+clean:
+	$(MAKE) -C adb-bin clean
+
+package:
+	$(MAKE) -C adb-bin package
