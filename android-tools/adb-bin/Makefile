@@ -13,8 +13,8 @@ ifeq ($(OS), Windows_NT)
       ../adb-win-api/winusb/obj* ../adb-win-api/winusb/build*_w*_x86.*
   PACKAGE_FILES += \
     ../win-out/libadb.dll \
-    ../adb-win-api/api/objfre_wxp_x86/i386/AdbWinApi.dll \
-    ../adb-win-api/winusb/objfre_wxp_x86/i386/AdbWinUsbApi.dll
+    ../adb-win-api/api/obj*/i386/AdbWinApi.dll \
+    ../adb-win-api/winusb/obj*/i386/AdbWinUsbApi.dll
 else
 ADB_TARGETS = adb nixlib
 WINDOWS_ARTIFACTS =
