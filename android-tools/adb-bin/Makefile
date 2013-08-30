@@ -108,7 +108,7 @@ SRCS= $(CSRCS) $(CPPSRCS)
 TESTSRCS= test-js-message.c
 TESTOBJS= $(TESTSRCS:.c=.o)
 
-all: $(ADB_TARGETS)
+build: $(ADB_TARGETS)
 
 adb: $(OBJS)
 	$(CC) -o adb$(EXE) $(LDFLAGS) $(OBJS) $(LIBS)
