@@ -16,3 +16,6 @@ driver:
 	if [ "$(LIB_TARGET)" = "winlib" ]; then \
 	  $(MAKE) -C adb-win-api; \
   fi
+
+package:
+	$(MAKE) -C adb-bin package
