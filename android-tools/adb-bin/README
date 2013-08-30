@@ -1,0 +1,5 @@
+This is the Android Debug Bridge (ADB) modified to load as a shared library.
+It is made available under the terms of the Apache 2.0 License in LICENSE.
+Its source code is available from <https://github.com/mozilla/r2d2b2g>,
+and you can reproduce this package by building libadb per the instructions
+in that repository.

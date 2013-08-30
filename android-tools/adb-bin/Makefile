@@ -3,15 +3,24 @@
 
 ADB_AUTH ?= off
 
+PACKAGE_FILES = LICENSE README
+
 ifeq ($(OS), Windows_NT)
   VS_DEVELOPER_CMD_PATH = vcvars32.bat
   ADB_TARGETS = winlib
   WINDOWS_ARTIFACTS = ../win-out vc110.idb vc110.pdb ../adb-win-api/api/build*_w*_x86.* \
       ../adb-win-api/api/obj* ../adb-win-api/api/*.idb ../adb-win-api/api/*.pdb \
       ../adb-win-api/winusb/obj* ../adb-win-api/winusb/build*_w*_x86.*
+  PACKAGE_FILES += \
+    ../win-out/libadb.dll \
+    ../adb-win-api/api/obj*/i386/AdbWinApi.dll \
+    ../adb-win-api/winusb/obj*/i386/AdbWinUsbApi.dll
 else
 ADB_TARGETS = adb nixlib
 WINDOWS_ARTIFACTS =
+DLL=.so
+PACKAGE_FILES += libadb$(DLL)
+
 CSRCS+= sockets.c
 CPPSRCS+= adb.cpp
 CPPSRCS+= adb_client.cpp
@@ -91,7 +100,6 @@ else
 endif
 # CPPFLAGS+= -Wno-deprecated-writable-strings
 CPPFLAGS+= -Wno-deprecated-declarations
-DLL=.so
 endif
 
 OBJS= $(CSRCS:.c=.o) $(CPPSRCS:.cpp=.o)
@@ -100,14 +108,14 @@ SRCS= $(CSRCS) $(CPPSRCS)
 TESTSRCS= test-js-message.c
 TESTOBJS= $(TESTSRCS:.c=.o)
 
-all: $(ADB_TARGETS)
+build: $(ADB_TARGETS)
 
 adb: $(OBJS)
 	$(CC) -o adb$(EXE) $(LDFLAGS) $(OBJS) $(LIBS)
 
 clean:
 	rm -rf $(OBJS) $(TESTOBJS) test-js-message.obj adb$(EXE) libadb$(DLL) \
-	  libtest$(DLL) $(WINDOWS_ARTIFACTS)
+	  libtest$(DLL) $(WINDOWS_ARTIFACTS) libadb.zip
 
 nixlib: nixlibadb nixlibtest
 
@@ -125,3 +133,6 @@ winlibadb:
 
 winlibtest:
 	echo "cl.exe test-js-message.c /link /DLL /OUT:..\\win-out\\libtest.dll" | cmd $(VS_DEVELOPER_CMD_PATH)
+
+package:
+	zip -j libadb.zip $(PACKAGE_FILES)
