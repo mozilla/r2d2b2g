@@ -26,6 +26,12 @@ module.exports = {
 
     io = ioUtils(I, libadb);
 
+    I.declare({ name: "initialize",
+                returns: ctypes.void_t,
+                args: []
+              }, libadb);
+    I.use("initialize")();
+
     I.declare({ name: "cleanup",
                 returns: ctypes.void_t,
                 args: [ ]

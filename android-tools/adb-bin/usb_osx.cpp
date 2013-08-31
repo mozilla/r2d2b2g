@@ -49,7 +49,6 @@ static CFRunLoopRef currentRunLoop = 0;
 static pthread_mutex_t start_lock;
 static pthread_cond_t start_cond;
 
-extern THREAD_LOCAL void * (*js_msg)(char *, void *);
 ADB_MUTEX_DEFINE( should_kill_lock );
 
 static void AndroidInterfaceAdded(void *refCon, io_iterator_t iterator);
@@ -452,7 +451,7 @@ void usb_init()
         adb_cond_init(&start_cond, NULL);
 
         D("Before thread_create");
-        if((int)MSG("spawn-device-loop", NULL))
+        if((int)send_js_msg("spawn-device-loop", NULL))
             fatal_errno("cannot create RunLoopThread");
         D("After thread_create");
 
