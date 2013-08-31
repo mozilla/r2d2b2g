@@ -33,10 +33,12 @@ CPPSRCS+= transport_usb.cpp
 CPPSRCS+= usb_vendors.cpp
 CPPSRCS+= utils.cpp
 CPPSRCS+= declare_array_lists.cpp
+CPPSRCS+= js_message.cpp
 
 CPPSRCS+= exports.cpp
 
 ifeq ($(shell uname -s), Darwin)
+  CPPFLAGS+= -DHAVE_PTHREADS
   CPPSRCS+= usb_osx.cpp
   CPPSRCS+= get_my_path_darwin.cpp
   CPPSRCS+= fdevent.cpp
@@ -50,6 +52,7 @@ ifeq ($(shell uname -s), Darwin)
   LIBS+= -lz -lpthread -framework CoreFoundation -framework IOKit -framework Carbon
 endif
 ifeq ($(shell uname -s), Linux)
+  CPPFLAGS+= -DHAVE_PTHREADS
   CSRCS+= usb_linux.c
   CSRCS+= get_my_path_linux.c
   CSRCS+= fdevent.c
@@ -74,6 +77,7 @@ CSRCS+= load_file.c
 CSRCS+= socket_local_client.c
 CSRCS+= socket_local_server.c
 CSRCS+= list.c
+CSRCS+= threads.c
 
 VPATH+= ../libzipfile
 CSRCS+= centraldir.c
@@ -105,7 +109,9 @@ endif
 OBJS= $(CSRCS:.c=.o) $(CPPSRCS:.cpp=.o)
 SRCS= $(CSRCS) $(CPPSRCS)
 
-TESTSRCS= test-js-message.c
+TESTSRCS+= test-js-message.c
+TESTSRCS+= threads.c
+TESTSRCS+= js_message.c
 TESTOBJS= $(TESTSRCS:.c=.o)
 
 build: $(ADB_TARGETS)
@@ -123,7 +129,7 @@ nixlibadb: $(OBJS)
 	$(CC) -shared -o libadb$(DLL) $(LDFLAGS) $(OBJS) $(LIBS)
 
 nixlibtest: $(TESTOBJS)
-	$(CC) test-js-message.c -shared -fPIC -o libtest$(DLL)
+	$(CC) -shared -o libtest$(DLL) $(LDFLAGS) $(TESTOBJS) $(LIBS)
 
 winlib: winlibadb winlibtest
 
@@ -132,7 +138,7 @@ winlibadb:
 	echo make-win.bat | cmd $(VS_DEVELOPER_CMD_PATH)
 
 winlibtest:
-	echo "cl.exe test-js-message.c /link /DLL /OUT:..\\win-out\\libtest.dll" | cmd $(VS_DEVELOPER_CMD_PATH)
+	echo "cl.exe /DHAVE_WIN32_THREADS /I../include ../libcutils/threads.c js_message.c test-js-message.c /link /DLL /OUT:..\\win-out\\libtest.dll" | cmd $(VS_DEVELOPER_CMD_PATH)
 
 package:
 	zip -j libadb.zip $(PACKAGE_FILES)

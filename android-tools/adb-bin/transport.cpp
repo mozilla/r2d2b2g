@@ -43,7 +43,6 @@ static atransport transport_list = {
 
 struct dll_io_bridge * i_bridge;
 struct dll_io_bridge * o_bridge;
-extern THREAD_LOCAL void * (*js_msg)(char *, void *);
 
 ADB_MUTEX_DEFINE( transport_lock );
 ADB_MUTEX_DEFINE( io_pump_status_lock );
@@ -501,7 +500,7 @@ void  update_transports(void)
     };
     struct device_update_msg m = { buffer };
 
-    MSG("device-update", &m);
+    send_js_msg("device-update", &m);
 }
 
 static int
@@ -641,7 +640,7 @@ static void transport_registration_func(int _fd, unsigned ev, void *data)
           atransport * t;
         };
         struct msg m = { t };
-        MSG("spawn-io-threads", &m);
+        send_js_msg("spawn-io-threads", &m);
 
         /*char i_tag[1024];
         char o_tag[1024];

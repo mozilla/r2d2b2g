@@ -32,9 +32,7 @@
 // #define HAVE_WINSOCK 1
 #define PATH_MAX 4096
 #define DLL_EXPORT EXTERN_C _declspec(dllexport)
-#define THREAD_LOCAL _declspec(thread)
 #else
-#define THREAD_LOCAL __thread
 #define DLL_EXPORT  
 #define Sleep(x) usleep((x) * 1000)
 typedef void * ADBAPIHANDLE;
@@ -301,7 +299,6 @@ struct func_carrier {
 
 #include "array_lists.h"
 #include "js_message.h"
-extern THREAD_LOCAL void * (*js_msg)(char *, void *);
 
 #ifdef WIN32
 struct dll_io_bridge {
@@ -349,7 +346,6 @@ struct dll_io_bridge { };
   void should_kill_device_loop();
 #endif
 void array_lists_init_();
-void install_js_msg_(void * (*js_msg_)(char *, void *));
 int adb_thread_create( adb_thread_t  *thread, adb_thread_func_t  start, void*  arg, char * tag );
 void dump_thread_tag();
 int get_guid();

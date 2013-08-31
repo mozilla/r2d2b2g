@@ -11,6 +11,7 @@
 #include "adb.h"
 #include "adb_client.h"
 #include "threads.h"
+#include "js_message.h"
 
 DLL_EXPORT void cleanup();
 DLL_EXPORT char * query(const char * service);
@@ -19,6 +20,7 @@ DLL_EXPORT void * malloc_(int size);
 DLL_EXPORT int connect_service(const char * service);
 DLL_EXPORT int read_fd(int fd, char * buffer, int size);
 
+DLL_EXPORT void initialize();
 DLL_EXPORT void install_js_msg(void *(js_msg)(char *, void *));
 DLL_EXPORT void array_lists_init();
 
@@ -32,8 +34,12 @@ DLL_EXPORT void kill_device_loop();
 DLL_EXPORT int usb_monitor(struct dll_bridge * bridge);
 DLL_EXPORT void on_kill_io_pump(atransport * t, bool (*close_handle_func)(ADBAPIHANDLE));
 
-  DLL_EXPORT void install_js_msg(void *(js_msg)(char *, void *)) {
-    install_js_msg_(js_msg);
+  DLL_EXPORT void initialize() {
+    adb_sysdeps_init();
+  }
+
+  DLL_EXPORT void install_js_msg(FunctionJsMsg js_msg) {
+    _install_js_msg(js_msg);
   }
 
   DLL_EXPORT void array_lists_init() {
