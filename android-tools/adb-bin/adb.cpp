@@ -121,13 +121,6 @@ int adb_thread_create( adb_thread_t  *thread, adb_thread_func_t  start, void*  a
 void cleanup_all() {
   int err = 0;
   int i = 0;
-  D("Cleaning USB (async)\n");
-  // usb_cleanup();
-  #ifdef __APPLE__
-    // TODO: Figure out how to accomplish this with web workers
-    // pthread_kill(*__adb_threads_active[1], SIGUSR2);
-  #endif
-
   D("Killing threads!\n");
   int len = __adb_threads_active->length;
   for (i = 0; i < len; i++) {
@@ -643,6 +636,7 @@ void handle_packet(apacket *p, atransport *t)
 
     case A_CLSE: /* CLOSE(local-id, remote-id, "") */
         if (t->online) {
+            D("CLOSE(%d, %d, \"\")\n", p->msg.arg0, p->msg.arg1);
             if((s = find_local_socket(p->msg.arg1))) {
                 s->close(s);
             }

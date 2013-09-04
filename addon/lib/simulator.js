@@ -111,7 +111,8 @@ let simulator = module.exports = {
       worker.on("message", this.onMessage.bind(this));
       worker.on("detach", function(message) {
         worker = null;
-      });
+        this.unload();
+      }.bind(this));
       worker.on("pageshow", function(message) {
         worker = this;
       });

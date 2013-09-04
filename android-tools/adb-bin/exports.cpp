@@ -27,7 +27,7 @@ DLL_EXPORT int main_server(struct adb_main_input * input_args);
 DLL_EXPORT int device_input_thread(atransport *, struct dll_io_bridge *);
 DLL_EXPORT int device_output_thread(atransport *, struct dll_io_bridge *);
 #ifdef __APPLE__
-void DLL_EXPORT kill_device_loop();
+DLL_EXPORT void kill_device_loop();
 #endif
 DLL_EXPORT int usb_monitor(struct dll_bridge * bridge);
 DLL_EXPORT void on_kill_io_pump(atransport * t, bool (*close_handle_func)(ADBAPIHANDLE));

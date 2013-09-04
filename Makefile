@@ -47,7 +47,7 @@ B2G_TYPE ?= specific
 
 B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/
 
-LIBADB_VERSION = 0.2
+LIBADB_VERSION = 0.3
 
 # The location of libadb for making ADB. Set this variable to "local" to build 
 # libadb.{so, dll} from source locally. Set to "remote" to grab prebuilt ADB 
@@ -67,7 +67,7 @@ export ADB_AUTH
 # Platform-specific Defines
 ifeq (win32, $(B2G_PLATFORM))
   # The URL of the specific B2G build.
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-08-07.en-US.win32.zip
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-08-30.en-US.win32.zip
 
   ADB_PACKAGE = libadb-$(LIBADB_VERSION)-windows.zip
   DEPS = AdbWinApi.dll
@@ -83,7 +83,7 @@ ifeq (win32, $(B2G_PLATFORM))
     $(ADB_DRIVERS_DIR)/winusb/objfre_wxp_x86/i386/AdbWinUsbApi$(LIB_SUFFIX)
 else
 ifeq (mac64, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-08-07.en-US.mac64.dmg
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-08-30.en-US.mac64.dmg
 
   ADB_PACKAGE = libadb-$(LIBADB_VERSION)-mac.zip
   ADB_BINARIES = libadb.so
@@ -96,7 +96,7 @@ ifeq (mac64, $(B2G_PLATFORM))
   DOWNLOAD_CMD = /usr/bin/curl -O
 else
 ifeq (linux64, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-08-07.en-US.linux-x86_64.tar.bz2
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-08-30.en-US.linux-x86_64.tar.bz2
 
   ADB_PACKAGE = libadb-$(LIBADB_VERSION)-linux64.zip
   ADB_BINARIES = libadb.so
@@ -107,7 +107,7 @@ ifeq (linux64, $(B2G_PLATFORM))
     $(ADB_OUT_DIR)/libtest$(LIB_SUFFIX)
 else
 ifeq (linux, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-08-07.en-US.linux-i686.tar.bz2
+  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-08-30.en-US.linux-i686.tar.bz2
 
   ADB_PACKAGE = libadb-$(LIBADB_VERSION)-linux.zip
   ADB_BINARIES = libadb.so
@@ -177,15 +177,15 @@ clean:
 	rm -f gaia/build/custom-prefs.js
 	rm -f gaia/build/custom-settings.json
 	rm -f $(ADB_PACKAGE)
-	make -C gaia clean
+	$(MAKE) -C gaia clean
 	python build/make-b2g.py $(B2G_TYPE_ARG) $(B2G_PLATFORM_ARG) $(B2G_ID_ARG) $(B2G_URL_ARG) --clean
-	make -C android-tools clean
+	$(MAKE) -C android-tools clean
 
 profile:
 	cp build/override-prefs.js gaia/build/custom-prefs.js
 	cp build/override-settings.json gaia/build/custom-settings.json
-	NOFTU=1 GAIA_APP_SRCDIRS=apps make -C gaia
-	DESKTOP=1 NOFTU=1 GAIA_APP_SRCDIRS=apps make -C gaia preferences
+	NOFTU=1 GAIA_APP_SRCDIRS=apps $(MAKE) -C gaia
+	DESKTOP=1 NOFTU=1 GAIA_APP_SRCDIRS=apps $(MAKE) -C gaia preferences
 	python build/override-webapps.py
 	cd gaia/tools/extensions/desktop-helper/ && zip -r ../../../profile/extensions/desktop-helper\@gaiamobile.org.xpi *
 	cd gaia/tools/extensions/activities/ && zip -r ../../../profile/extensions/activities\@gaiamobile.org.xpi *
@@ -229,8 +229,8 @@ adb:
 	  unzip $(ADB_PACKAGE) -d addon/data/$(B2G_PLATFORM)/adb; \
 	fi;
 	if [ "$(LIBADB_LOCATION)" = "local" ]; then \
-	  make -C android-tools lib && \
-	  make -C android-tools driver && \
+	  $(MAKE) -C android-tools lib && \
+	  $(MAKE) -C android-tools driver && \
 	  cp $(ADB_LIBS) $(ADB_DATA_PATH); \
 	fi;
 
