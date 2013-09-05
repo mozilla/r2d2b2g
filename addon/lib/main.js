@@ -18,6 +18,7 @@ const SStorage = require("simple-storage");
 const Gcli = require('gcli');
 const Simulator = require("simulator.js");
 const Prefs = require("preferences-service");
+const SimplePrefs = require("sdk/simple-prefs").prefs;
 
 require("marketplace-mod");
 
@@ -177,58 +178,58 @@ Gcli.addCommand({
 });
 
 Gcli.addCommand({
-  name: "firefoxos port",
+  name: 'firefoxos port',
+  description: 'Commands to control Firefox OS Simulator preferred Remote Debugger Port',
+});
+
+Gcli.addCommand({
+  name: "firefoxos port get",
   description: "Show the allocated remote debugger port",
   returnType: 'string',
   exec: function(args, context) {
     if (Simulator.isRunning) {
-      return "Simulator debugger port: " +
+      return "Simulator is running: Listening on port: " +
         Simulator.remoteSimulator.remoteDebuggerPort;
+    } else if (SimplePrefs.preferredSimulatorPort !== 0) {
+      return "Simulator is not running. Preferred port: " +
+        SimplePrefs.preferredSimulatorPort;
     } else {
-      return "Simulator is not running.";
+      return "Simulator is not running. No preferred port set.";
     }
+  },
+});
+
+Gcli.addCommand({
+  name: "firefoxos port set",
+  description: "Set a preferred Remote Debugger Port to listen on",
+  params: [{
+    name: 'port',
+    type: 'number',
+    description: 'Simulator preferred Remote Debugger Port'
+  }],
+  returnType: 'string',
+  exec: function(args, context) {
+    if (args.port) {
+      SimplePrefs.preferredSimulatorPort = args.port;
+    } else {
+      return "port arguments is mandatory";
+    }
+  },
+});
+
+Gcli.addCommand({
+  name: "firefoxos port reset",
+  description: "Reset preferred Remote Debugger Port to listen on",
+  exec: function(args, context) {
+    SimplePrefs.preferredSimulatorPort = 0;
   },
 });
 
 Gcli.addCommand({
   name: "firefoxos start",
-  description: "Start Firefox OS Simulator (restarts if running)",
-  params: [{
-    name: 'port',
-    type: 'number',
-    description: 'Set a specific remote debugger port',
-    defaultValue: null
-  }],
+  description: "Start Firefox OS Simulator",
   exec: function(args, context) {
-    if (args.port) {
-      // TODO: port to #756 once ready
-      Simulator.remoteSimulator.remoteDebuggerPort = args.port;
-    }
     Simulator.run();
-  },
-});
-
-Gcli.addCommand({
-  name: "firefoxos listen",
-  description: "Specify a remote debugger port to listen on",
-  params: [{
-    name: 'port',
-    type: 'number',
-    description: 'Set a specific remote debugger port'
-  }],
-  returnType: 'string',
-  exec: function(args, context) {
-    if (args.port) {
-      // TODO: port to #756 once ready
-      if (Simulator.isRunning && args.port != Simulator.remoteSimulator.remoteDebuggerPort) {
-        Simulator.remoteSimulator.startSecondaryListener(args.port);
-      } else {
-        Simulator.remoteSimulator.remoteDebuggerPort = args.port;
-        Simulator.run();
-      }
-    } else {
-      return "port arguments is mandatory";
-    }
   },
 });
 
