@@ -53,7 +53,6 @@ FILE* LOG_FILE;
 //#undef D
 //#define D printf
 
-THREAD_LOCAL void * (*js_msg)(char *, void *);
 int HOST = 0;
 int gListenAll = 0;
 
@@ -166,10 +165,6 @@ void cleanup_all() {
 #endif
 }
 
-void install_js_msg_(void *(js_msg_)(char *, void *)) {
-  js_msg = js_msg_;
-}
-
 void fatal(const char *fmt, ...)
 {
     va_list ap;
@@ -178,7 +173,7 @@ void fatal(const char *fmt, ...)
     vprintf(fmt, ap);
     printf("\n");
     va_end(ap);
-    MSG("restart-adb", NULL);
+    send_js_msg("restart-adb", NULL);
 }
 
 void fatal_errno(const char *fmt, ...)
@@ -189,7 +184,7 @@ void fatal_errno(const char *fmt, ...)
     vprintf(fmt, ap);
     printf("\n");
     va_end(ap);
-    MSG("restart-adb", NULL);
+    send_js_msg("restart-adb", NULL);
 }
 
 int   adb_trace_mask;
@@ -1177,7 +1172,6 @@ void build_local_name(char* target_str, size_t target_size, int server_port)
 }
 
 int server_thread(void * args) {
-  adb_sysdeps_init();
 
   struct adb_main_input* input = (struct adb_main_input*)args;
   int is_daemon = input->is_daemon;

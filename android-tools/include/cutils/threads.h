@@ -108,7 +108,7 @@ typedef struct {
 
 #define  MUTEX_INITIALIZER  { 0, {{ NULL, 0, 0, NULL, NULL, 0 }} }
 
-static __inline__ void  mutex_lock(mutex_t*  lock)
+static __inline void  mutex_lock(mutex_t*  lock)
 {
     if (!lock->init) {
         lock->init = 1;
@@ -120,17 +120,17 @@ static __inline__ void  mutex_lock(mutex_t*  lock)
     EnterCriticalSection(lock->lock);
 }
 
-static __inline__ void  mutex_unlock(mutex_t*  lock)
+static __inline void  mutex_unlock(mutex_t*  lock)
 {
     LeaveCriticalSection(lock->lock);
 }
-static __inline__ int  mutex_init(mutex_t*  lock)
+static __inline int  mutex_init(mutex_t*  lock)
 {
     InitializeCriticalSection(lock->lock);
     lock->init = 2;
     return 0;
 }
-static __inline__ void  mutex_destroy(mutex_t*  lock)
+static __inline void  mutex_destroy(mutex_t*  lock)
 {
     if (lock->init) {
         lock->init = 0;
