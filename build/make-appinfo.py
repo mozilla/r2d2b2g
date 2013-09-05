@@ -38,7 +38,7 @@ for line in prefs:
     appinfo["b2g_version"] = line.split('"')[3]
 
 
-# Then fetch some usefull data from gaia folder
+# Then fetch some useful data from gaia folder
 gaia_revision_file = os.path.join(options.gaia_path, "apps", "settings", "resources", "gaia_commit.txt")
 lines = open(gaia_revision_file).readlines()
 appinfo["gaia"] = {

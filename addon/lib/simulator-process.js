@@ -49,13 +49,16 @@ exports.SimulatorProcess = Class({
    * Start the process and connect the debugger client.
    */
   run: function() {
-    // resolve b2g binaries path (raise exception if not found)
-    let b2gExecutable = this.b2gExecutable;
-
     // kill before start if already running
     if (this.process != null) {
-      this.process.kill();
+      this.process
+          .kill()
+          .then(this.run.bind(this));
+      return;
     }
+
+    // resolve b2g binaries path (raise exception if not found)
+    let b2gExecutable = this.b2gExecutable;
 
     this.once("stdout", function () {
       if (Runtime.OS == "Darwin") {
@@ -108,18 +111,20 @@ exports.SimulatorProcess = Class({
 
   // request a b2g instance kill
   kill: function() {
-    if (this.process && !this.shuttingDown) {
-      let deferred = Promise.defer();
-      emit(this, "kill", null);
-      this.shuttingDown = true;
+    let deferred = Promise.defer();
+    if (this.process) {
       this.once("exit", (exitCode) => {
-        this.shuttingDown = true;
+        this.shuttingDown = false;
         deferred.resolve(exitCode);
       });
-      this.process.kill();
+      if (!this.shuttingDown) {
+        this.shuttingDown = true;
+        emit(this, "kill", null);
+        this.process.kill();
+      }
       return deferred.promise;
     } else {
-      return Promise.resolve(-1);
+      return Promise.resolve(undefined);
     }
   },  
 
