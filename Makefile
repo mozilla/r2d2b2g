@@ -46,7 +46,7 @@ B2G_TYPE ?= specific
 # B2G_ID
 
 # Use the current last know revision that sucessfully builds on windows
-B2G_URL_BASE = http://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2013-08-22-04-02-02-mozilla-central/
+B2G_URL_BASE = http://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2013-09-10-04-02-01-mozilla-central/
 
 LIBADB_VERSION = 0.3
 
