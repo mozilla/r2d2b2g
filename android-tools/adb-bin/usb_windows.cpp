@@ -446,6 +446,7 @@ int usb_read(usb_handle *handle, void* data, int len) {
           // the input thread will notify_should_kill
         }
 
+        Sleep(1);
       } while(!hasCompleted);
       D("Post hasComplated\n");
 
