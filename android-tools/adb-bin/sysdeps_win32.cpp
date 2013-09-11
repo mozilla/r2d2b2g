@@ -7,7 +7,6 @@
 #include "adb.h"
 
 
-extern THREAD_LOCAL void * (*js_msg)(char *, void *);
 extern void fatal(const char *fmt, ...);
 
 #define assert(cond)  do { if (!(cond)) fatal( "assertion failed '%s' on %s:%ld\n", #cond, __FILE__, __LINE__ ); } while (0)
@@ -2084,7 +2083,7 @@ static int _event_socket_start( EventHook  hook )
             D( "_event_socket_start: WSAEventSelect() for %s failed, error %d\n", hook->fh->name, WSAGetLastError() );
             CloseHandle( hook->h );
             hook->h = INVALID_HANDLE_VALUE;
-            MSG("restart-adb", NULL);
+            send_js_msg("restart-adb", NULL);
             return 0;
         }
         fh->mask = flags;

@@ -5,7 +5,18 @@
 #ifndef JS_MESSAGE_H
 #define JS_MESSAGE_H
 
-#define MSG(channel, instance_ptr) js_msg(channel, (void *)instance_ptr)
-
+#ifdef __cplusplus
+extern "C" {
 #endif
 
+typedef void* (*FunctionJsMsg)(char*, void*);
+
+void* send_js_msg(char* channel, void* instance_ptr);
+
+void _install_js_msg(FunctionJsMsg js_msg_);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
