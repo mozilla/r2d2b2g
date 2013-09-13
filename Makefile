@@ -1,4 +1,4 @@
-.PHONY: build clean profile prosthesis b2g adb locales run package test help
+.PHONY: build clean profile prosthesis b2g appinfo locales run package test help
 
 -include local.mk
 
@@ -45,21 +45,8 @@ B2G_TYPE ?= specific
 # https://releases.mozilla.com/b2g/promoted_to_stable/ (private URL).
 # B2G_ID
 
-B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/
-
-LIBADB_VERSION = 0.3
-
-# The location of libadb for making ADB. Set this variable to "local" to build 
-# libadb.{so, dll} from source locally. Set to "remote" to grab prebuilt ADB 
-# binaries from the FTP server.
-LIBADB_LOCATION ?= remote
-
-# This variable determines whether or not ADB is built with crypto support
-# The values are "off" (crypto is disabled) or "dynamic" (crypto is enabled
-# and linked dynamically) or "static" (crypto is enabled and linked statically 
-# on linux)
-ADB_AUTH ?= off
-export ADB_AUTH
+# Use the current last known revision that sucessfully builds on Windows.
+B2G_URL_BASE = http://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2013-09-10-04-02-01-mozilla-central/
 
 # Currently, all B2G builds are custom so we can optimize for code size and fix
 # bugs in B2G or its nightly build environments (like 844047 and 815805).
@@ -67,62 +54,21 @@ export ADB_AUTH
 # Platform-specific Defines
 ifeq (win32, $(B2G_PLATFORM))
   # The URL of the specific B2G build.
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-09-04.en-US.win32.zip
-
-  ADB_PACKAGE = libadb-$(LIBADB_VERSION)-windows.zip
-  DEPS = AdbWinApi.dll
-  ADB_BINARIES = libadb.dll $(DEPS)
-  LIB_SUFFIX = .dll
-
-  ADB_OUT_DIR = android-tools/win-out
-  ADB_DRIVERS_DIR = android-tools/adb-win-api
-  ADB_LIBS = \
-    $(ADB_OUT_DIR)/libadb$(LIB_SUFFIX) \
-    $(ADB_OUT_DIR)/libtest$(LIB_SUFFIX) \
-    $(ADB_DRIVERS_DIR)/api/objfre_wxp_x86/i386/AdbWinApi$(LIB_SUFFIX) \
-    $(ADB_DRIVERS_DIR)/winusb/objfre_wxp_x86/i386/AdbWinUsbApi$(LIB_SUFFIX)
+  B2G_URL ?= $(B2G_URL_BASE)b2g-26.0a1.multi.win32.zip
 else
 ifeq (mac64, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-09-04.en-US.mac64.dmg
-
-  ADB_PACKAGE = libadb-$(LIBADB_VERSION)-mac.zip
-  ADB_BINARIES = libadb.so
-  LIB_SUFFIX = .so
-  ADB_OUT_DIR = android-tools/adb-bin
-  ADB_LIBS = \
-    $(ADB_OUT_DIR)/libadb$(LIB_SUFFIX) \
-    $(ADB_OUT_DIR)/libtest$(LIB_SUFFIX)
-
+  B2G_URL ?= $(B2G_URL_BASE)b2g-26.0a1.multi.mac64.dmg
   DOWNLOAD_CMD = /usr/bin/curl -O
 else
 ifeq (linux64, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-09-04.en-US.linux-x86_64.tar.bz2
-
-  ADB_PACKAGE = libadb-$(LIBADB_VERSION)-linux64.zip
-  ADB_BINARIES = libadb.so
-  LIB_SUFFIX = .so
-  ADB_OUT_DIR = android-tools/adb-bin
-  ADB_LIBS = \
-    $(ADB_OUT_DIR)/libadb$(LIB_SUFFIX) \
-    $(ADB_OUT_DIR)/libtest$(LIB_SUFFIX)
+  B2G_URL ?= $(B2G_URL_BASE)b2g-26.0a1.multi.linux-x86_64.tar.bz2
 else
 ifeq (linux, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-09-04.en-US.linux-i686.tar.bz2
-
-  ADB_PACKAGE = libadb-$(LIBADB_VERSION)-linux.zip
-  ADB_BINARIES = libadb.so
-  LIB_SUFFIX = .so
-  ADB_OUT_DIR = android-tools/adb-bin
-  ADB_LIBS = \
-    $(ADB_OUT_DIR)/libadb$(LIB_SUFFIX) \
-    $(ADB_OUT_DIR)/libtest$(LIB_SUFFIX)
+  B2G_URL ?= $(B2G_URL_BASE)b2g-26.0a1.multi.linux-i686.tar.bz2
 endif
 endif
 endif
 endif
-
-ADB_URL_BASE = $(B2G_URL_BASE)
-ADB_URL ?= $(ADB_URL_BASE)$(ADB_PACKAGE)
 
 ifdef B2G_PLATFORM
   B2G_PLATFORM_ARG = --platform $(B2G_PLATFORM)
@@ -152,8 +98,6 @@ ifdef TEST
   TEST_ARG = -f $(TEST)
 endif
 
-ADB_DATA_PATH = addon/data/$(B2G_PLATFORM)/adb
-
 unix_to_windows_path = \
   $(shell echo '$(1)' | sed 's/^\///' | sed 's/\//\\/g' | sed 's/^./\0:/')
 # windows_to_unix_path = \
@@ -169,17 +113,15 @@ ifneq ($(strip $(LOCALES_FILE)),)
   endif
 endif
 
-build: profile b2g adb
+build: profile b2g appinfo
 
 clean:
 	rm -rf addon/data/$(B2G_PLATFORM)
 	rm -rf addon/template
 	rm -f gaia/build/custom-prefs.js
 	rm -f gaia/build/custom-settings.json
-	rm -f $(ADB_PACKAGE)
 	$(MAKE) -C gaia clean
 	python build/make-b2g.py $(B2G_TYPE_ARG) $(B2G_PLATFORM_ARG) $(B2G_ID_ARG) $(B2G_URL_ARG) --clean
-	$(MAKE) -C android-tools clean
 
 profile:
 	cp build/override-prefs.js gaia/build/custom-prefs.js
@@ -203,36 +145,11 @@ profile:
 # an alias to that target now.
 prosthesis: profile
 
+appinfo: profile b2g
+	python build/make-appinfo.py --gecko addon/data/$(B2G_PLATFORM)/b2g/ --gaia gaia/ --data addon/data/
+
 b2g:
 	python build/make-b2g.py $(B2G_TYPE_ARG) $(B2G_PLATFORM_ARG) $(B2G_ID_ARG) $(B2G_URL_ARG)
-
-# We used to store the binaries in the B2G_PLATFORM/ directory, whereas
-# now we store them in B2G_PLATFORM/adb/, which happens to be the same
-# as the names of the executables on Mac and Linux; so we need to remove
-# the executables from B2G_PLATFORM/ before creating B2G_PLATFORM/adb/.
-#
-# * prepare the adb folders
-# * if the zip doesn't exist and either libadb is remote or we depend on
-#   something from this zip (i.e. Windows)
-#   Download the zip
-# * if there exists a zip, unzip it
-# * if we are installing locally, run the build command
-adb:
-	mkdir -p addon/data/$(B2G_PLATFORM)
-	cd addon/data/$(B2G_PLATFORM) && rm -rf adb $(ADB_BINARIES)
-	mkdir addon/data/$(B2G_PLATFORM)/adb
-	if [ ! -f $(ADB_PACKAGE) ] && \
-		 ( [ "$(LIBADB_LOCATION)" = "remote" ] || [ $(DEPS) ] ); then \
-	  $(DOWNLOAD_CMD) $(ADB_URL); \
-	fi;
-	if [ -f $(ADB_PACKAGE) ]; then \
-	  unzip $(ADB_PACKAGE) -d addon/data/$(B2G_PLATFORM)/adb; \
-	fi;
-	if [ "$(LIBADB_LOCATION)" = "local" ]; then \
-	  $(MAKE) -C android-tools lib && \
-	  $(MAKE) -C android-tools driver && \
-	  cp $(ADB_LIBS) $(ADB_DATA_PATH); \
-	fi;
 
 locales:
 	python build/make-locales.py
@@ -249,11 +166,10 @@ test:
 help:
 	@echo 'Targets:'
 	@echo "  build: [default] build, download, install everything;\n"\
-	"         combines the profile, b2g, and adb make targets"
+	"         combines the profile and b2g make targets"
 	@echo '  clean: remove files created during the build process'
 	@echo '  profile: make the Gaia profile and its prosthesis addon'
 	@echo '  b2g: download and install B2G'
-	@echo '  adb: download and install ADB libraries'
 	@echo '  locales: pull/update l10n repositories for specified locales'
 	@echo '  run: start Firefox with the addon installed into a new profile'
 	@echo '  package: package the addon into a XPI'

@@ -13,6 +13,9 @@ addon/data/linux/adb
 addon/data/linux64/adb
 addon/data/win32/adb
 
+# generated appinfo data file
+addon/data/appinfo.json
+
 # generated XPI package
 addon/r2d2b2g.xpi
 

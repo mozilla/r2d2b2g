@@ -9,11 +9,6 @@
     DebuggerServer.addActors('chrome://prosthesis/content/dbg-simulator-actors.js');
     DebuggerServer.addActors('chrome://prosthesis/content/dbg-geolocation-actors.js');
     DebuggerServer.addActors('chrome://prosthesis/content/dbg-geolocation-ui-actors.js');
-    // NOTE: add temporary simulatorWebAppsActor
-    DebuggerServer.addActors('chrome://prosthesis/content/dbg-webapps-actors.js');
-    // Register our copy of styleeditor until it gets uplifted to b2g18
-    DebuggerServer.addActors('chrome://prosthesis/content/dbg-styleeditor-actors.js');
-    DebuggerServer.addTabActor(DebuggerServer.StyleEditorActor, "styleEditorActor");
   }
 
   // allow remote debugger connection without any user confirmation
