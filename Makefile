@@ -55,16 +55,20 @@ B2G_URL_BASE = http://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2013-09-10-04-
 ifeq (win32, $(B2G_PLATFORM))
   # The URL of the specific B2G build.
   B2G_URL ?= $(B2G_URL_BASE)b2g-26.0a1.multi.win32.zip
+  B2G_BIN_DIR = b2g
 else
 ifeq (mac64, $(B2G_PLATFORM))
   B2G_URL ?= $(B2G_URL_BASE)b2g-26.0a1.multi.mac64.dmg
   DOWNLOAD_CMD = /usr/bin/curl -O
+  B2G_BIN_DIR = B2G.app/Contents/MacOS
 else
 ifeq (linux64, $(B2G_PLATFORM))
   B2G_URL ?= $(B2G_URL_BASE)b2g-26.0a1.multi.linux-x86_64.tar.bz2
+  B2G_BIN_DIR = b2g
 else
 ifeq (linux, $(B2G_PLATFORM))
   B2G_URL ?= $(B2G_URL_BASE)b2g-26.0a1.multi.linux-i686.tar.bz2
+  B2G_BIN_DIR = b2g
 endif
 endif
 endif
@@ -146,7 +150,7 @@ profile:
 prosthesis: profile
 
 appinfo: profile b2g
-	python build/make-appinfo.py --gecko addon/data/$(B2G_PLATFORM)/b2g/ --gaia gaia/ --data addon/data/
+	python build/make-appinfo.py --gecko addon/data/$(B2G_PLATFORM)/$(B2G_BIN_DIR)/ --gaia gaia/ --data addon/data/
 
 b2g:
 	python build/make-b2g.py $(B2G_TYPE_ARG) $(B2G_PLATFORM_ARG) $(B2G_ID_ARG) $(B2G_URL_ARG)
