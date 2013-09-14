@@ -136,6 +136,9 @@ var Simulator = {
     var data = {
       "name": name,
       "description": "Description of the app",
+      "icons": {
+        "128": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAAVklEQVR4nO3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOBvAI8AAT4ZY7sAAAAASUVORK5CYII="
+      },
       "launch_path": 'index.html'
     }
     window.postMessage({ name: "createNewApp", manifestData: data }, "*");
