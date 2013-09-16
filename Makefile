@@ -163,7 +163,7 @@ run:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx run --templatedir template/ $(BIN_ARG) $(PROFILE_ARG)
 
 package:
-	cd addon-sdk && . bin/activate && cd ../addon && cfx xpi --templatedir template/
+	cd addon-sdk && . bin/activate && cd ../addon && cfx xpi --templatedir template/ --strip-sdk
 
 test:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx test --verbose --templatedir template/ $(BIN_ARG) $(TEST_ARG) $(PROFILE_ARG)
