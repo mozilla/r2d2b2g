@@ -154,6 +154,7 @@ appinfo: profile b2g
 
 b2g:
 	python build/make-b2g.py $(B2G_TYPE_ARG) $(B2G_PLATFORM_ARG) $(B2G_ID_ARG) $(B2G_URL_ARG)
+	rm -rf addon/data/$(B2G_PLATFORM)/$(B2G_BIN_DIR)/gaia
 
 locales:
 	python build/make-locales.py
