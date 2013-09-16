@@ -184,11 +184,11 @@ Gcli.addCommand({
 
 Gcli.addCommand({
   name: "firefoxos port get",
-  description: "Show the allocated remote debugger port",
+  description: "Show the preferred remote debugger port",
   returnType: 'string',
   exec: function(args, context) {
     if (Simulator.isRunning) {
-      return "Simulator is running: Listening on port: " +
+      return "Simulator is running, listening on port: " +
         Simulator.remoteSimulator.remoteDebuggerPort;
     } else if (SimplePrefs.preferredSimulatorPort !== 0) {
       return "Simulator is not running. Preferred port: " +
@@ -212,7 +212,7 @@ Gcli.addCommand({
     if (args.port) {
       SimplePrefs.preferredSimulatorPort = args.port;
     } else {
-      return "port arguments is mandatory";
+      return "port argument is mandatory";
     }
   },
 });
