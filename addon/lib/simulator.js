@@ -98,10 +98,6 @@ let simulator = module.exports = {
     return SStorage.storage.apps || (SStorage.storage.apps = {});
   },
 
-  get permissions() {
-    return SStorage.storage.permissions || (SStorage.storage.permissions = {});
-  },
-
   get worker() worker,
 
   set worker(newVal) {
@@ -372,30 +368,6 @@ let simulator = module.exports = {
     } else {
       // Hosted App
 
-      let PermissionsInstaller;
-      try {
-        PermissionsInstaller =
-          Cu.import("resource://gre/modules/PermissionsInstaller.jsm").
-          PermissionsInstaller;
-      } catch(e) {
-        // PermissionsInstaller doesn't exist on Firefox 17 (and 18/19?),
-        // so catch and ignore an exception importing it.
-      }
-
-      if (PermissionsInstaller) {
-        PermissionsInstaller.installPermissions(
-          {
-            manifest: config.manifest,
-            manifestURL: id,
-            origin: config.origin
-          },
-          false, // isReinstall, installation failed for true
-          function(e) {
-            console.error("PermissionInstaller FAILED for " + config.origin);
-          }
-        );
-      }
-
       let webappFile = File.join(tempWebappDir, "manifest.webapp");
       File.open(webappFile, "w").
         writeAsync(JSON.stringify(config.manifest, null, 2), function(err) {
@@ -576,16 +548,6 @@ let simulator = module.exports = {
 
     // remove from the registered app list
     delete apps[id];
-
-    // cleanup registered permissions
-    let permissions = simulator.permissions;
-    if (permissions[config.origin]) {
-      let host = config.host;
-      permissions[config.origin].forEach(function(type) {
-        Services.perms.remove(host, type);
-      });
-      delete permissions[config.origin];
-    }
   },
 
   flushRemovedApps: function() {
@@ -757,7 +719,6 @@ let simulator = module.exports = {
       icon: icon,
       manifest: webapp,
       origin: origin,
-      host: manifestUrl.host,
       installOrigin: installOrigin,
     }
     console.log("Registered App " + JSON.stringify(apps[id], null, 2));

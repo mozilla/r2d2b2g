@@ -69,6 +69,49 @@ function restoreStandardRemoteDebuggerPort() {
   Services.prefs.setIntPref("devtools.debugger.remote-port", 6000);
 }
 
+/**
+ * Purge Firefox's permissions database of permissions we previously added
+ * for apps the user registered with the Dashboard.  The feature for which we
+ * added permissions was never completed, and the user doesn't know
+ * the permissions were added nor expect them to be there, so we remove them.
+ */
+function purgePermissions() {
+  let permissions = SStorage.storage.permissions;
+  if (!permissions) {
+    return;
+  }
+
+  for (let origin in permissions) {
+    // Get the app record associated with the origin.
+    let app = simulator.apps.filter(app => app.origin == origin)[0];
+    if (!app) {
+      continue;
+    }
+
+    let host = app.host ? app.host : URL.URL(origin).host;
+
+    // Remove the permissions.
+    for (let type of permissions[origin]) {
+      console.log("removing permission: " + host + " " + type);
+      try {
+        Services.perms.remove(host, type);
+      }
+      catch(ex) {
+        // Report the error, but don't let it bork startup.
+        console.error(ex);
+      }
+    }
+
+    delete permissions[origin];
+
+    // The host property was only used to register permissions, and it doesn't
+    // need to be in the app record now that we're no longer registering them.
+    delete app.host;
+  }
+
+  delete SStorage.storage.permissions;
+}
+
 // Retrieve the last addon version from storage, and update storage if it
 // has changed, so we can do work on addon upgrade/downgrade that depends on
 // the last version the user used.
@@ -90,6 +133,10 @@ if (["install", "downgrade", "upgrade"].indexOf(Self.loadReason) >= 0) {
   if (Simulator.apps) {
     let activeAppIds = Object.keys(Simulator.apps).
       filter(function (appId) !Simulator.apps[appId].deleted);
+
+    if (Services.vc.compare(lastVersion, "5.0pre2") < 0) {
+      purgePermissions();
+    }
 
     if (activeAppIds.length > 0) {
       if (Services.vc.compare(lastVersion, "4.0pre9") < 0) {
@@ -195,75 +242,3 @@ Gcli.addCommand({
     }
   },
 });
-
-let PermissionSettings;
-try {
-  PermissionSettings =
-    Cu.import("resource://gre/modules/PermissionSettings.jsm").
-    PermissionSettingsModule;
-} catch(e) {
-  // PermissionSettings doesn't exist on Firefox 17 (and 18/19?),
-  // so catch and ignore an exception importing it.
-}
-
-if (PermissionSettings) {
-  PermissionSettings.addPermissionOld = PermissionSettings.addPermission;
-  PermissionSettings.getPermissionOld = PermissionSettings.getPermission;
-
-  PermissionSettings.addPermission = function CustomAddPermission(aData, aCallbacks) {
-    console.log("PermissionSettings.addPermission " + aData.origin);
-
-    let uri = Services.io.newURI(aData.origin, null, null);
-
-    let action;
-    switch (aData.value)
-    {
-      case "unknown":
-        action = Ci.nsIPermissionManager.UNKNOWN_ACTION;
-        break;
-      case "allow":
-        action = Ci.nsIPermissionManager.ALLOW_ACTION;
-        break;
-      case "deny":
-        action = Ci.nsIPermissionManager.DENY_ACTION;
-        break;
-      case "prompt":
-        action = Ci.nsIPermissionManager.PROMPT_ACTION;
-        break;
-      default:
-        dump("Unsupported PermisionSettings Action: " + aData.value +"\n");
-        action = Ci.nsIPermissionManager.UNKNOWN_ACTION;
-    }
-    console.log("PermissionSettings.addPermission add: " + aData.origin + " " + action);
-
-    Services.perms.add(uri, aData.type, action);
-
-    let permissions = Simulator.permissions;
-    if (!permissions[aData.origin]) {
-      permissions[aData.origin] = [];
-    }
-    permissions[aData.origin].push(aData.type);
-    Simulator.permissions = permissions;
-  };
-
-  PermissionSettings.getPermission = function CustomGetPermission(aPermission, aManifestURL, aOrigin, aBrowserFlag) {
-    console.log("getPermission: " + aPermName + ", " + aManifestURL + ", " + aOrigin);
-
-    let uri = Services.io.newURI(aOrigin, null, null);
-    let result = Services.perms.testExactPermission(uri, aPermName);
-
-    switch (result) {
-      case Ci.nsIPermissionManager.UNKNOWN_ACTION:
-        return "unknown";
-      case Ci.nsIPermissionManager.ALLOW_ACTION:
-        return "allow";
-      case Ci.nsIPermissionManager.DENY_ACTION:
-        return "deny";
-      case Ci.nsIPermissionManager.PROMPT_ACTION:
-        return "prompt";
-      default:
-        dump("Unsupported PermissionSettings Action!\n");
-        return "unknown";
-    }
-  };
-}
