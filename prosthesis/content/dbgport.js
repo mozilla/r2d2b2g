@@ -4,6 +4,12 @@ window.addEventListener("ContentStart", function() {
   // Get the command line arguments that were passed to the b2g client
   let args = window.arguments[0].QueryInterface(Ci.nsICommandLine);
   let dbgport;
+  // Workaround until bug 916237 is fixed.
+  let originalStart = RemoteDebugger.start;
+  RemoteDebugger.start = function () {
+    DebuggerServer.registerModule("devtools/server/actors/inspector");
+    originalStart();
+  };
  
    // Get the --dbgport argument from the command line
    try {
@@ -25,7 +31,8 @@ window.addEventListener("ContentStart", function() {
   try {
     let dbgprefs = Cc['@mozilla.org/preferences-service;1']
          .getService(Ci.nsIPrefService).getBranch("devtools.debugger.");
-     dbgprefs.setIntPref("remote-port", parseInt(dbgport));
+    dbgprefs.setIntPref("remote-port", parseInt(dbgport));
+    dbgprefs.setCharPref("unix-domain-socket", dbgport);
     debug("remote debugger will start on port: "+dbgport);
   } catch(e) {
     fail("EXCEPTION setting dbgport into preferences '"+e+"': "+e.stack);
