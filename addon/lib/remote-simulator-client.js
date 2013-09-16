@@ -1,6 +1,6 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. 
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
 'use strict';
@@ -80,7 +80,7 @@ const RemoteSimulatorClient = Class({
   },
 
   _hookInternalEvents: function () {
-    // on clientConnected, register an handler to close current connection 
+    // on clientConnected, register an handler to close current connection
     // on kill and send a "listTabs" debug protocol request, finally
     // emit a clientReady event on "listTabs" reply
     this.on("clientConnected", function (data) {
@@ -120,7 +120,7 @@ const RemoteSimulatorClient = Class({
         }).bind(this));
     });
 
-    // on clientClosed, untrack old remote target and emit 
+    // on clientClosed, untrack old remote target and emit
     // an high level "disconnected" event
     this.on("clientClosed", function () {
       console.debug("rsc.onClientClosed");
@@ -175,7 +175,7 @@ const RemoteSimulatorClient = Class({
           arguments: ["-e", 'tell application "' + path + '" to activate'],
         });
       }
-    });  
+    });
 
     let environment;
     if (Runtime.OS == "Linux") {
@@ -227,7 +227,7 @@ const RemoteSimulatorClient = Class({
         this.once("exit", onKilled);
       this.process.kill();
     }
-  },  
+  },
 
   // connect simulator using debugging protocol
   // NOTE: this control channel will be auto-created on every b2g instance run
@@ -444,7 +444,7 @@ const RemoteSimulatorClient = Class({
     let url = Self.data.url(executables[Runtime.OS]);
     let path = URL.toFilename(url);
 
-    let executable = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);    
+    let executable = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
     executable.initWithPath(path);
     let executableFilename = executables[Runtime.OS];
 
@@ -521,14 +521,10 @@ const RemoteSimulatorClient = Class({
       return port;
     }
 
-    if (SimplePrefs.preferredSimulatorPort !== 0) {
+    if (SimplePrefs.preferredSimulatorPort !== -1) {
       port = SimplePrefs.preferredSimulatorPort;
 
-      if (this._tryPort(port)) {
-        // NOTE: simulator will listen on the preferred port
-        this.remoteDebuggerPort = port;
-        return port;
-      } else {
+      if (! this._tryPort(port)) {
         // NOTE: simulator can't listen on preferred port
         // then find a port and warn the user
         port = this._findPort();
@@ -548,6 +544,7 @@ const RemoteSimulatorClient = Class({
       port = this._findPort();
     }
 
+    // NOTE: cache port selected until the next run
     this.remoteDebuggerPort = port;
 
     return port;

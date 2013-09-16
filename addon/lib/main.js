@@ -221,7 +221,7 @@ Gcli.addCommand({
   name: "firefoxos port reset",
   description: "Reset preferred Remote Debugger Port to listen on",
   exec: function(args, context) {
-    SimplePrefs.preferredSimulatorPort = 0;
+    SimplePrefs.preferredSimulatorPort = -1;
   },
 });
 
