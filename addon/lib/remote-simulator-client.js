@@ -392,14 +392,6 @@ const RemoteSimulatorClient = Class({
                                 onResponse);
   },
 
-  startSecondaryListener: function(port, onResponse) {
-    this._remote.client.request({ to: this._remote.simulator,
-                                  type: "startSecondaryListener",
-                                  port: port
-                                },
-                                onResponse);
-  },
-
   // send a ping request to the remote simulator actor
   ping: function(onResponse) {
     let remote = this._remote;
