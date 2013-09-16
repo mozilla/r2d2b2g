@@ -171,9 +171,10 @@ test:
 help:
 	@echo 'Targets:'
 	@echo "  build: [default] build, download, install everything;\n"\
-	"         combines the profile and b2g make targets"
+	"         combines the profile, appinfo and b2g make targets"
 	@echo '  clean: remove files created during the build process'
 	@echo '  profile: make the Gaia profile and its prosthesis addon'
+	@echo '  appinfo: create a static json file describing the gecko and gaia version we are shipping in the addon'
 	@echo '  b2g: download and install B2G'
 	@echo '  locales: pull/update l10n repositories for specified locales'
 	@echo '  run: start Firefox with the addon installed into a new profile'
