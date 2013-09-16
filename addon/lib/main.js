@@ -190,7 +190,9 @@ Gcli.addCommand({
     if (Simulator.isRunning) {
       return "Simulator is running, listening on port: " +
         Simulator.remoteSimulator.remoteDebuggerPort;
-    } else if (SimplePrefs.preferredSimulatorPort !== 0) {
+    } else if (SimplePrefs.preferredSimulatorPort && // NOTE: workaround hidden simple prefs
+                                                     // needed until we can use http://bugzil.la/768388
+               SimplePrefs.preferredSimulatorPort !== -1) {
       return "Simulator is not running. Preferred port: " +
         SimplePrefs.preferredSimulatorPort;
     } else {

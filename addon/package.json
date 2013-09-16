@@ -30,12 +30,13 @@
   "permissions": {
     "private-browsing": true
   },
-  "preferences": [
+  "!preferences": [
     {
       "name": "preferredSimulatorPort",
       "title": "Preferred Simulator Port",
       "description": "Simulator Remote Debugger Server will listen on this TCP port or trying to allocate it dinamically ",
       "type": "integer",
+      "hidden": true,
       "value": 0
     }
   ],

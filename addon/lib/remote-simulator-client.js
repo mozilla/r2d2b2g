@@ -521,7 +521,9 @@ const RemoteSimulatorClient = Class({
       return port;
     }
 
-    if (SimplePrefs.preferredSimulatorPort !== -1) {
+    if (SimplePrefs.preferredSimulatorPort && // NOTE: workaround hidden simple prefs
+                                              // needed until we can use http://bugzil.la/768388
+        SimplePrefs.preferredSimulatorPort !== -1) {
       port = SimplePrefs.preferredSimulatorPort;
 
       if (! this._tryPort(port)) {
