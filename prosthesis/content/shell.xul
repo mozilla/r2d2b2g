@@ -78,7 +78,9 @@
 
   <!-- The html:iframe containing the UI is created here. -->
   <box id="container"
-       style="background: black; overflow: hidden; width: 320px; height: 480px;"/>
+       style="background: black; overflow: hidden; width: 320px; height: 480px;">
+       <box id="placeholder" />
+  </box>
 
   <toolbox>
     <toolbar align="center" pack="center">
