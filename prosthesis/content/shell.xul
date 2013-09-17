@@ -25,6 +25,8 @@
       Services.scriptloader.loadSubScript("chrome://prosthesis/content/mutation-summary.js");
       Services.scriptloader.loadSubScript("chrome://prosthesis/content/window-manager.js");
     }, false);
+    // Workaround until b2g desktop is fixed.
+    var AdbController = {updateState: function (){}};
   </script>
 
   <script type="application/javascript" src="chrome://prosthesis/content/dbgport.js"/>

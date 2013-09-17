@@ -45,7 +45,7 @@ B2G_TYPE ?= specific
 # https://releases.mozilla.com/b2g/promoted_to_stable/ (private URL).
 # B2G_ID
 
-# Use the current last known revision that sucessfully builds on Windows.
+# Use the current last known revision that successfully builds on Windows.
 B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2013-09-16-04-02-05-mozilla-central/
 
 # Currently, all B2G builds are custom so we can optimize for code size and fix
@@ -135,7 +135,8 @@ profile:
 	python build/override-webapps.py
 	cd gaia/tools/extensions/desktop-helper/ && zip -r ../../../profile/extensions/desktop-helper\@gaiamobile.org.xpi *
 	cd gaia/tools/extensions/activities/ && zip -r ../../../profile/extensions/activities\@gaiamobile.org.xpi *
-	rm -rf gaia/profile/startupCache
+	rm -rf gaia/profile/startupCache gaia/profile/places.* gaia/profile/permissions.sqlite gaia/profile/defaults
+	zip -d gaia/profile/webapps/keyboard.gaiamobile.org/application.zip js/imes/latin/dictionaries/*
 	rm -rf addon/template
 	mkdir -p addon/template
 	mv gaia/profile addon/template/
@@ -154,6 +155,7 @@ appinfo: profile b2g
 
 b2g:
 	python build/make-b2g.py $(B2G_TYPE_ARG) $(B2G_PLATFORM_ARG) $(B2G_ID_ARG) $(B2G_URL_ARG)
+	rm -rf addon/data/$(B2G_PLATFORM)/$(B2G_BIN_DIR)/gaia
 
 locales:
 	python build/make-locales.py
@@ -162,7 +164,7 @@ run:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx run --templatedir template/ $(BIN_ARG) $(PROFILE_ARG)
 
 package:
-	cd addon-sdk && . bin/activate && cd ../addon && cfx xpi --templatedir template/
+	cd addon-sdk && . bin/activate && cd ../addon && cfx xpi --templatedir template/ --strip-sdk
 
 test:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx test --verbose --templatedir template/ $(BIN_ARG) $(TEST_ARG) $(PROFILE_ARG)
@@ -170,9 +172,10 @@ test:
 help:
 	@echo 'Targets:'
 	@echo "  build: [default] build, download, install everything;\n"\
-	"         combines the profile and b2g make targets"
+	"         combines the profile, appinfo and b2g make targets"
 	@echo '  clean: remove files created during the build process'
 	@echo '  profile: make the Gaia profile and its prosthesis addon'
+	@echo '  appinfo: create a static json file describing the gecko and gaia version we are shipping in the addon'
 	@echo '  b2g: download and install B2G'
 	@echo '  locales: pull/update l10n repositories for specified locales'
 	@echo '  run: start Firefox with the addon installed into a new profile'
