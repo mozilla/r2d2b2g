@@ -77,6 +77,7 @@ function restoreStandardRemoteDebuggerPort() {
  * the permissions were added nor expect them to be there, so we remove them.
  */
 function purgePermissions() {
+  console.log("purgePermissions");
   let permissions = SStorage.storage.permissions;
   if (!permissions) {
     return;
@@ -135,7 +136,7 @@ if (["install", "downgrade", "upgrade"].indexOf(Self.loadReason) >= 0) {
     let activeAppIds = Object.keys(Simulator.apps).
       filter(function (appId) !Simulator.apps[appId].deleted);
 
-    if (Services.vc.compare(lastVersion, "5.0pre2") < 0) {
+    if (Services.vc.compare(lastVersion, "5.0pre5") < 0) {
       purgePermissions();
     }
 
