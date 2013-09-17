@@ -81,8 +81,6 @@ function debug(aStr) {
 
 let ready = false;
 let didRunInitially = false;
-const psRegexNix = /.*? \d+ .*? .*? \d+\s+\d+ .*? .*? .*? .*? adb .*fork\-server/;
-const psRegexWin = /adb.exe.*/;
 
 this.ADB = {
   get didRunInitially() didRunInitially,
@@ -151,35 +149,9 @@ this.ADB = {
       this.ready = true;
     }).bind(this);
 
-    this._isAdbRunning().then(
-      (function onSuccess(isAdbRunning) {
-        if (isAdbRunning) {
-          this.didRunInitially = false;
-          debug("Found ADB process running, not restarting");
-          onSuccessfulStart();
-          return;
-        }
-        debug("Didn't find ADB process running, restarting");
-
-        this.didRunInitially = true;
-        let process = Cc["@mozilla.org/process/util;1"]
-                        .createInstance(Ci.nsIProcess);
-        process.init(this._adb);
-        let params = ["start-server"];
-        let self = this;
-        process.runAsync(params, params.length, {
-          observe: function(aSubject, aTopic, aData) {
-            switch(aTopic) {
-              case "process-finished":
-                onSuccessfulStart();
-                break;
-              case "process-failed":
-                self.ready = false;
-                break;
-             }
-           }
-        }, false);
-      }).bind(this));
+    this.didRunInitially = false;
+    debug("Found ADB process running, not restarting");
+    onSuccessfulStart();
   },
 
   /**
@@ -230,59 +202,6 @@ this.ADB = {
         }
       }, false);
     }
-  },
-
-  _isAdbRunning: function() {
-    let deferred = Promise.defer();
-
-    let ps, args;
-    let platform = Services.appinfo.OS;
-    if (platform === "WINNT") {
-      ps = "C:\\windows\\system32\\tasklist.exe";
-      args = [];
-    } else {
-      args = ["aux"];
-      let psCommand = "ps";
-
-      let paths = env.PATH.split(':');
-      let len = paths.length;
-      for (let i = 0; i < len; i++) {
-        try {
-          let fullyQualified = file.join(paths[i], psCommand);
-          if (file.exists(fullyQualified)) {
-            ps = fullyQualified;
-            break;
-          }
-        } catch (e) {
-          // keep checking PATH if we run into NS_ERROR_FILE_UNRECOGNIZED_PATH
-        }
-      }
-      if (!ps) {
-        debug("Error: a task list executable not found on filesystem");
-        deferred.resolve(false); // default to restart adb
-        return deferred.promise;
-      }
-    }
-
-    let buffer = [];
-
-    subprocess.call({
-      command: ps,
-      arguments: args,
-      stdout: function(data) {
-        buffer.push(data);
-      },
-      done: function() {
-        let lines = buffer.join('').split('\n');
-        let regex = (platform === "WINNT") ? psRegexWin : psRegexNix;
-        let isAdbRunning = lines.some(function(line) {
-          return regex.test(line);
-        });
-        deferred.resolve(isAdbRunning);
-      }
-    });
-
-    return deferred.promise;
   },
 
   // Creates a socket connected to the adb instance.

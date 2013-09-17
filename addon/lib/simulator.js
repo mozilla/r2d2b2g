@@ -7,6 +7,12 @@
 
 const { Cc, Ci, Cr, Cu } = require("chrome");
 
+/* Fake require statements so that the module dependency graph has dynamically
+ * loaded adb modules
+  require("adb/adb-fallback");
+  require("adb/adb");
+*/
+
 const Self = require("self");
 const URL = require("url");
 const Tabs = require("tabs");
@@ -21,16 +27,18 @@ const Timer = require("timer");
 const RemoteSimulatorClient = require("remote-simulator-client");
 const xulapp = require("sdk/system/xul-app");
 const JsonLint = require("jsonlint/jsonlint");
-const ADB = require("adb");
 const Promise = require("sdk/core/promise");
 const Runtime = require("runtime");
 const Validator = require("./validator");
+const DevKit = require("devkit");
 
 // The b2gremote debugger module that installs apps to devices.
 const Debugger = require("debugger");
 
 // The b2gremote debugger port.
 const DEBUGGER_PORT = 6000;
+
+let ADB = null;
 
 const { rootURI: ROOT_URI } = require('@loader/options');
 const PROFILE_URL = ROOT_URI + "profile/";
@@ -60,13 +68,17 @@ let simulator = module.exports = {
    * Unload the module.
    */
   unload: function unload(reason) {
+
     // Kill the Simulator and ADB processes, so they don't continue to run
     // unnecessarily if the user is quitting Firefox or disabling the addon;
     // and so they close their filehandles if the user is updating the addon,
     // which we need to do on Windows to replace the files.
     this.kill();
-    if (ADB.didRunInitially) {
-      ADB.kill(Runtime.OS == "WINNT" ? true : false /* sync */);
+
+    // make sure we only shutdown ADB when the
+    // actual onUnload event fires (the `&& reason`)
+    if (ADB && ADB.didRunInitially && reason) {
+      ADB.close();
     }
 
     // Close the Dashboard if the user is disabling or updating the addon.
@@ -96,7 +108,8 @@ let simulator = module.exports = {
       worker.on("message", this.onMessage.bind(this));
       worker.on("detach", function(message) {
         worker = null;
-      });
+        this.unload();
+      }.bind(this));
       worker.on("pageshow", function(message) {
         worker = this;
       });
@@ -104,9 +117,13 @@ let simulator = module.exports = {
         worker = null;
       });
 
-      if (!ADB.ready) {
-        ADB.start();
-      }
+      require("adb/adb-running-checker").check().then(function(isAdbRunning) {
+        // Use adb-fallback if an instance of adb is already running
+        ADB = isAdbRunning ? require("adb/adb-fallback") : require("adb/adb");
+        if (!ADB.ready) {
+          ADB.start();
+        }
+      });
     }
   },
 
@@ -125,30 +142,55 @@ let simulator = module.exports = {
     fp.appendFilters(Ci.nsIFilePicker.filterAll);
 
     let ret = fp.show();
-    if (ret == Ci.nsIFilePicker.returnOK || ret == Ci.nsIFilePicker.returnReplace) {
+    if (ret == Ci.nsIFilePicker.returnOK ||
+        ret == Ci.nsIFilePicker.returnReplace) {
       let manifestFile = fp.file.path;
-      console.log("Selected " + manifestFile);
-
-      let apps = simulator.apps;
-      let xkey = UUID.uuid().toString().slice(1, -1);
-      apps[manifestFile] = {
-        type: "local",
-        xkey: xkey,
-        origin: "app://" + xkey
-      };
-      console.log("Registered App " + JSON.stringify(apps[manifestFile]));
-
-      let next = function next(error, app) {
-        // Update the Dashboard to reflect changes to the record and run the app
-        // if the update succeeded.  Otherwise, it isn't necessary to notify
-        // the user about the error, as it'll show up in the validation results.
-        simulator.sendSingleApp(manifestFile);
-        if (!error) {
-          simulator.runApp(app);
-        }
-      };
-      this.updateApp(manifestFile, next);
+      simulator.addManifestFile(manifestFile);
     }
+  },
+
+  addManifestFile: function (manifestFile) {
+    console.log("Selected " + manifestFile);
+
+    let apps = simulator.apps;
+    let xkey = UUID.uuid().toString().slice(1, -1);
+    apps[manifestFile] = {
+      type: "local",
+      xkey: xkey,
+      origin: "app://" + xkey
+    };
+    console.log("Registered App " + JSON.stringify(apps[manifestFile]));
+
+    let next = function next(error, app) {
+      // Update the Dashboard to reflect changes to the record and run the app
+      // if the update succeeded.  Otherwise, it isn't necessary to notify
+      // the user about the error, as it'll show up in the validation results.
+      simulator.sendSingleApp(manifestFile);
+      if (!error) {
+        simulator.runApp(app);
+      }
+    };
+    this.updateApp(manifestFile, next);
+  },
+
+  addAppByPath: function(manifestFile) {
+    let apps = simulator.apps;
+    apps[manifestFile] = {
+      type: "local",
+      xkey: UUID.uuid().toString().slice(1, -1)
+    };
+    console.log("Registered App " + JSON.stringify(apps[manifestFile]));
+
+    let next = function next(error, app) {
+      // Update the Dashboard to reflect changes to the record and run the app
+      // if the update succeeded.  Otherwise, it isn't necessary to notify
+      // the user about the error, as it'll show up in the validation results.
+      simulator.sendListApps();
+      if (!error) {
+        simulator.runApp(app);
+      }
+    };
+    this.updateApp(manifestFile, next);
   },
 
   updateAll: function(oncompleted) {
@@ -412,9 +454,7 @@ let simulator = module.exports = {
         } else {
           app.receipt = receipt;
           app.receiptType = receiptType;
-          this._updateApp(appId, function() {
-            this.sendSingleApp(appId);
-          });
+          this._updateApp(appId, this.sendSingleApp.bind(this, appId));
         }
       }.bind(this));
     }
@@ -802,6 +842,12 @@ let simulator = module.exports = {
                            app.manifest, app);
     Validator.validateManifest(app.validation.errors, app.validation.warnings,
                                app.manifest);
+
+    if (app.type == "local") {
+      Validator.validateManifestFile(app.validation.errors,
+                                     app.validation.warnings,
+                                     id);
+    }
 
     // Appcache checks
     if (["generated", "hosted"].indexOf(app.type) !== -1) {
@@ -1402,6 +1448,16 @@ let simulator = module.exports = {
           simulator.updateReceiptType(message.id, message.receiptType);
         } else {
           console.log("Simulator failed to update receipt type");
+        }
+        break;
+      case "createNewApp":
+        if (message.manifestData) {
+          var manifestPath = DevKit.createNewApp(message.manifestData);
+          if (manifestPath) {
+            simulator.addAppByPath(manifestPath);
+          }
+        } else {
+          console.log("Not enough information to create new app");
         }
         break;
     }

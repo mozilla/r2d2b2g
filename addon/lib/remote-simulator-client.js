@@ -1,6 +1,6 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. 
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
 'use strict';
@@ -18,6 +18,7 @@ const Self = require("self");
 const URL = require("url");
 const Subprocess = require("subprocess");
 const { setTimeout, clearTimeout } = require("sdk/timers");
+const SimplePrefs = require("sdk/simple-prefs").prefs;
 
 const { rootURI: ROOT_URI } = require('@loader/options');
 const PROFILE_URL = ROOT_URI + "profile/";
@@ -30,8 +31,8 @@ const Geolocation = Cc["@mozilla.org/geolocation;1"].getService(Ci.nsISupports);
 const DEBUGGER_CONNECT_TIMEOUT = 30000;
 
 // add unsolicited notifications
-dbgClient.UnsolicitedNotifications.geolocationStart = "geolocationStart";
-dbgClient.UnsolicitedNotifications.geolocationStop = "geolocationStop";
+dbgClient.UnsolicitedNotifications.enableRealGeolocation = "enableRealGeolocation";
+dbgClient.UnsolicitedNotifications.disableRealGeolocation = "disableRealGeolocation";
 dbgClient.UnsolicitedNotifications.appUpdateRequest = "appUpdateRequest";
 dbgClient.UnsolicitedNotifications.appOpen = "appOpen";
 dbgClient.UnsolicitedNotifications.appClose = "appClose";
@@ -79,7 +80,7 @@ const RemoteSimulatorClient = Class({
   },
 
   _hookInternalEvents: function () {
-    // on clientConnected, register an handler to close current connection 
+    // on clientConnected, register an handler to close current connection
     // on kill and send a "listTabs" debug protocol request, finally
     // emit a clientReady event on "listTabs" reply
     this.on("clientConnected", function (data) {
@@ -95,7 +96,9 @@ const RemoteSimulatorClient = Class({
           tabs: reply.tabs,
           selected: reply.selected,
           simulator: reply.simulatorActor,
-          webapps: reply.simulatorWebappsActor
+          webapps: reply.simulatorWebappsActor,
+          geolocation: reply.simulatorGeolocationActor,
+          geolocationUI: reply.simulatorGeolocationUIActor
         });
       }).bind(this));
     });
@@ -104,8 +107,11 @@ const RemoteSimulatorClient = Class({
     // listeners and emit an high level "ready" event
     this.on("clientReady", function (remote) {
       console.debug("rsc.onClientReady");
-      // Needed for Debugger Server to initialize SimulatorActor
+      // Actors are initialized lazily, so if they have any initialization work
+      // to perform (set up listeners / observers, etc.), then some message must
+      // be sent to trigger that process.
       remote.client.request({to: remote.simulator, type: "ping"});
+      remote.client.request({to: remote.geolocationUI, type: "attach"});
       this._remote = remote;
       // Start watching app open/close
       this.client.request({to: this._remote.webapps, type: "watchApps"},
@@ -114,7 +120,7 @@ const RemoteSimulatorClient = Class({
         }).bind(this));
     });
 
-    // on clientClosed, untrack old remote target and emit 
+    // on clientClosed, untrack old remote target and emit
     // an high level "disconnected" event
     this.on("clientClosed", function () {
       console.debug("rsc.onClientClosed");
@@ -169,7 +175,7 @@ const RemoteSimulatorClient = Class({
           arguments: ["-e", 'tell application "' + path + '" to activate'],
         });
       }
-    });  
+    });
 
     let environment;
     if (Runtime.OS == "Linux") {
@@ -221,7 +227,7 @@ const RemoteSimulatorClient = Class({
         this.once("exit", onKilled);
       this.process.kill();
     }
-  },  
+  },
 
   // connect simulator using debugging protocol
   // NOTE: this control channel will be auto-created on every b2g instance run
@@ -252,8 +258,10 @@ const RemoteSimulatorClient = Class({
       emit(this, "clientClosed", {client: client});
     }).bind(this));
 
-    client.addListener("geolocationStart", this.onGeolocationStart.bind(this));
-    client.addListener("geolocationStop", this.onGeolocationStop.bind(this));
+    client.addListener("enableRealGeolocation",
+                       this.onEnableRealGeolocation.bind(this));
+    client.addListener("disableRealGeolocation",
+                       this.onDisableRealGeolocation.bind(this));
     client.addListener("appOpen", this.onAppOpen.bind(this));
     client.addListener("appClose", this.onAppClose.bind(this));
 
@@ -274,8 +282,8 @@ const RemoteSimulatorClient = Class({
 
   _geolocationID: null,
 
-  onGeolocationStart: function onGeolocationStart() {
-    console.log("Firefox received geolocation start request");
+  onEnableRealGeolocation: function onEnableRealGeolocation() {
+    console.log("Firefox received enable real geolocation request");
 
     let onSuccess = (function onSuccess(position) {
       if (!this._remote) {
@@ -288,12 +296,12 @@ const RemoteSimulatorClient = Class({
       console.log("Firefox sending geolocation response");
 
       this._remote.client.request({
-        to: this._remote.simulator,
+        to: this._remote.geolocation,
         message: {
           lat: position.coords.latitude,
           lon: position.coords.longitude,
         },
-        type: "geolocationUpdate"
+        type: "update"
       });
     }).bind(this);
 
@@ -304,8 +312,8 @@ const RemoteSimulatorClient = Class({
     this._geolocationID = Geolocation.watchPosition(onSuccess, onError);
   },
 
-  onGeolocationStop: function onGeolocationStop() {
-    console.log("Firefox received geolocation stop request");
+  onDisableRealGeolocation: function onDisableRealGeolocation() {
+    console.log("Firefox received disable real geolocation request");
     this._stopGeolocation();
   },
 
@@ -436,7 +444,7 @@ const RemoteSimulatorClient = Class({
     let url = Self.data.url(executables[Runtime.OS]);
     let path = URL.toFilename(url);
 
-    let executable = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);    
+    let executable = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
     executable.initWithPath(path);
     let executableFilename = executables[Runtime.OS];
 
@@ -474,35 +482,80 @@ const RemoteSimulatorClient = Class({
 
     // NOTE: push dbgport option on the b2g-desktop commandline
     args.push("-dbgport", ""+this.remoteDebuggerPort);
-    
+
     // Ignore eventual zombie instances of b2g that are left over
     args.push("-no-remote");
 
     return args;
   },
 
-  // NOTE: find a port for remoteDebuggerPort if it's null or undefined
-  get remoteDebuggerPort() {
-    var port = this._foundRemoteDebuggerPort;
-
-    if (port) {
-      return port;
+  _tryPort: function(port) {
+    try {
+      let serv = Cc['@mozilla.org/network/server-socket;1']
+        .createInstance(Ci.nsIServerSocket);
+      serv.init(port, true, -1);
+      serv.close();
+    } catch(e) {
+      console.log("TCP port '" + port + "'could not be used: ", e.toString());
+      return false;
     }
-     
-    var serv = Cc['@mozilla.org/network/server-socket;1']
+
+    return true;
+  },
+
+  _findPort: function() {
+    let serv = Cc['@mozilla.org/network/server-socket;1']
       .createInstance(Ci.nsIServerSocket);
     serv.init(-1, true, -1);
-    var found = serv.port;
+    let found = serv.port;
     console.log("rsc.remoteDebuggerPort: found free port ", found);
-    this.remoteDebuggerPort = found;
     serv.close();
     return found;
   },
 
-  // NOTE: manual set and reset allocated remoteDebuggingPort 
+  // NOTE: find a port for remoteDebuggerPort if it's null or undefined
+  get remoteDebuggerPort() {
+    let port = this._foundRemoteDebuggerPort;
+
+    if (port) {
+      return port;
+    }
+
+    if (SimplePrefs.preferredSimulatorPort && // NOTE: workaround hidden simple prefs
+                                              // needed until we can use http://bugzil.la/768388
+        SimplePrefs.preferredSimulatorPort !== -1) {
+      port = SimplePrefs.preferredSimulatorPort;
+
+      if (! this._tryPort(port)) {
+        // NOTE: simulator can't listen on preferred port
+        // then find a port and warn the user
+        port = this._findPort();
+
+        let notifications = require("sdk/notifications");
+        let self = require("self");
+        let simulatorIcon = self.data.url("content/icon.png");
+        notifications.notify({
+          text: "Preferred Simulator Remote Debugger Port (" +
+            SimplePrefs.preferredSimulatorPort + ") could not be used. " +
+            "Listening on port: " + port,
+          iconURL: simulatorIcon
+        });
+      }
+    } else {
+      // NOTE: there isn't any preferred port, silently find a free port
+      port = this._findPort();
+    }
+
+    // NOTE: cache port selected until the next run
+    this.remoteDebuggerPort = port;
+
+    return port;
+  },
+
+  // NOTE: manual set and reset allocated remoteDebuggingPort
   //       (used by process done handler)
   set remoteDebuggerPort(port) {
-    this._foundRemoteDebuggerPort = port;
+    return this._foundRemoteDebuggerPort = port;
   },
 
 });
