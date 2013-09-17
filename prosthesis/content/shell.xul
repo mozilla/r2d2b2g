@@ -33,7 +33,7 @@
                                   .getService(Components.interfaces
                                                         .nsISettingsService);
     // Workaround until bug 917310 lands
-    Cu.import("resource://gre/modules/WebappOSUtils.jsm").WebappOSUtils.getInstallPath = function(aApp) {
+    Components.utils.import("resource://gre/modules/WebappOSUtils.jsm").WebappOSUtils.getInstallPath = function(aApp) {
       return aApp.basePath + "/" + aApp.id;
     };
   </script>

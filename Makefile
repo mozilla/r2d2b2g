@@ -45,7 +45,7 @@ B2G_TYPE ?= specific
 # https://releases.mozilla.com/b2g/promoted_to_stable/ (private URL).
 # B2G_ID
 
-# Use the current last known revision that successfully builds on Windows.
+# Use the current last known revision that sucessfully builds on Windows.
 B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2013-09-16-04-02-05-mozilla-central/
 
 # Currently, all B2G builds are custom so we can optimize for code size and fix
