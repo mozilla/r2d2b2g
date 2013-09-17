@@ -14,7 +14,7 @@
     // Register our copy of styleeditor until it gets uplifted to b2g18
     DebuggerServer.addActors('chrome://prosthesis/content/dbg-styleeditor-actors.js');
     DebuggerServer.addTabActor(DebuggerServer.StyleEditorActor, "styleEditorActor");
-  }
+  };
 
   // allow remote debugger connection without any user confirmation
   RemoteDebugger.prompt = function() {
