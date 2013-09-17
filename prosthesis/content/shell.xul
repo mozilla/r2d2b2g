@@ -25,13 +25,22 @@
       Services.scriptloader.loadSubScript("chrome://prosthesis/content/mutation-summary.js");
       Services.scriptloader.loadSubScript("chrome://prosthesis/content/window-manager.js");
     }, false);
-    // Workaround until b2g desktop is fixed.
+    // Bug 917331 - Workaround until b2g desktop is fixed.
     var AdbController = {updateState: function (){}};
+    // Yet another workaround until bug 914594 lands
+    Components.utils.import("resource://gre/modules/Services.jsm");
+    Services.settings = Components.classes["@mozilla.org/settingsService;1"]
+                                  .getService(Components.interfaces
+                                                        .nsISettingsService);
+    // Workaround until bug 917310 lands
+    Components.utils.import("resource://gre/modules/WebappOSUtils.jsm").WebappOSUtils.getInstallPath = function(aApp) {
+      return aApp.basePath + "/" + aApp.id;
+    };
   </script>
 
-  <script type="application/javascript" src="chrome://prosthesis/content/dbgport.js"/>
   <script type="application/javascript" src="chrome://browser/content/settings.js"/>
   <script type="application/javascript" src="chrome://browser/content/shell.js"/>
+  <script type="application/javascript" src="chrome://prosthesis/content/dbgport.js"/>
 
   <!-- this script handles the screen argument for desktop builds -->
   <script type="application/javascript" src="chrome://browser/content/screen.js"/>
