@@ -25,12 +25,22 @@
       Services.scriptloader.loadSubScript("chrome://prosthesis/content/mutation-summary.js");
       Services.scriptloader.loadSubScript("chrome://prosthesis/content/window-manager.js");
     }, false);
+    // Bug 917331 - Workaround until b2g desktop is fixed.
+    var AdbController = {updateState: function (){}};
+    // Yet another workaround until bug 914594 lands
+    Components.utils.import("resource://gre/modules/Services.jsm");
+    Services.settings = Components.classes["@mozilla.org/settingsService;1"]
+                                  .getService(Components.interfaces
+                                                        .nsISettingsService);
+    // Workaround until bug 917310 lands
+    Components.utils.import("resource://gre/modules/WebappOSUtils.jsm").WebappOSUtils.getInstallPath = function(aApp) {
+      return aApp.basePath + "/" + aApp.id;
+    };
   </script>
 
-  <script type="application/javascript" src="chrome://prosthesis/content/dbgport.js"/>
   <script type="application/javascript" src="chrome://browser/content/settings.js"/>
   <script type="application/javascript" src="chrome://browser/content/shell.js"/>
-  <script type="application/javascript" src="chrome://prosthesis/content/patch-start-debugger.js"/>
+  <script type="application/javascript" src="chrome://prosthesis/content/dbgport.js"/>
 
   <!-- this script handles the screen argument for desktop builds -->
   <script type="application/javascript" src="chrome://browser/content/screen.js"/>
@@ -67,8 +77,10 @@
   </menubar>
 
   <!-- The html:iframe containing the UI is created here. -->
-  <box id="shell"
-       style="background: black; overflow: hidden; width: 320px; height: 480px;"/>
+  <box id="container"
+       style="background: black; overflow: hidden; width: 320px; height: 480px;">
+       <box id="placeholder" />
+  </box>
 
   <toolbox>
     <toolbar align="center" pack="center">

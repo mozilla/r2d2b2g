@@ -2,3 +2,7 @@
 // prosthesis/defaults/preferences/prefs.js, but these load earlier, so this
 // file is useful for prefs that are accessed before addons are loaded.
 
+user_pref("devtools.debugger.enable-content-actors", true);
+user_pref("devtools.debugger.prompt-connection", false);
+user_pref("devtools.debugger.forbid-certified-apps", false);
+user_pref("b2g.adb.timeout", 0);

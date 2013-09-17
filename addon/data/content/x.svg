@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
-  <view id="black" viewBox="0 0 32 32"/>
-  <view id="red" viewBox="0 32 32 32"/>
-  <path stroke="#000" stroke-width="2" d="M2,2 L 30,30 M 2,30 L 30,2"/>
-  <path transform="translate(0,32)" stroke="red" stroke-width="2" d="M2,2 L 30,30 M 2,30 L 30,2"/>
-</svg>

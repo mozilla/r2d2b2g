@@ -125,7 +125,7 @@ SimulatorScreen.prototype = {
     let messages = ["SimulatorScreen:orientationChange"];
 
     this.initialized = true;
-    this.initHelper(aWindow, messages);
+    this.initDOMRequestHelper(aWindow, messages);
 
     let globalScreen = GlobalSimulatorScreen;
 
