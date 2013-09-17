@@ -1,9 +1,9 @@
 {
-  "id": "r2d2b2g@mozilla.org",
-  "name": "r2d2b2g",
-  "version": "5.0pre5dev",
-  "fullName": "Firefox OS Simulator",
-  "description": "a Firefox OS simulator",
+  "id": "fxos_1_2@mozilla.org",
+  "name": "fxos_1_2",
+  "version": "6.0pre1.20130916",
+  "fullName": "Firefox OS 1.2 Simulator",
+  "description": "a Firefox OS 1.2 simulator",
   "author": "Myk Melez (https://github.com/mykmelez)",
   "contributors": [
     "Alexandre Poirot (https://github.com/ochameau)",
