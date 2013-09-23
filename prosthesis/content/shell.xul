@@ -22,16 +22,9 @@
   <script type="application/javascript">
     window.addEventListener("ContentStart", function() {
       Services.scriptloader.loadSubScript("chrome://prosthesis/content/shell.js");
-      Services.scriptloader.loadSubScript("chrome://prosthesis/content/mutation-summary.js");
-      Services.scriptloader.loadSubScript("chrome://prosthesis/content/window-manager.js");
     }, false);
     // Bug 917331 - Workaround until b2g desktop is fixed.
     var AdbController = {updateState: function (){}};
-    // Yet another workaround until bug 914594 lands
-    Components.utils.import("resource://gre/modules/Services.jsm");
-    Services.settings = Components.classes["@mozilla.org/settingsService;1"]
-                                  .getService(Components.interfaces
-                                                        .nsISettingsService);
     // Workaround until bug 917310 lands
     Components.utils.import("resource://gre/modules/WebappOSUtils.jsm").WebappOSUtils.getInstallPath = function(aApp) {
       return aApp.basePath + "/" + aApp.id;
@@ -41,6 +34,27 @@
   <script type="application/javascript" src="chrome://browser/content/settings.js"/>
   <script type="application/javascript" src="chrome://browser/content/shell.js"/>
   <script type="application/javascript" src="chrome://prosthesis/content/dbgport.js"/>
+  <script type="application/javascript">
+    // Workaround the race where shell.start is called before
+    // shell.xhtml is actually loaded
+    window.addEventListener("load", function () {
+      shell.start();
+    });
+    Object.defineProperty(shell, "contentBrowser", {
+      get: function () {
+        return document.getElementById("systemapp");
+      }
+    });
+    var originalStart = shell.start;
+    shell.start = function () {
+      try {
+        originalStart.call(shell);
+      } catch (e) {
+        this._started = false;
+        dump("Failed to start gaia: " + e + "\n" + e.stack + "\n");
+      }
+    };
+  </script>
 
   <!-- this script handles the screen argument for desktop builds -->
   <script type="application/javascript" src="chrome://browser/content/screen.js"/>
@@ -65,7 +79,7 @@
          command="refreshClearCacheCmd"/>
   </keyset>
   <menubar id="mainMenubar">
-    <menu id="appMenu" label="&appMenu.label;" accesskey="&appMenu.accesskey;">
+    <menu id="appMenu" label="&appMenu.label;" accesskey="&appMenu.accesskey;" hidden="true">
       <menupopup id="appPopup">
         <menuitem id="refreshAppItem"
                   label="&refreshAppItem.label;"
@@ -82,7 +96,7 @@
        <box id="placeholder" />
   </box>
 
-  <toolbox>
+  <toolbox hidden="true">
     <toolbar align="center" pack="center">
       <toolbarbutton id="homeButton"/>
       <toolbarbutton id="rotateButton"/>

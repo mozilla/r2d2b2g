@@ -40,7 +40,7 @@ try {
 } catch(e) {}
 
 if (Simulator) {
-  Simulator.register(Self.name + " " + Self.version, {
+  Simulator.register(appinfo.label, {
     appinfo: appinfo,
     launch: launch,
     close: close
