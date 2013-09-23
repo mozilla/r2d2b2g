@@ -12,6 +12,9 @@ parser.add_option('--gecko',
 parser.add_option('--data',
                   dest='data_path',
                   help='path to data folder')
+parser.add_option('--package',
+                  dest='package_path',
+                  help='path to package.json addon file')
 parser.add_option('--gaia',
                   dest='gaia_path',
                   help='path to gaia folder')
@@ -19,7 +22,7 @@ parser.add_option('--gaia',
 
 
 # Read gecko's application.ini to fetch version information
-# and write these info as gecko-info.json file in data folder
+# and write these info as appinfo.json file in data folder
 config = ConfigParser.RawConfigParser()
 application_ini = os.path.join(options.gecko_path, "application.ini")
 config.read(application_ini)
@@ -45,6 +48,10 @@ appinfo["gaia"] = {
   "revision": lines[0].strip(),
   "revision_date": lines[1].strip()
 }
+
+# Finally get the simulator label used to designate the simulator in the app manager
+package = json.load(open(os.path.join(options.package_path)))
+appinfo["label"] = package["label"]
 
 appinfo_file = os.path.join(options.data_path, "appinfo.json")
 with open(appinfo_file, 'wb') as f:

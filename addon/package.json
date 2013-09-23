@@ -3,6 +3,7 @@
   "name": "fxos_1_2_simulator",
   "version": "6.0pre2dev.20130916",
   "fullName": "Firefox OS 1.2 Simulator",
+  "label": "Firefox OS 1.2",
   "description": "a Firefox OS 1.2 simulator",
   "author": "Myk Melez (https://github.com/mykmelez)",
   "contributors": [

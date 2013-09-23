@@ -3,12 +3,6 @@ dump("processing -dbgport command line option\n");
 // Get the command line arguments that were passed to the b2g client
 let args = window.arguments[0].QueryInterface(Ci.nsICommandLine);
 let dbgport;
-// Workaround until bug 916237 is fixed.
-let originalStart = RemoteDebugger.start;
-RemoteDebugger.start = function () {
-  DebuggerServer.registerModule("devtools/server/actors/inspector");
-  originalStart();
-};
 
 // Get the --dbgport argument from the command line
 try {
