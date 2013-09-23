@@ -22,8 +22,6 @@
   <script type="application/javascript">
     window.addEventListener("ContentStart", function() {
       Services.scriptloader.loadSubScript("chrome://prosthesis/content/shell.js");
-      Services.scriptloader.loadSubScript("chrome://prosthesis/content/mutation-summary.js");
-      Services.scriptloader.loadSubScript("chrome://prosthesis/content/window-manager.js");
     }, false);
     // Bug 917331 - Workaround until b2g desktop is fixed.
     var AdbController = {updateState: function (){}};
@@ -81,7 +79,7 @@
          command="refreshClearCacheCmd"/>
   </keyset>
   <menubar id="mainMenubar">
-    <menu id="appMenu" label="&appMenu.label;" accesskey="&appMenu.accesskey;">
+    <menu id="appMenu" label="&appMenu.label;" accesskey="&appMenu.accesskey;" hidden="true">
       <menupopup id="appPopup">
         <menuitem id="refreshAppItem"
                   label="&refreshAppItem.label;"
@@ -98,7 +96,7 @@
        <box id="placeholder" />
   </box>
 
-  <toolbox>
+  <toolbox hidden="true">
     <toolbar align="center" pack="center">
       <toolbarbutton id="homeButton"/>
       <toolbarbutton id="rotateButton"/>
