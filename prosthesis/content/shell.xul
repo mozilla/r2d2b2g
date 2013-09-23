@@ -27,11 +27,6 @@
     }, false);
     // Bug 917331 - Workaround until b2g desktop is fixed.
     var AdbController = {updateState: function (){}};
-    // Yet another workaround until bug 914594 lands
-    Components.utils.import("resource://gre/modules/Services.jsm");
-    Services.settings = Components.classes["@mozilla.org/settingsService;1"]
-                                  .getService(Components.interfaces
-                                                        .nsISettingsService);
     // Workaround until bug 917310 lands
     Components.utils.import("resource://gre/modules/WebappOSUtils.jsm").WebappOSUtils.getInstallPath = function(aApp) {
       return aApp.basePath + "/" + aApp.id;
