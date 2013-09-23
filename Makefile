@@ -151,7 +151,7 @@ profile:
 prosthesis: profile
 
 appinfo: profile b2g
-	python build/make-appinfo.py --gecko addon/data/$(B2G_PLATFORM)/$(B2G_BIN_DIR)/ --gaia gaia/ --data addon/data/
+	python build/make-appinfo.py --gecko addon/data/$(B2G_PLATFORM)/$(B2G_BIN_DIR)/ --gaia gaia/ --data addon/data/ --package addon/package.json
 
 b2g:
 	python build/make-b2g.py $(B2G_TYPE_ARG) $(B2G_PLATFORM_ARG) $(B2G_ID_ARG) $(B2G_URL_ARG)
