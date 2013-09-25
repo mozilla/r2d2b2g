@@ -85,7 +85,7 @@ function purgePermissions() {
 
   for (let origin in permissions) {
     // Get the app record associated with the origin.
-    let app = simulator.apps.filter(app => app.origin == origin)[0];
+    let app = [a for each (a in Simulator.apps) if (a.origin == origin)][0];
     if (!app) {
       continue;
     }
