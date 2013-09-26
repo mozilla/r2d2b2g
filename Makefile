@@ -35,6 +35,15 @@ ifndef B2G_PLATFORM
   endif
 endif
 
+B2G_VERSION=1.2
+ADDON_NAME=fxos_1_2_simulator
+ADDON_VERSION=6.0pre4
+XPI_NAME=$(ADDON_NAME)-$(ADDON_VERSION)-$(B2G_PLATFORM).xpi
+
+UPDATE_PATH=$(B2G_VERSION)/$(B2G_PLATFORM)
+UPDATE_LINK=https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/$(UPDATE_PATH)/$(XPI_NAME)
+UPDATE_URL=https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/$(UPDATE_PATH)/update.rdf
+
 # The type of the B2G build.  It can be "nightly", in which case you may set
 # B2G_ID to the ID of the build (default: the most recent nightly build);
 # or "specific", in which case you must set B2G_URL to the URL of the build.
@@ -46,7 +55,7 @@ B2G_TYPE ?= specific
 # B2G_ID
 
 # Use the current last known revision that sucessfully builds on Windows.
-B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2013-09-22-00-40-01-mozilla-aurora/
+B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2013-09-26-00-40-01-mozilla-aurora/
 
 # Currently, all B2G builds are custom so we can optimize for code size and fix
 # bugs in B2G or its nightly build environments (like 844047 and 815805).
@@ -164,7 +173,17 @@ run:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx run --templatedir template/ $(BIN_ARG) $(PROFILE_ARG)
 
 package:
-	cd addon-sdk && . bin/activate && cd ../addon && cfx xpi --templatedir template/ --strip-sdk
+	cd addon-sdk && . bin/activate && cd ../addon && cfx xpi --templatedir template/ --strip-sdk $(PRODUCTION_ARG)
+
+production: PRODUCTION_ARG=--update-link $(UPDATE_LINK) --update-url $(UPDATE_URL)
+production: package
+	mkdir -p ftp/$(UPDATE_PATH)/
+	cp addon/$(ADDON_NAME).update.rdf ftp/$(UPDATE_PATH)/update.rdf
+	cp addon/$(ADDON_NAME).xpi ftp/$(UPDATE_PATH)/$(XPI_NAME)
+
+release: ftp/$(UPDATE_PATH)/$(XPI_NAME) ftp/$(UPDATE_PATH)/update.rdf
+	cd ftp/ && lftp sftp://stage.mozilla.org -u $(FTP_USER) -e "mput -O /pub/mozilla.org/labs/r2d2b2g/ -d $(UPDATE_PATH)/$(XPI_NAME); quit;"
+	cd ftp/ && lftp sftp://stage.mozilla.org -u $(FTP_USER) -e "mput -O /pub/mozilla.org/labs/r2d2b2g/ -d $(UPDATE_PATH)/update.rdf; quit;"
 
 test:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx test --verbose --templatedir template/ $(BIN_ARG) $(TEST_ARG) $(PROFILE_ARG)
