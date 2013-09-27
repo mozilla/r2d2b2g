@@ -39,10 +39,11 @@ B2G_VERSION=1.2
 ADDON_NAME=fxos_1_2_simulator
 ADDON_VERSION=6.0pre4
 XPI_NAME=$(ADDON_NAME)-$(ADDON_VERSION)-$(B2G_PLATFORM).xpi
+FTP_ROOT_PATH=/pub/mozilla.org/labs/fxos-simulator
 
 UPDATE_PATH=$(B2G_VERSION)/$(B2G_PLATFORM)
-UPDATE_LINK=https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/$(UPDATE_PATH)/$(XPI_NAME)
-UPDATE_URL=https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/$(UPDATE_PATH)/update.rdf
+UPDATE_LINK=https://ftp.mozilla.org$(FTP_ROOT_PATH)/$(UPDATE_PATH)/$(XPI_NAME)
+UPDATE_URL=https://ftp.mozilla.org$(FTP_ROOT_PATH)/$(UPDATE_PATH)/update.rdf
 
 # The type of the B2G build.  It can be "nightly", in which case you may set
 # B2G_ID to the ID of the build (default: the most recent nightly build);
@@ -116,14 +117,13 @@ unix_to_windows_path = \
 # windows_to_unix_path = \
 #   $(shell echo '$(1)' | sed 's/\\/\//g' | sed 's/://')
 
-ifneq ($(strip $(LOCALES_FILE)),)
-  export LOCALE_BASEDIR ?= $(PWD)/gaia-l10n
+export LOCALES_FILE=${PWD}/build/languages.json
+export LOCALE_BASEDIR ?= $(PWD)/gaia-l10n
 
-  # Gaia expects these to be Windows-style paths on Windows.
-  ifeq (win32, $(B2G_PLATFORM))
-    LOCALES_FILE := $(call unix_to_windows_path,$(LOCALES_FILE))
-    LOCALE_BASEDIR := $(call unix_to_windows_path,$(LOCALE_BASEDIR))
-  endif
+# Gaia expects these to be Windows-style paths on Windows.
+ifeq (win32, $(B2G_PLATFORM))
+  LOCALES_FILE := $(call unix_to_windows_path,$(LOCALES_FILE))
+  LOCALE_BASEDIR := $(call unix_to_windows_path,$(LOCALE_BASEDIR))
 endif
 
 build: profile b2g appinfo
@@ -176,14 +176,13 @@ package:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx xpi --templatedir template/ --strip-sdk $(PRODUCTION_ARG)
 
 production: PRODUCTION_ARG=--update-link $(UPDATE_LINK) --update-url $(UPDATE_URL)
-production: package
-	mkdir -p ftp/$(UPDATE_PATH)/
-	cp addon/$(ADDON_NAME).update.rdf ftp/$(UPDATE_PATH)/update.rdf
-	cp addon/$(ADDON_NAME).xpi ftp/$(UPDATE_PATH)/$(XPI_NAME)
+production: locales build package
 
-release: ftp/$(UPDATE_PATH)/$(XPI_NAME) ftp/$(UPDATE_PATH)/update.rdf
-	cd ftp/ && lftp sftp://stage.mozilla.org -u $(FTP_USER) -e "mput -O /pub/mozilla.org/labs/r2d2b2g/ -d $(UPDATE_PATH)/$(XPI_NAME); quit;"
-	cd ftp/ && lftp sftp://stage.mozilla.org -u $(FTP_USER) -e "mput -O /pub/mozilla.org/labs/r2d2b2g/ -d $(UPDATE_PATH)/update.rdf; quit;"
+release: addon/$(ADDON_NAME).xpi addon/$(ADDON_NAME).update.rdf
+	ssh $(SSH_USER)@stage.mozilla.org 'mkdir -m 755 -p $(FTP_ROOT_PATH)/$(UPDATE_PATH)'
+	chmod 766 addon/$(ADDON_NAME).xpi addon/$(ADDON_NAME).update.rdf
+	scp -p addon/$(ADDON_NAME).xpi $(SSH_USER)@stage.mozilla.org:$(FTP_ROOT_PATH)/$(UPDATE_PATH)/$(XPI_NAME) 
+	scp -p addon/$(ADDON_NAME).update.rdf $(SSH_USER)@stage.mozilla.org:$(FTP_ROOT_PATH)/$(UPDATE_PATH)/update.rdf
 
 test:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx test --verbose --templatedir template/ $(BIN_ARG) $(TEST_ARG) $(PROFILE_ARG)
