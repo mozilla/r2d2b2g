@@ -59,7 +59,7 @@ B2G_TYPE ?= specific
 # B2G_ID
 
 # Use the current last known revision that sucessfully builds on Windows.
-B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2013-09-26-00-40-01-mozilla-aurora/
+B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2013-09-29-00-40-04-mozilla-aurora/
 
 # Currently, all B2G builds are custom so we can optimize for code size and fix
 # bugs in B2G or its nightly build environments (like 844047 and 815805).
