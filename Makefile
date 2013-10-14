@@ -37,12 +37,16 @@ endif
 
 B2G_VERSION=1.2
 ADDON_NAME=fxos_1_2_simulator
-ADDON_VERSION=6.0pre4
+# compute addon version out of package.json
+# matches xx.yy[pre,a,b]zz version patterns
+ADDON_VERSION=$(shell grep version addon/package.json | perl -p -e 's/.*([0-9]+\.[0-9]+(pre|a|b)?[0-9]*(dev)?).*/\1/')
+
 XPI_NAME=$(ADDON_NAME)-$(ADDON_VERSION)-$(B2G_PLATFORM).xpi
 
+FTP_ROOT_PATH=/pub/mozilla.org/labs/fxos-simulator
 UPDATE_PATH=$(B2G_VERSION)/$(B2G_PLATFORM)
-UPDATE_LINK=https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/$(UPDATE_PATH)/$(XPI_NAME)
-UPDATE_URL=https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/$(UPDATE_PATH)/update.rdf
+UPDATE_LINK=https://ftp.mozilla.org$(FTP_ROOT_PATH)/$(UPDATE_PATH)/$(XPI_NAME)
+UPDATE_URL=https://ftp.mozilla.org$(FTP_ROOT_PATH)/$(UPDATE_PATH)/update.rdf
 
 # The type of the B2G build.  It can be "nightly", in which case you may set
 # B2G_ID to the ID of the build (default: the most recent nightly build);
@@ -55,7 +59,7 @@ B2G_TYPE ?= specific
 # B2G_ID
 
 # Use the current last known revision that sucessfully builds on Windows.
-B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2013-09-26-00-40-01-mozilla-aurora/
+B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2013-09-29-00-40-04-mozilla-aurora/
 
 # Currently, all B2G builds are custom so we can optimize for code size and fix
 # bugs in B2G or its nightly build environments (like 844047 and 815805).
@@ -116,14 +120,13 @@ unix_to_windows_path = \
 # windows_to_unix_path = \
 #   $(shell echo '$(1)' | sed 's/\\/\//g' | sed 's/://')
 
-ifneq ($(strip $(LOCALES_FILE)),)
-  export LOCALE_BASEDIR ?= $(PWD)/gaia-l10n
+export LOCALES_FILE=${PWD}/build/languages.json
+export LOCALE_BASEDIR ?= $(PWD)/gaia-l10n
 
-  # Gaia expects these to be Windows-style paths on Windows.
-  ifeq (win32, $(B2G_PLATFORM))
-    LOCALES_FILE := $(call unix_to_windows_path,$(LOCALES_FILE))
-    LOCALE_BASEDIR := $(call unix_to_windows_path,$(LOCALE_BASEDIR))
-  endif
+# Gaia expects these to be Windows-style paths on Windows.
+ifeq (win32, $(B2G_PLATFORM))
+  LOCALES_FILE := $(call unix_to_windows_path,$(LOCALES_FILE))
+  LOCALE_BASEDIR := $(call unix_to_windows_path,$(LOCALE_BASEDIR))
 endif
 
 build: profile b2g appinfo
@@ -176,14 +179,18 @@ package:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx xpi --templatedir template/ --strip-sdk $(PRODUCTION_ARG)
 
 production: PRODUCTION_ARG=--update-link $(UPDATE_LINK) --update-url $(UPDATE_URL)
-production: package
-	mkdir -p ftp/$(UPDATE_PATH)/
-	cp addon/$(ADDON_NAME).update.rdf ftp/$(UPDATE_PATH)/update.rdf
-	cp addon/$(ADDON_NAME).xpi ftp/$(UPDATE_PATH)/$(XPI_NAME)
+production: locales build package
 
-release: ftp/$(UPDATE_PATH)/$(XPI_NAME) ftp/$(UPDATE_PATH)/update.rdf
-	cd ftp/ && lftp sftp://stage.mozilla.org -u $(FTP_USER) -e "mput -O /pub/mozilla.org/labs/r2d2b2g/ -d $(UPDATE_PATH)/$(XPI_NAME); quit;"
-	cd ftp/ && lftp sftp://stage.mozilla.org -u $(FTP_USER) -e "mput -O /pub/mozilla.org/labs/r2d2b2g/ -d $(UPDATE_PATH)/update.rdf; quit;"
+release: addon/$(ADDON_NAME).xpi addon/$(ADDON_NAME).update.rdf
+	@if [ -z $(SSH_USER) ]; then \
+	  echo "release target requires SSH_USER env variable to be defined."; \
+	  exit 1; \
+	fi
+	ssh $(SSH_USER)@stage.mozilla.org 'mkdir -m 775 -p $(FTP_ROOT_PATH)/$(UPDATE_PATH)'
+	chmod 664 addon/$(ADDON_NAME).xpi addon/$(ADDON_NAME).update.rdf
+	scp -p addon/$(ADDON_NAME).xpi $(SSH_USER)@stage.mozilla.org:$(FTP_ROOT_PATH)/$(UPDATE_PATH)/$(XPI_NAME)
+	ssh $(SSH_USER)@stage.mozilla.org 'cd $(FTP_ROOT_PATH)/$(UPDATE_PATH)/ && ln -fs $(XPI_NAME) $(ADDON_NAME)-$(B2G_PLATFORM)-latest.xpi'
+	scp -p addon/$(ADDON_NAME).update.rdf $(SSH_USER)@stage.mozilla.org:$(FTP_ROOT_PATH)/$(UPDATE_PATH)/update.rdf
 
 test:
 	cd addon-sdk && . bin/activate && cd ../addon && cfx test --verbose --templatedir template/ $(BIN_ARG) $(TEST_ARG) $(PROFILE_ARG)
