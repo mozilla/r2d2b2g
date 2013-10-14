@@ -139,8 +139,8 @@ clean:
 profile:
 	cp build/override-prefs.js gaia/build/custom-prefs.js
 	cp build/override-settings.json gaia/build/custom-settings.json
-	NOFTU=1 GAIA_APP_SRCDIRS=apps $(MAKE) -C gaia
-	DESKTOP=1 NOFTU=1 GAIA_APP_SRCDIRS=apps $(MAKE) -C gaia preferences
+	NOFTU=1 GAIA_APP_TARGET=production $(MAKE) -C gaia
+	DESKTOP=1 NOFTU=1 GAIA_APP_TARGET=production $(MAKE) -C gaia preferences
 	python build/override-webapps.py
 	cd gaia/tools/extensions/desktop-helper/ && zip -r ../../../profile/extensions/desktop-helper\@gaiamobile.org.xpi *
 	cd gaia/tools/extensions/activities/ && zip -r ../../../profile/extensions/activities\@gaiamobile.org.xpi *
