@@ -39,7 +39,7 @@ B2G_VERSION=1.2
 ADDON_NAME=fxos_1_2_simulator
 # compute addon version out of package.json
 # matches xx.yy[pre,a,b]zz version patterns
-ADDON_VERSION=$(shell cat addon/package.json | grep version | grep -oE '[0-9]+\.[0-9]+(pre|a|b)?[0-9]+')
+ADDON_VERSION=$(shell grep version addon/package.json | perl -p -e 's/.*([0-9]+\.[0-9]+(pre|a|b)?[0-9]*(dev)?).*/\1/')
 
 XPI_NAME=$(ADDON_NAME)-$(ADDON_VERSION)-$(B2G_PLATFORM).xpi
 
@@ -186,8 +186,8 @@ release: addon/$(ADDON_NAME).xpi addon/$(ADDON_NAME).update.rdf
 	  echo "release target requires SSH_USER env variable to be defined."; \
 	  exit 1; \
 	fi
-	ssh $(SSH_USER)@stage.mozilla.org 'mkdir -m 755 -p $(FTP_ROOT_PATH)/$(UPDATE_PATH)'
-	chmod 766 addon/$(ADDON_NAME).xpi addon/$(ADDON_NAME).update.rdf
+	ssh $(SSH_USER)@stage.mozilla.org 'mkdir -m 775 -p $(FTP_ROOT_PATH)/$(UPDATE_PATH)'
+	chmod 664 addon/$(ADDON_NAME).xpi addon/$(ADDON_NAME).update.rdf
 	scp -p addon/$(ADDON_NAME).xpi $(SSH_USER)@stage.mozilla.org:$(FTP_ROOT_PATH)/$(UPDATE_PATH)/$(XPI_NAME)
 	ssh $(SSH_USER)@stage.mozilla.org 'cd $(FTP_ROOT_PATH)/$(UPDATE_PATH)/ && ln -fs $(XPI_NAME) $(ADDON_NAME)-$(B2G_PLATFORM)-latest.xpi'
 	scp -p addon/$(ADDON_NAME).update.rdf $(SSH_USER)@stage.mozilla.org:$(FTP_ROOT_PATH)/$(UPDATE_PATH)/update.rdf
