@@ -59,17 +59,18 @@
       this._zipWithIndex(bridge_body).forEach((function bridgeFunc([obj, i]) {
         // grab the name of the function
         for (let k in obj) {
-          // store the bridge to prevent premature garbage collection
-          ref[k] = (function bridgeCall() {
+          // Store the bridge callback object to prevent premature garbage
+          // collection.
+          ref[k] = bridge_funcs[i][k].ptr(() => {
             // get a reference to the actual DLL call
             let f = this.I.use(k);
             // call the real DLL function with the arguments to the bridge call
             let res = f.apply(f, arguments);
             this.saved_errno = ctypes.winLastError;
             return res;
-          }).bind(this);
+          });
           // install this callback in the bridge struct
-          bridge[k] = bridge_funcs[i][k].ptr(ref[k]);
+          bridge[k] = ref[k];
         }
         return null; // to get rid of func not returning value warning
       }).bind(this));

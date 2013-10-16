@@ -35,7 +35,6 @@ const env = require("api-utils/environment").env;
 const File = require("file");
 const TmpD = require("sdk/system").pathFor("TmpD");
 
-const subprocess = require("subprocess");
 const self = require("self");
 const { platform } = require("system");
 
@@ -133,7 +132,7 @@ exports = module.exports = {
     // nop -- we automatically start tracking devices
   },
 
-  forwardPort: function forwardPort(port) {
+  forwardPort: function forwardPort(port, remote) {
     let deferred = Promise.defer();
     if (!deviceTracker.hasDevice) {
       deferred.reject(DEVICE_NOT_CONNECTED);
@@ -141,7 +140,7 @@ exports = module.exports = {
     }
 
     // <host-prefix>:forward:<local>;<remote>
-    let service = "host:forward:tcp:" + port + ";tcp:6000";
+    let service = "host:forward:tcp:" + port + ";" + (remote || "tcp:6000");
 
     queryService(service, deferred);
 

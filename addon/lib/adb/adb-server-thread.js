@@ -30,7 +30,7 @@ let I = null;
 let libadb = null;
 let libPath_;
 
-let jsMsgFn = CommonMessageHandler(worker, console, function(channel, args) {
+let jsMsgCallback = JsMsgType.ptr(CommonMessageHandler(worker, console, function(channel, args) {
   switch(channel) {
     case "device-update":
       let [updates] = JsMessage.unpack(args, ctypes.char.ptr);
@@ -78,7 +78,7 @@ let jsMsgFn = CommonMessageHandler(worker, console, function(channel, args) {
       console.log("Unknown message: " + channel);
       return JsMessage.pack(-1, Number);
   }
-});
+}));
 
 worker.once("init", function({ libPath }) {
   libPath_ = libPath;
@@ -112,7 +112,7 @@ worker.once("init", function({ libPath }) {
                   args: [ JsMsgType.ptr ]
                 }, libadb);
 
-  install_js_msg(JsMsgType.ptr(jsMsgFn));
+  install_js_msg(jsMsgCallback);
 });
 
 worker.once("start", function({ port, log_path }) {

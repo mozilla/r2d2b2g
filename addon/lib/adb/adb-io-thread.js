@@ -30,14 +30,14 @@ const console = new Console(worker);
 let I = null;
 let libadb = null;
 let io;
-let jsMsgFn = CommonMessageHandler(worker, console, function(channel, args) {
+let jsMsgCallback = JsMsgType.ptr(CommonMessageHandler(worker, console, function(channel, args) {
   switch(channel) {
     default:
       console.log("Unknown message: " + channel);
   }
 
   return JsMessage.pack(-1, Number);
-});
+}));
 
 worker.once("init", function({ libPath }) {
   I = new Instantiator();
@@ -52,7 +52,7 @@ worker.once("init", function({ libPath }) {
                   args: [ JsMsgType.ptr ]
                 }, libadb);
 
-  install_js_msg(JsMsgType.ptr(jsMsgFn));
+  install_js_msg(jsMsgCallback);
 });
 
 worker.listen("readStringFully", function({ fd, tag }) {

@@ -32,7 +32,7 @@ const I = new Instantiator;
 let libadb = null;
 let winusbPath_ = null;
 let getLastError = function() { return 0; };
-let jsMsgFn = CommonMessageHandler(worker, console, function(channel, args) {
+let jsMsgCallback = JsMsgType.ptr(CommonMessageHandler(worker, console, function(channel, args) {
   switch(channel) {
     case "get-last-error":
       return JsMessage.pack(getLastError(), Number);
@@ -44,7 +44,7 @@ let jsMsgFn = CommonMessageHandler(worker, console, function(channel, args) {
   }
 
   return JsMessage.pack(-1, Number);
-});
+}));
 
 worker.once("init", function({ winusbPath, libPath, driversPath, platform }) {
   libadb = ctypes.open(libPath);
@@ -56,7 +56,7 @@ worker.once("init", function({ winusbPath, libPath, driversPath, platform }) {
                   args: [ JsMsgType.ptr ]
                 }, libadb);
 
-  install_js_msg(JsMsgType.ptr(jsMsgFn));
+  install_js_msg(jsMsgCallback);
 
   // on Linux, fallback to pthreads here
   if (platform === "linux") {

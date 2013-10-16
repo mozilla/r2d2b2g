@@ -91,6 +91,8 @@ module.exports = {
     let close_handle_func;
     if (platform === "winnt") {
       let bridge = function close_bridge() {
+        // Reference the callback object here so it is not garbage collected.
+        close_handle_func = null;
         let f = I.use("AdbCloseHandle");
         // call the real DLL function with the arguments to the bridge call
         return f.apply(f, arguments);
