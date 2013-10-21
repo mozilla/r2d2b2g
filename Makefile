@@ -152,6 +152,7 @@ profile:
 	rm -rf addon/template
 	mkdir -p addon/template
 	mv gaia/profile addon/template/
+	cp gaia/profile-debug/user.js addon/template/profile/
 	cp addon-sdk/app-extension/bootstrap.js addon/template/
 	cp addon-sdk/app-extension/install.rdf addon/template/
 	mkdir -p addon/template/profile/extensions
