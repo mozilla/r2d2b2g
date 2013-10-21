@@ -33,9 +33,5 @@
   },
   "license": "MPL 2.0",
   "unpack": true,
-  "dependencies": ["gcli",
-                   "menuitems",
-                   "subprocess",
-                   "vold-utils",
-                   "jsonlint"]
+  "dependencies": ["subprocess"]
 }
