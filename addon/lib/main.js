@@ -3,6 +3,7 @@ const {Cc, Ci, Cu} = require("chrome");
 const {SimulatorProcess} = require("./simulator-process");
 const Promise = require("sdk/core/promise");
 const Self = require("sdk/self");
+const { Simulator } = Cu.import("resource://gre/modules/devtools/Simulator.jsm");
 
 let process;
 
@@ -32,17 +33,12 @@ function close() {
 // expose various information about the runtime we ship
 let appinfo = JSON.parse(Self.data.load("appinfo.json"));
 
-let Simulator;
-// Simulator module only landed in FF26,
-// so do not throw on addon startup when we miss it
-try {
-  Simulator = Cu.import("resource://gre/modules/devtools/Simulator.jsm").Simulator;
-} catch(e) {}
+Simulator.register(appinfo.label, {
+  appinfo: appinfo,
+  launch: launch,
+  close: close
+});
 
-if (Simulator) {
-  Simulator.register(appinfo.label, {
-    appinfo: appinfo,
-    launch: launch,
-    close: close
-  });
-}
+require("sdk/system/unload").when(function () {
+  Simulator.unregister(appinfo.label);
+});
