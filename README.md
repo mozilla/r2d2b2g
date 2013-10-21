@@ -1,8 +1,5 @@
 r2d2b2g is an experimental prototype test environment for Firefox OS
-in the form of a Firefox Desktop addon for
-[Linux](https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/r2d2b2g-linux.xpi),
-[Mac](https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/r2d2b2g-mac.xpi), and
-[Windows (crashy)](https://ftp.mozilla.org/pub/mozilla.org/labs/r2d2b2g/r2d2b2g-windows.xpi).
+in the form of a [Firefox Desktop addon](https://ftp.mozilla.org/pub/mozilla.org/labs/fxos-simulator/).
 
 To hack on it, clone this repository, then:
 
