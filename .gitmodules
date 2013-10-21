@@ -7,21 +7,9 @@
 [submodule "addon-sdk"]
 	path = addon-sdk
 	url = git://github.com/mykmelez/addon-sdk.git
-[submodule "addon/packages/menuitems"]
-	path = addon/packages/menuitems
-	url = git://github.com/mykmelez/menuitems-jplib.git
-[submodule "addon/packages/vold-utils"]
-	path = addon/packages/vold-utils
-	url = git://github.com/mykmelez/vold-utils-jplib.git
 [submodule "gaia"]
 	path = gaia
 	url = git://github.com/mykmelez/gaia.git
 [submodule "addon/packages/subprocess"]
 	path = addon/packages/subprocess
 	url = git://github.com/mykmelez/jetpack-subprocess.git
-[submodule "addon/packages/gcli"]
-	path = addon/packages/gcli
-	url = git://github.com/jryans/gcli-jplib.git
-[submodule "addon/packages/jsonlint"]
-	path = addon/packages/jsonlint
-	url = git://github.com/rpl/jsonlint.git
