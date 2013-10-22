@@ -90,11 +90,11 @@
        <box id="placeholder" />
   </box>
 
-  <toolbox hidden="true">
+  <toolbox id="desktop-toolbar">
     <toolbar align="center" pack="center">
       <toolbarbutton id="homeButton"/>
-      <toolbarbutton id="rotateButton"/>
-      <toolbarbutton id="geolocationButton"/>
+      <toolbarbutton id="rotateButton" hidden="true"/>
+      <toolbarbutton id="geolocationButton" hidden="true"/>
     </toolbar>
   </toolbox>
 
