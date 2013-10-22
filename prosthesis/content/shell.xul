@@ -23,12 +23,6 @@
     window.addEventListener("ContentStart", function() {
       Services.scriptloader.loadSubScript("chrome://prosthesis/content/shell.js");
     }, false);
-    // Bug 917331 - Workaround until b2g desktop is fixed.
-    var AdbController = {updateState: function (){}};
-    // Workaround until bug 917310 lands
-    Components.utils.import("resource://gre/modules/WebappOSUtils.jsm").WebappOSUtils.getInstallPath = function(aApp) {
-      return aApp.basePath + "/" + aApp.id;
-    };
   </script>
 
   <script type="application/javascript" src="chrome://browser/content/settings.js"/>
