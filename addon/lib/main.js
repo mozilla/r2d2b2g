@@ -41,4 +41,5 @@ Simulator.register(appinfo.label, {
 
 require("sdk/system/unload").when(function () {
   Simulator.unregister(appinfo.label);
+  close();
 });
