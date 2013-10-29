@@ -39,7 +39,7 @@ B2G_VERSION=1.2
 ADDON_NAME=fxos_1_2_simulator
 # compute addon version out of package.json
 # matches xx.yy[pre,a,b]zz version patterns
-ADDON_VERSION=$(shell grep version addon/package.json | perl -p -e 's/.*([0-9]+\.[0-9]+(pre|a|b)?[0-9]*(dev)?).*/\1/')
+ADDON_VERSION=$(shell grep version addon/package.json | perl -p -e 's/.*([0-9]+\.[0-9]+(pre|a|b)?[0-9]*(dev)?(\.[0-9]{8})).*/\1/')
 
 XPI_NAME=$(ADDON_NAME)-$(ADDON_VERSION)-$(B2G_PLATFORM).xpi
 
