@@ -194,64 +194,12 @@ int register_new_device(usb_handle* handle) {
   return 1;
 }
 
-
-static int should_kill = 0;
-extern int is_io_pump_on;
-ADB_COND_DEFINE(should_kill_cond);
-static void inc_should_kill() {
-  adb_mutex_lock(&should_kill_lock);
-  D("Set should_kill to %d\n", should_kill+1);
-  should_kill++;
-  adb_mutex_unlock(&should_kill_lock);
-}
-static void set_should_kill(int val) {
-  adb_mutex_lock(&should_kill_lock);
-  D("Set should_kill to %d\n", val);
-  should_kill = val;
-  adb_mutex_unlock(&should_kill_lock);
-}
-
-int notify_should_kill() {
-  if (!should_kill) {
-    return should_kill;
-  }
-
-  inc_should_kill();
-  D("Broadcasting\n");
-  adb_cond_broadcast(&should_kill_cond);
-  return should_kill;
-}
-
-// signals the device_loop and device_output_thread
-void should_kill_threads() {
-  ADB_COND(should_kill_cond);
-  set_should_kill(1);
-
-  // wait for both the device loop's and the input_thread's death (if it exists)
-  D("Waiting for %d notifications\n", 2 + is_io_pump_on - 1);
-  while(should_kill < (2 + is_io_pump_on)) {
-    // TODO: HACK: For some reason Geeksphone Peak will not close its device
-    //   input thread unless there is a sleep here. (probably starvation)
-    //   I think the adb_cond_wait/adb_broadcast implementations don't work.
-    //   This should be removed when we patch adb_cond_wait/adb_broadcast.
-    adb_sleep_ms(1);
-    // hang on a condition
-    adb_cond_wait(&should_kill_cond, NULL);
-  }
-  D("device_poll_thread should be shutdown\n");
-}
-
 void* device_poll_thread(void* _bridge) {
   bridge = (struct dll_bridge *)_bridge;
   D("Created device thread\n");
 
   int i = 0;
   while(1) {
-    if (notify_should_kill()) {
-      D("Cleaned in timer handler\n");
-      return NULL;
-    }
-
     if(i % 10 == 0) {
       D("In the if-statement");
       find_devices();
@@ -405,66 +353,37 @@ int usb_write(usb_handle* handle, const void* data, int len) {
 }
 
 int usb_read(usb_handle *handle, void* data, int len) {
+  unsigned long time_out = 0;
   unsigned long read = 0;
   int ret;
   char * data_ = (char *)data;
-  ADBAPIHANDLE completed_handle = NULL;
 
   D("usb_read %d\n", len);
   if (NULL != handle) {
     while (len > 0) {
       int xfer = (len > 4096) ? 4096 : len;
 
-      // loop until there is a byte
       int saved_errno = 0;
 
-      D("Pre read call\n");
-      completed_handle = o_bridge->AdbReadEndpointAsync(handle->adb_read_pipe,
+      ret = o_bridge->AdbReadEndpointSync(handle->adb_read_pipe,
                                   (void*)data_,
                                   (unsigned long)xfer,
                                   &read,
-                                  0,
-                                  NULL);
+                                  time_out);
       saved_errno = (int)send_js_msg("get-last-error", NULL);
-      if (completed_handle == NULL) {
-        D("AdbReadEndpointAsync, errno: %d\n", saved_errno);
-        return -1;
-      }
-      D("Read async started");
-
-      int hasCompleted = FALSE;
-      do {
-        hasCompleted = o_bridge->AdbHasOvelappedIoComplated(completed_handle);
-        saved_errno = (int)send_js_msg("get-last-error", NULL);
-        if (saved_errno != 0) {
-          D("HasOvelappedIoComplated, errno: %d\n", saved_errno);
-          return -1;
-        }
-
-        if (should_kill) {
-          return -1;
-          // the input thread will notify_should_kill
-        }
-
-        Sleep(1);
-      } while(!hasCompleted);
-      D("Post hasComplated\n");
-
-
-      ret = o_bridge->AdbGetOvelappedIoResult(completed_handle, NULL, &read, true);
-      if (!ret) {
-        D("AdbGetOvelappedIoResult(read %u) failure (%u). Error %u, read %u\n",
-            xfer, ret, (int)send_js_msg("get-last-error", NULL), read);
-        return -1;
-      }
       D("usb_read got: %ld, expected: %d, errno: %d\n", read, xfer, saved_errno);
+      if (ret) {
+        data_ += read;
+        len -= read;
 
-      data_ += read;
-      len -= read;
-
-      if (len == 0)
-        return 0;
-
+        if (len == 0)
+          return 0;
+      } else {
+        // assume ERROR_INVALID_HANDLE indicates we are disconnected
+        if (saved_errno == ERROR_INVALID_HANDLE)
+          usb_kick(handle, i_bridge->AdbCloseHandle);
+        break;
+      }
       errno = saved_errno;
     }
   } else {

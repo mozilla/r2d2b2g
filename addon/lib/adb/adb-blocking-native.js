@@ -37,7 +37,7 @@ module.exports = {
                 args: [ ]
               }, libadb);
 
-    if (platform === "darwin" || platform === "winnt") {
+    if (platform === "darwin") {
       I.declare({ name: "kill_threads",
                   returns: ctypes.void_t,
                   args: []
@@ -74,8 +74,8 @@ module.exports = {
   },
 
   killNativeSafely: function killNativeSafely() {
-    // if we're not on OSX or Windows, we don't have to do anything
-    if (platform === "darwin" || platform === "winnt") {
+    // Only OSX needs the device loop killed.
+    if (platform === "darwin") {
       I.use("kill_threads")();
     }
   },
