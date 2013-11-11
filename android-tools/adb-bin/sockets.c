@@ -738,7 +738,7 @@ static int smart_socket_enqueue(asocket *s, apacket *p)
             ** and tear down here.
             */
         s2 = create_host_service_socket(service, serial);
-        D( "SS(%d): attempted to create host service socket\n", s2->id);
+        D( "SS(%d): attempted to create host service socket\n", s->id);
         if(s2 == 0) {
             D( "SS(%d): couldn't create host service '%s'\n", s->id, service );
             sendfailmsg(s->peer->fd, "unknown host service");

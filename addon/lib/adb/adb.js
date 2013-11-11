@@ -205,6 +205,8 @@ exports = module.exports = {
   }
 };
 
+context.close = exports.close;
+
 function restart_helper() {
   context.restart = exports.restart;
 }

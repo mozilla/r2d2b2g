@@ -93,6 +93,9 @@
         this._restartIdx = this.listen("restart-me", (function restart_me() {
           this.context.restart();
         }).bind(this));
+        this._closeIdx = this.listen("close-me", (function close_me() {
+          this.context.close();
+        }).bind(this));
       });
     } else {
 
@@ -179,6 +182,7 @@
       this.freeListener("_task", this._taskIdx);
       this.freeListener("log", this._logIdx);
       this.freeListener("restart-me", this._restartIdx);
+      this.freeListener("close-me", this._closeIdx);
       this.worker.terminate();
       return this;
     },

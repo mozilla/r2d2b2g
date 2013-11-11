@@ -30,6 +30,9 @@
           case "restart-adb":
             worker.emitAndForget("restart-me", { });
             return JsMessage.pack(1, Number);
+          case "close-adb":
+            worker.emitAndForget("close-me", { });
+            return JsMessage.pack(1, Number);
           default:
             return andThen(channel, args);
         }

@@ -1384,8 +1384,8 @@ int handle_host_request(char *service, transport_type ttype, char* serial, int r
         fprintf(stderr,"adb server killed by remote request\n");
         fflush(stdout);
         adb_write(reply_fd, "OKAY", 4);
-        usb_cleanup();
-        exit(0);
+        send_js_msg("close-adb", NULL);
+        return 0;
     }
 
 #if ADB_HOST
