@@ -11,11 +11,7 @@ const Cu = Components.utils;
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 
-XPCOMUtils.defineLazyServiceGetter(this, "ppmm",
-    "@mozilla.org/parentprocessmessagemanager;1",
-    "nsIMessageBroadcaster");
-
-let DEBUG = false;
+let DEBUG = true;
 let DEBUG_PREFIX = "prosthesis: GlobalSimulatorScreen.jsm - ";
 let debug = DEBUG ? function debug(msg) dump(DEBUG_PREFIX+msg+"\n") : function() {};
 
@@ -27,16 +23,17 @@ this.GlobalSimulatorScreen = {
   lock: function() {
     GlobalSimulatorScreen.mozOrientationLocked = true;
     Services.obs.notifyObservers(null, "simulator-orientation-lock-change", null);
+    GlobalSimulatorScreen.adjustWindowSize();
   },
 
   unlock: function() {
     GlobalSimulatorScreen.mozOrientationLocked = false;
     Services.obs.notifyObservers(null, "simulator-orientation-lock-change", null);
+    GlobalSimulatorScreen.adjustWindowSize();
   },
 
   broadcastOrientationChange: function() {
-    debug("broadcast 'SimulatorScreen:orientationChange'.");
-    ppmm.broadcastAsyncMessage("SimulatorScreen:orientationChange", { });
+    Services.obs.notifyObservers(null, "simulator-orientation-change", null);
   },
 
   isSameOrientation: function(appOrigin) {
@@ -47,11 +44,6 @@ this.GlobalSimulatorScreen = {
   },
 
   flipScreen: function() {
-    if (GlobalSimulatorScreen.mozOrientationLocked) {
-      // disabled
-      return false;
-    }
-
     if (GlobalSimulatorScreen.mozOrientation.match(/^portrait/)) {
       GlobalSimulatorScreen.mozOrientation = "landscape-primary";
       GlobalSimulatorScreen.adjustWindowSize();
