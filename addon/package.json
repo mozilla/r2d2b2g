@@ -1,7 +1,7 @@
 {
   "id": "fxos_1_2_simulator@mozilla.org",
   "name": "fxos_1_2_simulator",
-  "version": "6.0pre6dev.20130929",
+  "version": "6.0pre6.20131125",
   "fullName": "Firefox OS 1.2 Simulator",
   "label": "Firefox OS 1.2",
   "description": "a Firefox OS 1.2 simulator",
