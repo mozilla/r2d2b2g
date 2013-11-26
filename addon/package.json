@@ -1,10 +1,10 @@
 {
-  "id": "fxos_1_2_simulator@mozilla.org",
-  "name": "fxos_1_2_simulator",
-  "version": "6.0pre7dev.20130929",
-  "fullName": "Firefox OS 1.2 Simulator",
-  "label": "Firefox OS 1.2",
-  "description": "a Firefox OS 1.2 simulator",
+  "id": "fxos_1_3_simulator@mozilla.org",
+  "name": "fxos_1_3_simulator",
+  "version": "7.0pre5dev.20131126",
+  "fullName": "Firefox OS 1.3 Simulator",
+  "label": "Firefox OS 1.3",
+  "description": "a Firefox OS 1.3 simulator",
   "author": "Myk Melez (https://github.com/mykmelez)",
   "contributors": [
     "Alexandre Poirot (https://github.com/ochameau)",
