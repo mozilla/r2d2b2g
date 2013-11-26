@@ -18,8 +18,12 @@ let debug = DEBUG ? function debug(msg) dump(DEBUG_PREFIX+msg+"\n") : function()
 this.GlobalSimulatorScreen = {
   width: 320,
   height: 480,
+  // Orientation data for the current app,
+  // what it supports
   mozOrientationLocked: false,
   mozOrientation: "portrait-primary",
+  // The faked screen orientation
+  screenOrientation: "portrait-primary",
   lock: function() {
     GlobalSimulatorScreen.mozOrientationLocked = true;
     Services.obs.notifyObservers(null, "simulator-orientation-lock-change", null);
@@ -36,21 +40,14 @@ this.GlobalSimulatorScreen = {
     Services.obs.notifyObservers(null, "simulator-orientation-change", null);
   },
 
-  isSameOrientation: function(appOrigin) {
-    let orientation = this.getAppOrientation(appOrigin);
-    if (!orientation)
-      return true;
-    return this.mozOrientation.split("-")[0] === orientation.split("-")[0];
-  },
-
   flipScreen: function() {
-    if (GlobalSimulatorScreen.mozOrientation.match(/^portrait/)) {
-      GlobalSimulatorScreen.mozOrientation = "landscape-primary";
+    if (GlobalSimulatorScreen.screenOrientation.match(/^portrait/)) {
+      GlobalSimulatorScreen.screenOrientation = "landscape-primary";
       GlobalSimulatorScreen.adjustWindowSize();
       GlobalSimulatorScreen.broadcastOrientationChange();
       return true;
-    } else if (GlobalSimulatorScreen.mozOrientation.match(/^landscape/)) {
-      GlobalSimulatorScreen.mozOrientation = "portrait-primary";
+    } else if (GlobalSimulatorScreen.screenOrientation.match(/^landscape/)) {
+      GlobalSimulatorScreen.screenOrientation = "portrait-primary";
       GlobalSimulatorScreen.adjustWindowSize();
       GlobalSimulatorScreen.broadcastOrientationChange();
       return true;
@@ -61,10 +58,10 @@ this.GlobalSimulatorScreen = {
 
   // adjust shell, homescreen and optional app div container (if appOrigin != null)
   adjustWindowSize: function() {
-    if (GlobalSimulatorScreen.mozOrientation.match(/^portrait/)) {
+    if (GlobalSimulatorScreen.screenOrientation.match(/^portrait/)) {
       GlobalSimulatorScreen.width = 320;
       GlobalSimulatorScreen.height = 480;
-    } else if (GlobalSimulatorScreen.mozOrientation.match(/^landscape/)) {
+    } else if (GlobalSimulatorScreen.screenOrientation.match(/^landscape/)) {
       GlobalSimulatorScreen.width = 480;
       GlobalSimulatorScreen.height = 320;
     }

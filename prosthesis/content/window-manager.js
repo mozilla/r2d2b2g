@@ -39,7 +39,7 @@ let SimulatorWindowManager = {
     // it is displayed rotated on the side
     let shouldRotate =
       GlobalSimulatorScreen.mozOrientationLocked &&
-      GlobalSimulatorScreen.mozOrientation.match(/^landscape/);
+      GlobalSimulatorScreen.screenOrientation.match(/^landscape/);
 
     if (shouldRotate) {
       let w = width;
