@@ -22,6 +22,7 @@
   <script type="application/javascript">
     window.addEventListener("ContentStart", function() {
       Services.scriptloader.loadSubScript("chrome://prosthesis/content/shell.js");
+      Services.scriptloader.loadSubScript("chrome://prosthesis/content/window-manager.js");
     }, false);
   </script>
 
@@ -93,7 +94,7 @@
   <toolbox id="desktop-toolbar">
     <toolbar align="center" pack="center">
       <toolbarbutton id="homeButton"/>
-      <toolbarbutton id="rotateButton" hidden="true"/>
+      <toolbarbutton id="rotateButton"/>
       <toolbarbutton id="geolocationButton" hidden="true"/>
     </toolbar>
   </toolbox>

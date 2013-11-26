@@ -1,3 +1,3 @@
 component {c83c02c0-5d43-4e3e-987f-9173b313e880} SimulatorScreen.js
 contract @mozilla.org/simulator-screen;1 {c83c02c0-5d43-4e3e-987f-9173b313e880}
-category JavaScript-global-property screen @mozilla.org/simulator-screen;1
+category profile-after-change SimulatorScreen @mozilla.org/simulator-screen;1
