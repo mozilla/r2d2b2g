@@ -59,7 +59,7 @@ B2G_TYPE ?= specific
 # B2G_ID
 
 # Use the current last known revision that sucessfully builds on Windows.
-B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2013-11-25-00-40-01-mozilla-b2g26_v1_2/
+B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2014-01-06-00-40-01-mozilla-b2g26_v1_2/
 
 # Currently, all B2G builds are custom so we can optimize for code size and fix
 # bugs in B2G or its nightly build environments (like 844047 and 815805).
@@ -142,16 +142,25 @@ clean:
 profile:
 	cp build/override-prefs.js gaia/build/custom-prefs.js
 	cp build/override-settings.json gaia/build/custom-settings.json
+	# We can't set DESKTOP=1 until bug 930104 reach all branches we are targeting
+	# In the meantime, we set DESKTOP=1 for `make preferences` to make prefs
+	# in a debug profile and then copy them to the regular profile below.
 	NOFTU=1 GAIA_APP_TARGET=production $(MAKE) -C gaia
 	DESKTOP=1 NOFTU=1 GAIA_APP_TARGET=production $(MAKE) -C gaia preferences
 	python build/override-webapps.py
+	# As we do not use DESKTOP=1 for extensions target, helper addons aren't installed into the profile
 	cd gaia/tools/extensions/desktop-helper/ && zip -r ../../../profile/extensions/desktop-helper\@gaiamobile.org.xpi *
 	cd gaia/tools/extensions/activities/ && zip -r ../../../profile/extensions/activities\@gaiamobile.org.xpi *
+	# Remove junks gaia build system creates
 	rm -rf gaia/profile/startupCache gaia/profile/places.* gaia/profile/permissions.sqlite gaia/profile/defaults
+	# Strip dictionaries to reduce xpi size
 	zip -d gaia/profile/webapps/keyboard.gaiamobile.org/application.zip js/imes/latin/dictionaries/*
+	# Remove firefox addons that mess up with the simulator
+	rm -rf gaia/profile/extensions/{browser-helper@gaiamobile.org,gaia-build@gaiamobile.org,httpd@gaiamobile.org,httpd,screen-reader-simulator@gaiamobile.org}
 	rm -rf addon/template
 	mkdir -p addon/template
 	mv gaia/profile addon/template/
+	# As preferences target is executed with DESKTOP=1, it is installed in another debug profile
 	cp gaia/profile-debug/user.js addon/template/profile/
 	cp addon-sdk/app-extension/bootstrap.js addon/template/
 	cp addon-sdk/app-extension/install.rdf addon/template/

@@ -8,6 +8,8 @@
 const { Cc, Ci, Cu, ChromeWorker } = require("chrome");
 
 Cu.import("resource://gre/modules/Services.jsm");
+Cu.import("resource://gre/modules/osfile.jsm");
+Cu.import("resource://gre/modules/Task.jsm");
 
 const { EventTarget } = require("sdk/event/target");
 const { emit, off } = require("sdk/event/core");
@@ -18,6 +20,7 @@ const Self = require("self");
 const URL = require("url");
 const Subprocess = require("subprocess");
 const Promise = require("sdk/core/promise");
+const Prefs = require("sdk/simple-prefs").prefs;
 
 const { rootURI: ROOT_URI } = require('@loader/options');
 const PROFILE_URL = ROOT_URI + "profile/";
@@ -48,13 +51,26 @@ exports.SimulatorProcess = Class({
   /**
    * Start the process and connect the debugger client.
    */
-  run: function() {
+  run: function () Task.spawn((function *() {
     // kill before start if already running
     if (this.process != null) {
-      this.process
-          .kill()
-          .then(this.run.bind(this));
-      return;
+      yield this.process.kill();
+    }
+
+    if (Prefs.gaiaProfile) {
+      // If a custom profile is given, we need to install prosthesis addon into it
+      let profileAddons = OS.Path.join(Prefs.gaiaProfile, "extensions");
+      let name = "b2g-prosthesis@mozilla.org.xpi";
+      let profileXpiPath = OS.Path.join(profileAddons, name);
+      let exists = yield OS.File.exists(profileXpiPath);
+      if (!exists) {
+        OS.File.makeDir(profileAddons, {ignoreExisting: true});
+        let simulatorAddons = OS.Path.join(
+          URL.toFilename(PROFILE_URL), "extensions");
+        yield OS.File.copy(
+          OS.Path.join(simulatorAddons, name),
+          profileXpiPath);
+       }
     }
 
     // resolve b2g binaries path (raise exception if not found)
@@ -90,30 +106,32 @@ exports.SimulatorProcess = Class({
       environment: environment,
 
       // emit stdout event
-      stdout: (function(data) {
-        emit(this, "stdout", data);
-      }).bind(this),
+      stdout: data => {
+        emit(this, "stdout", data)
+      },
 
       // emit stderr event
-      stderr: (function(data) {
+      stderr: data => {
         emit(this, "stderr", data);
-      }).bind(this),
+      },
 
       // on b2g instance exit, reset tracked process, remoteDebuggerPort and
       // shuttingDown flag, then finally emit an exit event
-      done: (function(result) {
+      done: result => {
         console.log(this.b2gFilename + " terminated with " + result.exitCode);
         this.process = null;
         emit(this, "exit", result.exitCode);
-      }).bind(this)
+      }
     });
-  },
+
+    return null;
+  }).bind(this)),
 
   // request a b2g instance kill
   kill: function() {
     let deferred = Promise.defer();
     if (this.process) {
-      this.once("exit", (exitCode) => {
+      this.once("exit", exitCode => {
         this.shuttingDown = false;
         deferred.resolve(exitCode);
       });
@@ -135,7 +153,15 @@ exports.SimulatorProcess = Class({
 
   // compute current b2g file handle
   get b2gExecutable() {
-    if (this._executable) return this._executable;
+    if (this._executable) {
+      return this._executable;
+    }
+
+    if (Prefs.customRuntime) {
+      this._executable = Prefs.customRuntime;
+      this._executableFilename = "Custom runtime";
+      return this._executable;
+    }
 
     let executables = {
       WINNT: "win32/b2g/b2g-bin.exe",
@@ -147,7 +173,7 @@ exports.SimulatorProcess = Class({
     let url = Self.data.url(executables[Runtime.OS]);
     let path = URL.toFilename(url);
 
-    let executable = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);    
+    let executable = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
     executable.initWithPath(path);
     let executableFilename = executables[Runtime.OS];
 
@@ -180,7 +206,7 @@ exports.SimulatorProcess = Class({
   get b2gArguments() {
     let args = [];
 
-    let profile = URL.toFilename(PROFILE_URL);
+    let profile = Prefs.gaiaProfile || URL.toFilename(PROFILE_URL);
     args.push("-profile", profile);
 
     // NOTE: push dbgport option on the b2g-desktop commandline
