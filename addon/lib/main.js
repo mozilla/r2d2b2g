@@ -15,9 +15,8 @@ function launch({ port }) {
 
   process = SimulatorProcess();
   process.remoteDebuggerPort = port;
-  process.run();
 
-  return Promise.resolve();
+  return process.run();
 }
 
 function close() {
