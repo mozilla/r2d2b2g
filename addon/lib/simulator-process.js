@@ -51,7 +51,7 @@ exports.SimulatorProcess = Class({
   /**
    * Start the process and connect the debugger client.
    */
-  run: function () Task.spawn((function *() {
+  run: function () Task.spawn((function () {
     // kill before start if already running
     if (this.process != null) {
       yield this.process.kill();
@@ -124,7 +124,7 @@ exports.SimulatorProcess = Class({
       }
     });
 
-    return null;
+    throw new Task.Result();
   }).bind(this)),
 
   // request a b2g instance kill
