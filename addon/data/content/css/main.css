@@ -590,6 +590,13 @@ section header {
     pointer-events: all;
 }
 
+#sidebar .deprecated {
+    font-weight: 300;
+    text-align: center;
+    margin: 1em;
+	border: 2px orange dashed;
+    background-color: #FCF5BA;
+}
 #sidebar .device-dependent {
     text-align: center;
     height: 0;
