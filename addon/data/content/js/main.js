@@ -107,6 +107,11 @@ var Simulator = {
     // Clears removed apps on reload
     window.postMessage({ name: "listApps", flush: true }, "*");
     window.postMessage({ name: "listTabs" }, "*");
+
+    var geckoVersion = navigator.userAgent.match(/rv:(\d+)/)[1];
+    if (geckoVersion >= 26) {
+      $("#deprecation-message").show();
+    }
   },
 
   updateDeviceView: function() {
