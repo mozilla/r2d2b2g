@@ -19,7 +19,7 @@ const Runtime = require("runtime");
 const Self = require("self");
 const URL = require("url");
 const Subprocess = require("subprocess");
-const Promise = require("sdk/core/promise");
+const promise = require("sdk/core/promise");
 const Prefs = require("sdk/simple-prefs").prefs;
 
 const { rootURI: ROOT_URI } = require('@loader/options');
@@ -129,7 +129,7 @@ exports.SimulatorProcess = Class({
 
   // request a b2g instance kill
   kill: function() {
-    let deferred = Promise.defer();
+    let deferred = promise.defer();
     if (this.process) {
       this.once("exit", exitCode => {
         this.shuttingDown = false;
@@ -142,7 +142,7 @@ exports.SimulatorProcess = Class({
       }
       return deferred.promise;
     } else {
-      return Promise.resolve(undefined);
+      return promise.resolve(undefined);
     }
   },  
 
