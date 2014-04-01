@@ -60,7 +60,7 @@ B2G_TYPE ?= specific
 # B2G_ID
 
 # Use the current last known revision that sucessfully builds on Windows.
-B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2014-01-06-00-40-01-mozilla-b2g26_v1_2/
+B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2014/03/2014-03-31-16-40-03-mozilla-b2g26_v1_2/
 
 # Currently, all B2G builds are custom so we can optimize for code size and fix
 # bugs in B2G or its nightly build environments (like 844047 and 815805).
