@@ -9,7 +9,7 @@
 	url = git://github.com/mykmelez/addon-sdk.git
 [submodule "gaia"]
 	path = gaia
-	url = git://github.com/mykmelez/gaia.git
+	url = git://github.com/mozilla-b2g/gaia.git
 [submodule "addon/packages/subprocess"]
 	path = addon/packages/subprocess
 	url = git://github.com/mykmelez/jetpack-subprocess.git
