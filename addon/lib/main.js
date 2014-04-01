@@ -1,7 +1,7 @@
 const {Cc, Ci, Cu} = require("chrome");
 
 const {SimulatorProcess} = require("./simulator-process");
-const Promise = require("sdk/core/promise");
+const promise = require("sdk/core/promise");
 const Self = require("sdk/self");
 const { Simulator } = Cu.import("resource://gre/modules/devtools/Simulator.jsm");
 
@@ -21,7 +21,7 @@ function launch({ port }) {
 
 function close() {
   if (!process) {
-    return Promise.resolve();
+    return promise.resolve();
   }
   let p = process;
   process = null;
