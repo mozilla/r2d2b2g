@@ -36,6 +36,7 @@ ifndef B2G_PLATFORM
 endif
 
 B2G_VERSION=1.2
+GECKO_VERSION=26
 ADDON_NAME=fxos_1_2_simulator
 # compute addon version out of package.json
 # matches xx.yy[pre,a,b]zz version patterns
@@ -67,20 +68,20 @@ B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2014-01-06-00
 # Platform-specific Defines
 ifeq (win32, $(B2G_PLATFORM))
   # The URL of the specific B2G build.
-  B2G_URL ?= $(B2G_URL_BASE)b2g-26.0.multi.win32.zip
+  B2G_URL ?= $(B2G_URL_BASE)b2g-$(GECKO_VERSION).0.multi.win32.zip
   B2G_BIN_DIR = b2g
 else
 ifeq (mac64, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-26.0.multi.mac64.dmg
+  B2G_URL ?= $(B2G_URL_BASE)b2g-$(GECKO_VERSION).0.multi.mac64.dmg
   DOWNLOAD_CMD = /usr/bin/curl -O
   B2G_BIN_DIR = B2G.app/Contents/MacOS
 else
 ifeq (linux64, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-26.0.multi.linux-x86_64.tar.bz2
+  B2G_URL ?= $(B2G_URL_BASE)b2g-$(GECKO_VERSION).0.multi.linux-x86_64.tar.bz2
   B2G_BIN_DIR = b2g
 else
 ifeq (linux, $(B2G_PLATFORM))
-  B2G_URL ?= $(B2G_URL_BASE)b2g-26.0.multi.linux-i686.tar.bz2
+  B2G_URL ?= $(B2G_URL_BASE)b2g-$(GECKO_VERSION).0.multi.linux-i686.tar.bz2
   B2G_BIN_DIR = b2g
 endif
 endif
