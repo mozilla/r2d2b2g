@@ -35,9 +35,9 @@ ifndef B2G_PLATFORM
   endif
 endif
 
-B2G_VERSION=1.2
-GECKO_VERSION=26
-ADDON_NAME=fxos_1_2_simulator
+B2G_VERSION=1.3
+GECKO_VERSION=28
+ADDON_NAME=fxos_1_3_simulator
 # compute addon version out of package.json
 # matches xx.yy[pre,a,b]zz version patterns
 ADDON_VERSION=$(shell grep version addon/package.json | perl -p -e 's/.*([0-9]+\.[0-9]+(pre|a|b)?[0-9]*(dev)?(\.[0-9]{8})).*/\1/')
@@ -60,7 +60,7 @@ B2G_TYPE ?= specific
 # B2G_ID
 
 # Use the current last known revision that sucessfully builds on Windows.
-B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2014/03/2014-03-31-16-40-03-mozilla-b2g26_v1_2/
+B2G_URL_BASE = https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/2014/03/2014-03-31-16-40-05-mozilla-b2g28_v1_3/
 
 # Currently, all B2G builds are custom so we can optimize for code size and fix
 # bugs in B2G or its nightly build environments (like 844047 and 815805).
