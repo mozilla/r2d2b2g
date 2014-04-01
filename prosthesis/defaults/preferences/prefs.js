@@ -6,7 +6,7 @@
 // Note that we need to update this string each time we update the version
 // of B2G we ship to one on a different train (i.e. with a different major
 // version number).
-user_pref("general.useragent.override", "Mozilla/5.0 (Mobile; rv:26.0) Gecko/26.0 Firefox/26.0");
+user_pref("general.useragent.override", "Mozilla/5.0 (Mobile; rv:28.0) Gecko/28.0 Firefox/28.0");
 
 // Don't go to sleep so quickly.
 user_pref("power.screen.timeout", 86400);
