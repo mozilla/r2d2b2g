@@ -22,7 +22,7 @@ const RemoteSimulatorClient = require("remote-simulator-client");
 const xulapp = require("sdk/system/xul-app");
 const JsonLint = require("jsonlint/jsonlint");
 const ADB = require("adb");
-const Promise = require("sdk/core/promise");
+const promise = require("sdk/core/promise");
 const Runtime = require("runtime");
 const Validator = require("./validator");
 
@@ -1489,7 +1489,7 @@ let simulator = module.exports = {
   },
 
   connectToDevice: function() {
-    let deferred = Promise.defer();
+    let deferred = promise.defer();
 
     this.connectADBToDevice().
     then(this.connectDebuggerToDevice.bind(this)).
@@ -1508,7 +1508,7 @@ let simulator = module.exports = {
   },
 
   connectADBToDevice: function() {
-    let deferred = Promise.defer();
+    let deferred = promise.defer();
 
     if (adbReady) {
       deferred.resolve();
@@ -1526,7 +1526,7 @@ let simulator = module.exports = {
   },
 
   connectDebuggerToDevice: function connectDebuggerToDevice() {
-    let deferred = Promise.defer();
+    let deferred = promise.defer();
 
     if (debuggerReady) {
       deferred.resolve();
