@@ -7,11 +7,14 @@
 let contentWindow = document.defaultView;
 
 contentWindow.addEventListener("message", function(event) {
-  self.postMessage(event.data);
+  let message = event.data;
+  if (message.destination === "content") {
+    return;
+  }
+  self.postMessage(message);
 }, false);
 
 self.on("message", function(message) {
-  let event = document.createEvent("CustomEvent");
-  event.initCustomEvent("addon-message", true, true, message);
-  document.documentElement.dispatchEvent(event);
+  message.destination = "content";
+  contentWindow.postMessage(message, "*");
 });
