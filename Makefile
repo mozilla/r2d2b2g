@@ -133,7 +133,7 @@ build: profile b2g adb
 
 clean:
 	rm -rf addon/data/$(B2G_PLATFORM)
-	rm -rf addon/template
+	rm -rf addon/template/profile
 	rm -f gaia/build/custom-prefs.js
 	rm -f gaia/build/custom-settings.json
 	rm -f $(ADB_PACKAGE)
@@ -149,11 +149,8 @@ profile:
 	cd gaia/tools/extensions/desktop-helper/ && zip -r ../../../profile/extensions/desktop-helper\@gaiamobile.org.xpi *
 	cd gaia/tools/extensions/activities/ && zip -r ../../../profile/extensions/activities\@gaiamobile.org.xpi *
 	rm -rf gaia/profile/startupCache
-	rm -rf addon/template
-	mkdir -p addon/template
+	rm -rf addon/template/profile
 	mv gaia/profile addon/template/
-	cp addon-sdk/app-extension/bootstrap.js addon/template/
-	cp addon-sdk/app-extension/install.rdf addon/template/
 	mkdir -p addon/template/profile/extensions
 	cd prosthesis && zip -r b2g-prosthesis\@mozilla.org.xpi content components defaults locale modules chrome.manifest install.rdf
 	mv prosthesis/b2g-prosthesis@mozilla.org.xpi addon/template/profile/extensions
