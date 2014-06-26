@@ -1,5 +1,6 @@
-# generated Gaia profile and other files the Add-on SDK needs to be in that dir
-addon/template
+# generated Gaia profile
+addon/template/profile
+addon/*.xpi
 
 # platform-specific directories containing B2G Desktop binaries
 addon/data/mac64/B2G.app

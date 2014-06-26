@@ -41,11 +41,7 @@ let Ci = components.interfaces;
 let Cu = components.utils;
 
 Cu.import("resource://gre/modules/Services.jsm");
-try {
-  Cu.import("resource://gre/modules/commonjs/promise/core.js");
-} catch (e) {
-  Cu.import("resource://gre/modules/commonjs/sdk/core/promise.js");
-}
+let { Promise: promise } = Cu.import("resource://gre/modules/Promise.jsm", {});
 Cu.import("resource://gre/modules/devtools/dbg-client.jsm");
 
 if (!COMMONJS) {
@@ -65,7 +61,7 @@ this.Debugger = {
     let transport = debuggerSocketConnect("localhost", aPort);
     client = new DebuggerClient(transport);
 
-    let deferred = Promise.defer();
+    let deferred = promise.defer();
 
     let connectionTimer = setTimeout(function () {
       let errorMsg = "Failed to connect to device: timeout";
@@ -92,7 +88,7 @@ this.Debugger = {
     dump("webappsRequest " + webappsActor + "\n");
     aData.to = webappsActor;
     dump("about to send " + JSON.stringify(aData, null, 2) + "\n");
-    let deferred = Promise.defer();
+    let deferred = promise.defer();
     client.request(aData,
       function onResponse(aResponse) {
       dump("response=" + JSON.stringify(aResponse, null, 2) + "\n");

@@ -41,65 +41,64 @@ var Simulator = {
       $("#form-add-app").get(0).reset();
     });
 
-    document.documentElement.addEventListener(
-      "addon-message",
-      function addonMessageListener(event) {
-        var message = event.detail;
-        if (!("name" in message)) {
-          return;
-        }
-        console.log('Addon-message: ' + message.name);
-        switch (message.name) {
-          case "deviceConnected":
-            Simulator.deviceConnected = message.value;
-            console.log("device " + (message.value ? "" : "dis") + "connected");
-            Simulator.updateDeviceView();
-            break;
-          case "isRunning":
-            $(Simulator.toggler).prop('indeterminate', false);
-            $(Simulator.toggler).prop('checked', message.isRunning);
-            if (message.isRunning) {
-              $("#open-connect-devtools").show().prop("disabled", false);
-            } else {
-              $("#open-connect-devtools").hide().prop("disabled", true);
-            }
-            break;
-          case "listTabs":
-            var datalist = $('#list-app-tabs').empty();
-            var tablist = $('#new-from-tab').empty();
-            tablist.append('<option selected>Select an open tab</option>');
-            for (var url in message.list) {
-              var el = $('<option>').prop('value', url).text(message.list[url]);
-              datalist.append(el);
-              tablist.append(el);
-            }
-            break;
-          case "validateUrl":
-            var set = $('#add-app-url').parents('form').removeClass('is-manifest');
-            $("#add-hosted-app").prop("disabled", !!message.err);
-            if (message.err) {
-              $('#new-from-manifest, #add-app-url').attr('data-valid', 'no');
-              $('#add-app-url').prop('title', message.err);
-            } else {
-              set.addClass('is-manifest');
-              $('#new-from-manifest, #add-app-url').attr('data-valid', 'yes');
-            }
-            break;
-          case "listApps":
-            AppList.update(message.list);
-            break;
-          case "updateReceiptStart":
-            $('li').filter(function() $(this).data('id') == message.id).
-                    addClass("updateReceipt");
-            break;
-          case "updateReceiptStop":
-            $('li').filter(function() $(this).data('id') == message.id).
-                    removeClass("updateReceipt");
-            break;
-        }
-      },
-      false
-    );
+    window.addEventListener("message", function(event) {
+      var message = event.data;
+      if (message.destination !== "content") {
+        return;
+      }
+      if (!("name" in message)) {
+        return;
+      }
+      console.log('Addon-message: ' + message.name);
+      switch (message.name) {
+        case "deviceConnected":
+          Simulator.deviceConnected = message.value;
+          console.log("device " + (message.value ? "" : "dis") + "connected");
+          Simulator.updateDeviceView();
+          break;
+        case "isRunning":
+          $(Simulator.toggler).prop('indeterminate', false);
+          $(Simulator.toggler).prop('checked', message.isRunning);
+          if (message.isRunning) {
+            $("#open-connect-devtools").show().prop("disabled", false);
+          } else {
+            $("#open-connect-devtools").hide().prop("disabled", true);
+          }
+          break;
+        case "listTabs":
+          var datalist = $('#list-app-tabs').empty();
+          var tablist = $('#new-from-tab').empty();
+          tablist.append('<option selected>Select an open tab</option>');
+          for (var url in message.list) {
+            var el = $('<option>').prop('value', url).text(message.list[url]);
+            datalist.append(el);
+            tablist.append(el);
+          }
+          break;
+        case "validateUrl":
+          var set = $('#add-app-url').parents('form').removeClass('is-manifest');
+          $("#add-hosted-app").prop("disabled", !!message.err);
+          if (message.err) {
+            $('#new-from-manifest, #add-app-url').attr('data-valid', 'no');
+            $('#add-app-url').prop('title', message.err);
+          } else {
+            set.addClass('is-manifest');
+            $('#new-from-manifest, #add-app-url').attr('data-valid', 'yes');
+          }
+          break;
+        case "listApps":
+          AppList.update(message.list);
+          break;
+        case "updateReceiptStart":
+          $('li').filter(function() $(this).data('id') == message.id).
+                  addClass("updateReceipt");
+          break;
+        case "updateReceiptStop":
+          $('li').filter(function() $(this).data('id') == message.id).
+                  removeClass("updateReceipt");
+          break;
+      }
+    });
 
     window.postMessage({ name: "getIsRunning" }, "*");
     window.postMessage({ name: "getDeviceConnected" }, "*");

@@ -605,3 +605,7 @@ section header {
 .device-connected #sidebar .device-dependent {
     height: 50px;
 }
+
+.connect {
+    display: none;
+}
