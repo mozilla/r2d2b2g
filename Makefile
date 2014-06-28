@@ -58,6 +58,8 @@ ifeq (win32, $(B2G_PLATFORM))
   ADB_PACKAGE = adb-1.0.31-windows.zip
   ADB_BINARIES = adb.exe AdbWinApi.dll AdbWinUsbApi.dll
   BIN_SUFFIX = .exe
+
+  DOWNLOAD_CMD = wget -c --no-check-certificate
 else
 ifeq (mac64, $(B2G_PLATFORM))
   B2G_URL ?= $(B2G_URL_BASE)b2g-18.0.2013-06-26.en-US.mac64.dmg
