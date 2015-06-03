@@ -608,12 +608,12 @@ this.ADB = {
           // $fileMode is not the octal one there.
           let encoder = new TextEncoder();
 
-          let (infoLengthPacket = new Uint32Array(1), info = aDest + ",33204") {
-            infoLengthPacket[0] = info.length;
-            ADB.sockSend(socket, encoder.encode("SEND"));
-            ADB.sockSend(socket, infoLengthPacket);
-            ADB.sockSend(socket, encoder.encode(info));
-          }
+          let infoLengthPacket = new Uint32Array(1);
+          let info = aDest + ",33204";
+          infoLengthPacket[0] = info.length;
+          ADB.sockSend(socket, encoder.encode("SEND"));
+          ADB.sockSend(socket, infoLengthPacket);
+          ADB.sockSend(socket, encoder.encode(info));
 
           // now sending file data.
           while (remaining > 0) {
@@ -636,11 +636,10 @@ this.ADB = {
           }
 
           // Ending up with DONE + mtime (wtf???)
-          let (fileTimePacket = new Uint32Array(1)) {
-            fileTimePacket[0] = fileTime;
-            ADB.sockSend(socket, encoder.encode("DONE"));
-            ADB.sockSend(socket, fileTimePacket);
-          }
+          let fileTimePacket = new Uint32Array(1);
+          fileTimePacket[0] = fileTime;
+          ADB.sockSend(socket, encoder.encode("DONE"));
+          ADB.sockSend(socket, fileTimePacket);
 
           state = "wait-done";
           break;
