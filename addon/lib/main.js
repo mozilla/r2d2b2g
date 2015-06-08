@@ -160,39 +160,42 @@ Menuitems.Menuitem({
   },
 });
 
-Gcli.addCommand({
-  name: 'firefoxos',
-  description: 'Commands to control Firefox OS Simulator',
-});
+// Newer Firefox's GCLI does not have addCommand, should convert this.
+try {
+  Gcli.addCommand({
+    name: 'firefoxos',
+    description: 'Commands to control Firefox OS Simulator',
+  });
 
-Gcli.addCommand({
-  name: "firefoxos manager",
-  description: "Open the Firefox OS Simulator Manager",
-  params: [],
-  exec: function(args, context) {
-    Simulator.openHelperTab();
-  },
-});
+  Gcli.addCommand({
+    name: "firefoxos manager",
+    description: "Open the Firefox OS Simulator Manager",
+    params: [],
+    exec: function(args, context) {
+      Simulator.openHelperTab();
+    },
+  });
 
-Gcli.addCommand({
-  name: "firefoxos start",
-  description: "Start Firefox OS Simulator (restarts if running)",
-  params: [],
-  exec: function(args, context) {
-    Simulator.run();
-  },
-});
+  Gcli.addCommand({
+    name: "firefoxos start",
+    description: "Start Firefox OS Simulator (restarts if running)",
+    params: [],
+    exec: function(args, context) {
+      Simulator.run();
+    },
+  });
 
-Gcli.addCommand({
-  name: "firefoxos stop",
-  description: "Stop Firefox OS Simulator",
-  params: [],
-  exec: function(args, context) {
-    if (Simulator.isRunning) {
-      Simulator.kill();
-    }
-  },
-});
+  Gcli.addCommand({
+    name: "firefoxos stop",
+    description: "Stop Firefox OS Simulator",
+    params: [],
+    exec: function(args, context) {
+      if (Simulator.isRunning) {
+        Simulator.kill();
+      }
+    },
+  });
+} catch (e) {}
 
 let PermissionSettings;
 try {
